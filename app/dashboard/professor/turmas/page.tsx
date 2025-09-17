@@ -1,8 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Users, BookOpen, FileText, CheckCircle, Calendar, TrendingUp } from "lucide-react"
 import Link from "next/link"
@@ -59,19 +59,19 @@ export default function ProfessorTurmasPage() {
               <p className="text-muted-foreground">Gerencie suas turmas e acompanhe o desempenho</p>
             </div>
             <div className="flex gap-2">
-              <Button>
+              <LiquidGlassButton>
                 <FileText className="h-4 w-4 mr-2" />
                 Lançar Notas
-              </Button>
-              <Button variant="outline">
+              </LiquidGlassButton>
+              <LiquidGlassButton variant="outline">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Registrar Frequência
-              </Button>
+              </LiquidGlassButton>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -80,9 +80,9 @@ export default function ProfessorTurmasPage() {
                 <div className="text-2xl font-bold text-primary">83</div>
                 <p className="text-xs text-muted-foreground">Distribuídos em 3 turmas</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média Geral</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -91,9 +91,9 @@ export default function ProfessorTurmasPage() {
                 <div className="text-2xl font-bold text-primary">7.8</div>
                 <p className="text-xs text-muted-foreground">+0.2 desde o último bimestre</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -102,12 +102,12 @@ export default function ProfessorTurmasPage() {
                 <div className="text-2xl font-bold text-destructive">9</div>
                 <p className="text-xs text-muted-foreground">Para correção</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {turmas.map((turma) => (
-              <Card key={turma.id} className="hover:shadow-lg transition-shadow">
+              <LiquidGlassCard key={turma.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -148,17 +148,17 @@ export default function ProfessorTurmasPage() {
 
                     <div className="flex gap-2">
                       <Link href={`/dashboard/professor/turmas/${turma.id}`} className="flex-1">
-                        <Button className="w-full" size="sm">
+                        <LiquidGlassButton className="w-full" size="sm">
                           Gerenciar Turma
-                        </Button>
+                        </LiquidGlassButton>
                       </Link>
-                      <Button variant="outline" size="sm">
+                      <LiquidGlassButton variant="outline" size="sm">
                         <FileText className="h-4 w-4" />
-                      </Button>
+                      </LiquidGlassButton>
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </LiquidGlassCard>
             ))}
           </div>
         </div>

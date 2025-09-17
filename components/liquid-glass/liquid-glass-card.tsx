@@ -6,7 +6,7 @@ import { useTheme } from "next-themes"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { getDisplacementFilter } from "./liquid-glass-utils"
-import { LIQUID_GLASS_PRESETS, LIQUID_GLASS_RADIUS, type LiquidGlassIntensity } from "./config"
+import { LIQUID_GLASS_PRESETS, LIQUID_GLASS_RADIUS, LIQUID_GLASS_DEFAULT_INTENSITY, type LiquidGlassIntensity } from "./config"
 
 interface LiquidGlassCardProps {
   children: React.ReactNode
@@ -14,7 +14,7 @@ interface LiquidGlassCardProps {
   intensity?: LiquidGlassIntensity
 }
 
-export function LiquidGlassCard({ children, className, intensity = "medium" }: LiquidGlassCardProps) {
+export function LiquidGlassCard({ children, className, intensity = LIQUID_GLASS_DEFAULT_INTENSITY }: LiquidGlassCardProps) {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)

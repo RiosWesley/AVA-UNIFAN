@@ -2,7 +2,7 @@
 
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { LiquidGlassButton } from "@/components/liquid-glass"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard } from "@/components/liquid-glass"
@@ -39,9 +39,9 @@ export default function AlunoDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Bem-vindo, João!</h1>
               <p className="text-muted-foreground">Aqui está um resumo das suas atividades acadêmicas</p>
             </div>
-            <Button variant="outline" size="sm">
+            <LiquidGlassButton variant="outline" size="sm">
               <Bell className="h-4 w-4 mr-2" />3 Notificações
-            </Button>
+            </LiquidGlassButton>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">

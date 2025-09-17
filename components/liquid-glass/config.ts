@@ -1,5 +1,7 @@
 export type LiquidGlassIntensity = "low" | "medium" | "high"
 
+export const LIQUID_GLASS_DEFAULT_INTENSITY: LiquidGlassIntensity = "low"
+
 export const LIQUID_GLASS_RADIUS = {
   card: 12,
   button: 10,
@@ -8,8 +10,8 @@ export const LIQUID_GLASS_RADIUS = {
 
 export const LIQUID_GLASS_PRESETS = {
   card: {
-    low: { blur: 4, depth: 6, chroma: 2, strength: 90 },
-    medium: { blur: 8, depth: 10, chroma: 4, strength: 90 },
+    low: { blur: 4, depth: 6, chroma: 5, strength: 90 },
+    medium: { blur: 8, depth: 10, chroma: 5, strength: 90 },
     high: { blur: 12, depth: 14, chroma: 6, strength: 90 },
   },
   button: {
@@ -19,7 +21,9 @@ export const LIQUID_GLASS_PRESETS = {
   },
   sidebar: {
     // Sidebar não usa intensidade variável por ora, mas mantemos formato
+    low: { blur: 8, depth: 10, chroma: 3, strength: 95 },
     medium: { blur: 12, depth: 14, chroma: 4, strength: 95 },
+    high: { blur: 16, depth: 18, chroma: 6, strength: 95 },
   },
   background: {
     radius: 40,

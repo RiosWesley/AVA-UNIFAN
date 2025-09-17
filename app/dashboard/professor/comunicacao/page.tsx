@@ -1,8 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -87,14 +87,14 @@ export default function ProfessorComunicacaoPage() {
               <p className="text-muted-foreground">Gerencie mensagens, fóruns e avisos</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
+              <LiquidGlassButton variant="outline">
                 <Bell className="h-4 w-4 mr-2" />
                 Notificações
-              </Button>
-              <Button>
+              </LiquidGlassButton>
+              <LiquidGlassButton>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Aviso
-              </Button>
+              </LiquidGlassButton>
             </div>
           </div>
 
@@ -109,7 +109,7 @@ export default function ProfessorComunicacaoPage() {
             <TabsContent value="mensagens">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
-                  <Card>
+                  <LiquidGlassCard>
                     <CardHeader>
                       <CardTitle>Caixa de Entrada</CardTitle>
                       <CardDescription>3 mensagens não lidas</CardDescription>
@@ -134,11 +134,11 @@ export default function ProfessorComunicacaoPage() {
                         ))}
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 </div>
 
                 <div className="lg:col-span-2">
-                  <Card>
+                  <LiquidGlassCard>
                     <CardHeader>
                       <CardTitle>Dúvida sobre exercício</CardTitle>
                       <CardDescription>De: Ana Silva (9º A) • Hoje, 15:20</CardDescription>
@@ -154,14 +154,14 @@ export default function ProfessorComunicacaoPage() {
                         <p>Ana Silva</p>
                         <div className="border-t pt-4">
                           <Textarea placeholder="Digite sua resposta..." className="mb-4" />
-                          <Button>
+                          <LiquidGlassButton>
                             <Send className="h-4 w-4 mr-2" />
                             Responder
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 </div>
               </div>
             </TabsContent>
@@ -170,14 +170,14 @@ export default function ProfessorComunicacaoPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Fóruns das Turmas</h3>
-                  <Button>
+                  <LiquidGlassButton>
                     <Plus className="h-4 w-4 mr-2" />
                     Novo Tópico
-                  </Button>
+                  </LiquidGlassButton>
                 </div>
 
                 {forumTopicos.map((topico) => (
-                  <Card key={topico.id}>
+                  <LiquidGlassCard key={topico.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -192,16 +192,16 @@ export default function ProfessorComunicacaoPage() {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
+                          <LiquidGlassButton variant="outline" size="sm">
                             Moderar
-                          </Button>
-                          <Button variant="outline" size="sm">
+                          </LiquidGlassButton>
+                          <LiquidGlassButton variant="outline" size="sm">
                             Ver Discussão
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 ))}
               </div>
             </TabsContent>
@@ -210,14 +210,14 @@ export default function ProfessorComunicacaoPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Meus Avisos</h3>
-                  <Button>
+                  <LiquidGlassButton>
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Aviso
-                  </Button>
+                  </LiquidGlassButton>
                 </div>
 
                 {avisos.map((aviso) => (
-                  <Card key={aviso.id}>
+                  <LiquidGlassCard key={aviso.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -229,22 +229,22 @@ export default function ProfessorComunicacaoPage() {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
+                          <LiquidGlassButton variant="outline" size="sm">
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
+                          </LiquidGlassButton>
+                          <LiquidGlassButton variant="outline" size="sm">
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 ))}
               </div>
             </TabsContent>
 
             <TabsContent value="enviar">
-              <Card>
+              <LiquidGlassCard>
                 <CardHeader>
                   <CardTitle>Enviar Mensagem</CardTitle>
                   <CardDescription>Envie mensagens para alunos ou colegas</CardDescription>
@@ -294,15 +294,15 @@ export default function ProfessorComunicacaoPage() {
                     </div>
 
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline">Salvar Rascunho</Button>
-                      <Button>
+                      <LiquidGlassButton variant="outline">Salvar Rascunho</LiquidGlassButton>
+                      <LiquidGlassButton>
                         <Send className="h-4 w-4 mr-2" />
                         Enviar Mensagem
-                      </Button>
+                      </LiquidGlassButton>
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </LiquidGlassCard>
             </TabsContent>
           </Tabs>
         </div>

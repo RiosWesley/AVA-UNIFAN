@@ -1,9 +1,9 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { BookOpen, Users, Calendar, TrendingUp, GraduationCap } from "lucide-react"
 
@@ -44,14 +44,14 @@ export default function CoordenadorDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Painel de Coordenação</h1>
               <p className="text-muted-foreground">Visão geral dos cursos e desempenho acadêmico</p>
             </div>
-            <Button>
+            <LiquidGlassButton>
               <Calendar className="h-4 w-4 mr-2" />
               Montagem de Grade
-            </Button>
+            </LiquidGlassButton>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Cursos</CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -60,9 +60,9 @@ export default function CoordenadorDashboard() {
                 <div className="text-2xl font-bold text-primary">3</div>
                 <p className="text-xs text-muted-foreground">29 turmas ativas</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -71,9 +71,9 @@ export default function CoordenadorDashboard() {
                 <div className="text-2xl font-bold text-primary">870</div>
                 <p className="text-xs text-muted-foreground">+15 novos este mês</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Professores Ativos</CardTitle>
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -82,9 +82,9 @@ export default function CoordenadorDashboard() {
                 <div className="text-2xl font-bold text-primary">45</div>
                 <p className="text-xs text-muted-foreground">3 disponíveis para novas turmas</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média Geral</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -93,11 +93,11 @@ export default function CoordenadorDashboard() {
                 <div className="text-2xl font-bold text-primary">7.8</div>
                 <p className="text-xs text-muted-foreground">+0.1 desde o último bimestre</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <Card className="lg:col-span-2">
+            <LiquidGlassCard className="lg:col-span-2" intensity="low">
               <CardHeader>
                 <CardTitle>Desempenho por Curso</CardTitle>
                 <CardDescription>Média e frequência dos cursos</CardDescription>
@@ -114,9 +114,9 @@ export default function CoordenadorDashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity="low">
               <CardHeader>
                 <CardTitle>Distribuição de Alunos</CardTitle>
                 <CardDescription>Por nível de ensino</CardDescription>
@@ -152,11 +152,11 @@ export default function CoordenadorDashboard() {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <LiquidGlassCard>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <BookOpen className="h-5 w-5 mr-2" />
@@ -170,9 +170,9 @@ export default function CoordenadorDashboard() {
                     <div key={index} className="p-4 border rounded-lg">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium">{curso.nome}</h4>
-                        <Button size="sm" variant="outline">
+                        <LiquidGlassButton size="sm" variant="outline">
                           Gerenciar
-                        </Button>
+                        </LiquidGlassButton>
                       </div>
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
@@ -192,9 +192,9 @@ export default function CoordenadorDashboard() {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Users className="h-5 w-5 mr-2" />
@@ -220,7 +220,7 @@ export default function CoordenadorDashboard() {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
         </div>
       </main>

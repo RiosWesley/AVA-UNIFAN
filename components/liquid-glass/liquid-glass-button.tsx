@@ -4,15 +4,15 @@ import { useTheme } from "next-themes"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { ButtonProps } from "@/components/ui/button"
+import type { ComponentProps } from "react"
 import { getDisplacementFilter } from "./liquid-glass-utils"
-import { LIQUID_GLASS_PRESETS, LIQUID_GLASS_RADIUS, type LiquidGlassIntensity } from "./config"
+import { LIQUID_GLASS_PRESETS, LIQUID_GLASS_RADIUS, LIQUID_GLASS_DEFAULT_INTENSITY, type LiquidGlassIntensity } from "./config"
 
-interface LiquidGlassButtonProps extends ButtonProps {
+interface LiquidGlassButtonProps extends ComponentProps<typeof Button> {
   intensity?: LiquidGlassIntensity
 }
 
-export function LiquidGlassButton({ children, className, intensity = "medium", ...props }: LiquidGlassButtonProps) {
+export function LiquidGlassButton({ children, className, intensity = LIQUID_GLASS_DEFAULT_INTENSITY, ...props }: LiquidGlassButtonProps) {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const ref = useRef<HTMLButtonElement | null>(null)

@@ -52,7 +52,7 @@ export function LiquidGlassBackground() {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url("https://4kwallpapers.com/images/wallpapers/ghost-of-yotei-5184x2160-19074.jpg")',
+          backgroundImage: 'url("https://4kwallpapers.com/images/wallpapers/chika-fujiwara-3840x2160-16148.jpg")',
         }}
       />
 

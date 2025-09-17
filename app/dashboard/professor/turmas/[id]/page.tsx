@@ -1,8 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -72,10 +72,10 @@ export default function TurmaDetalhePage() {
         <div className="p-6">
           <div className="flex items-center mb-6">
             <Link href="/dashboard/professor/turmas">
-              <Button variant="ghost" size="sm" className="mr-4">
+              <LiquidGlassButton variant="ghost" size="sm" className="mr-4">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar
-              </Button>
+              </LiquidGlassButton>
             </Link>
             <div>
               <h1 className="text-3xl font-bold text-foreground">{turma.nome}</h1>
@@ -86,7 +86,7 @@ export default function TurmaDetalhePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média da Turma</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -95,9 +95,9 @@ export default function TurmaDetalhePage() {
                 <div className="text-2xl font-bold text-primary">{turma.mediaGeral}</div>
                 <p className="text-xs text-muted-foreground">+0.3 desde o último bimestre</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Frequência Média</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -106,9 +106,9 @@ export default function TurmaDetalhePage() {
                 <div className="text-2xl font-bold text-primary">{turma.frequenciaMedia}%</div>
                 <p className="text-xs text-muted-foreground">Acima da média escolar</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -117,7 +117,7 @@ export default function TurmaDetalhePage() {
                 <div className="text-2xl font-bold text-destructive">2</div>
                 <p className="text-xs text-muted-foreground">Para correção</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <Tabs defaultValue="alunos" className="space-y-6">
@@ -129,7 +129,7 @@ export default function TurmaDetalhePage() {
             </TabsList>
 
             <TabsContent value="alunos">
-              <Card>
+              <LiquidGlassCard>
                 <CardHeader>
                   <CardTitle>Lista de Alunos</CardTitle>
                   <CardDescription>Desempenho individual dos alunos</CardDescription>
@@ -156,29 +156,29 @@ export default function TurmaDetalhePage() {
                           >
                             {aluno.situacao}
                           </Badge>
-                          <Button size="sm" variant="outline">
+                          <LiquidGlassButton size="sm" variant="outline">
                             Ver Detalhes
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+              </LiquidGlassCard>
             </TabsContent>
 
             <TabsContent value="atividades">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Atividades da Turma</h3>
-                  <Button>
+                  <LiquidGlassButton>
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Atividade
-                  </Button>
+                  </LiquidGlassButton>
                 </div>
 
                 {atividades.map((atividade) => (
-                  <Card key={atividade.id}>
+                  <LiquidGlassCard key={atividade.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
@@ -191,12 +191,12 @@ export default function TurmaDetalhePage() {
                           <Badge variant={atividade.status === "Concluída" ? "default" : "secondary"}>
                             {atividade.status}
                           </Badge>
-                          <Button size="sm" variant="outline">
+                          <LiquidGlassButton size="sm" variant="outline">
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline">
+                          </LiquidGlassButton>
+                          <LiquidGlassButton size="sm" variant="outline">
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     </CardHeader>
@@ -205,10 +205,10 @@ export default function TurmaDetalhePage() {
                         <p className="text-sm text-muted-foreground">
                           Entregues: {atividade.entregues}/{atividade.total}
                         </p>
-                        <Button size="sm">Ver Entregas</Button>
+                        <LiquidGlassButton size="sm">Ver Entregas</LiquidGlassButton>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 ))}
               </div>
             </TabsContent>
@@ -217,14 +217,14 @@ export default function TurmaDetalhePage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Materiais da Disciplina</h3>
-                  <Button>
+                  <LiquidGlassButton>
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Material
-                  </Button>
+                  </LiquidGlassButton>
                 </div>
 
                 {materiais.map((material) => (
-                  <Card key={material.id}>
+                  <LiquidGlassCard key={material.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -237,22 +237,22 @@ export default function TurmaDetalhePage() {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <Button size="sm" variant="outline">
+                          <LiquidGlassButton size="sm" variant="outline">
                             <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline">
+                          </LiquidGlassButton>
+                          <LiquidGlassButton size="sm" variant="outline">
                             <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 ))}
               </div>
             </TabsContent>
 
             <TabsContent value="notas">
-              <Card>
+              <LiquidGlassCard>
                 <CardHeader>
                   <CardTitle>Lançamento de Notas</CardTitle>
                   <CardDescription>Registre as notas dos alunos</CardDescription>
@@ -285,10 +285,10 @@ export default function TurmaDetalhePage() {
                       ))}
                     </div>
 
-                    <Button className="w-full">Salvar Notas</Button>
+                    <LiquidGlassButton className="w-full">Salvar Notas</LiquidGlassButton>
                   </div>
                 </CardContent>
-              </Card>
+              </LiquidGlassCard>
             </TabsContent>
           </Tabs>
         </div>

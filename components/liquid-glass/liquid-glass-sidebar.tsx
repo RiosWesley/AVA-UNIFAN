@@ -38,7 +38,7 @@ export function LiquidGlassSidebar({ children, className }: LiquidGlassSidebarPr
   }, [mounted])
 
   const radiusPx = LIQUID_GLASS_RADIUS.sidebar
-  const preset = LIQUID_GLASS_PRESETS.sidebar.medium
+  const preset = LIQUID_GLASS_PRESETS.sidebar.high
   const blur = preset.blur
   const depth = preset.depth
   const chroma = preset.chroma
