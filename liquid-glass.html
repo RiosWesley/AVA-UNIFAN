@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Efeito Vidro Líquido com Movimento Inteligente</title>
+    <style>
+        /* --- Estilos Globais --- */
+        body {
+            background: black;
+            color: white;
+            padding-bottom: 50vh;
+            font-family: sans-serif;
+            margin: 0;
+            overflow: hidden; /* Previne scroll da página ao arrastar */
+        }
+        /* Classe de estado global para melhorar a experiência de arrastar */
+        body.is-dragging {
+            user-select: none; /* Evita a seleção de texto durante o arraste */
+        }
+
+        #background-content img.bg-image {
+            width: 100%;
+            display: block;
+        }
+        
+        /* --- Overlay (container de posicionamento) --- */
+        .overlay {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none; /* Permite clicar "através" do overlay */
+        }
+        
+        /* --- Estilo do Elemento de Vidro Arrastável --- */
+        .glass-element {
+            position: absolute; /* Essencial para o posicionamento livre */
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 0 4px 0px white;
+            cursor: grab; /* Indica que o elemento é móvel */
+            touch-action: none; /* Otimiza a resposta ao toque */
+            pointer-events: auto; /* Garante que os elementos sejam interativos */
+        }
+
+        .glass-element.is-dragging {
+            cursor: grabbing; /* Feedback visual durante o arraste */
+            z-index: 1000; /* Garante que o elemento arrastado fique na frente */
+            transition: none; /* Remove transições para um movimento mais responsivo */
+        }
+        
+        /* Posições iniciais robustas com calc() */
+        #glass-1 { top: calc(50% - 100px); left: calc(50% - 350px); }
+        #glass-2 { top: calc(50% - 100px); left: calc(50% - 100px); }
+        #glass-3 { top: calc(50% - 100px); left: calc(50% + 150px); }
+
+        /* --- Estilos para os Controles (sem grandes alterações) --- */
+        .controls-container { position: fixed; bottom: 10px; left: 10px; right: 10px; display: flex; justify-content: center; gap: 15px; z-index: 100; flex-wrap: wrap; align-items: flex-start; }
+        .control-group, .background-controls { background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(8px); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); color: white; font-family: monospace; }
+        .control-group { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 12px; align-items: center; }
+        .control-group h3, .background-controls h3 { grid-column: 1 / -1; text-align: center; margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid #444; font-size: 1em; font-weight: normal; }
+        .control-group label { font-size: 0.85em; justify-self: end; }
+        .control-group input[type="range"] { width: 140px; margin: 0; }
+        .control-group span { font-size: 0.85em; min-width: 35px; text-align: left; }
+        .background-controls { width: 320px; }
+        .image-input-container { display: flex; gap: 8px; margin-bottom: 12px; }
+        #image-url-input { flex-grow: 1; padding: 6px 8px; border-radius: 4px; border: 1px solid #555; background: #333; color: white; }
+        #add-image-btn { padding: 6px 12px; border: none; background: #4a4af0; color: white; border-radius: 4px; cursor: pointer; }
+        #image-list { max-height: 120px; overflow-y: auto; font-size: 0.8em; border: 1px solid #333; border-radius: 4px; padding: 5px; }
+        .image-list-item { display: flex; justify-content: space-between; align-items: center; padding: 4px; border-radius: 3px; }
+        .image-url { word-break: break-all; padding-right: 10px; }
+        .image-list-item.has-error .image-url { color: #ff8a8a; text-decoration: line-through; }
+        .remove-image-btn { background: #e03c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div id="glass-1" class="glass-element"></div>
+        <div id="glass-2" class="glass-element"></div>
+        <div id="glass-3" class="glass-element"></div>
+    </div>
+
+    <!-- Controles -->
+    <div class="controls-container">
+        <div class="control-group" data-target-id="glass-1"><h3>Elemento 1</h3><label for="width-1">Width</label><input type="range" id="width-1" min="50" max="400" value="200"><span id="width-1-value">200px</span><label for="height-1">Height</label><input type="range" id="height-1" min="50" max="400" value="200"><span id="height-1-value">200px</span><label for="radius-1">Radius</label><input type="range" id="radius-1" min="0" max="200" value="50"><span id="radius-1-value">50px</span><label for="depth-1">Depth</label><input type="range" id="depth-1" min="1" max="50" value="10"><span id="depth-1-value">10</span><label for="blur-1">Blur</label><input type="range" id="blur-1" min="0" max="20" step="0.5" value="2"><span id="blur-1-value">2.0</span><label for="chroma-1">Chroma</label><input type="range" id="chroma-1" min="0" max="50" step="0.5" value="5"><span id="chroma-1-value">5.0</span></div>
+        <div class="control-group" data-target-id="glass-2"><h3>Elemento 2</h3><label for="width-2">Width</label><input type="range" id="width-2" min="50" max="400" value="200"><span id="width-2-value">200px</span><label for="height-2">Height</label><input type="range" id="height-2" min="50" max="400" value="200"><span id="height-2-value">200px</span><label for="radius-2">Radius</label><input type="range" id="radius-2" min="0" max="200" value="100"><span id="radius-2-value">100px</span><label for="depth-2">Depth</label><input type="range" id="depth-2" min="1" max="50" value="10"><span id="depth-2-value">10</span><label for="blur-2">Blur</label><input type="range" id="blur-2" min="0" max="20" step="0.5" value="4"><span id="blur-2-value">4.0</span><label for="chroma-2">Chroma</label><input type="range" id="chroma-2" min="0" max="50" step="0.5" value="0"><span id="chroma-2-value">0.0</span></div>
+        <div class="control-group" data-target-id="glass-3"><h3>Elemento 3</h3><label for="width-3">Width</label><input type="range" id="width-3" min="50" max="400" value="200"><span id="width-3-value">200px</span><label for="height-3">Height</label><input type="range" id="height-3" min="50" max="400" value="200"><span id="height-3-value">200px</span><label for="radius-3">Radius</label><input type="range" id="radius-3" min="0" max="200" value="20"><span id="radius-3-value">20px</span><label for="depth-3">Depth</label><input type="range" id="depth-3" min="1" max="50" value="10"><span id="depth-3-value">10</span><label for="blur-3">Blur</label><input type="range" id="blur-3" min="0" max="20" step="0.5" value="1"><span id="blur-3-value">1.0</span><label for="chroma-3">Chroma</label><input type="range" id="chroma-3" min="0" max="50" step="0.5" value="1"><span id="chroma-3-value">1.0</span></div>
+        <div class="background-controls"><h3>Imagens de Fundo</h3><div class="image-input-container"><input type="text" id="image-url-input" placeholder="Cole o URL da imagem aqui..."><button id="add-image-btn">Adicionar</button></div><div id="image-list"></div></div>
+    </div>
+
+    <div id="background-content"></div>
+    <p style="padding: 2rem; max-width: 800px; margin: auto;">Lorem ipsum dolor sit amet.</p>
+
+    <script>
+        // --- Funções de Geração de SVG (sem alterações) ---
+        function getDisplacementMap({ height, width, radius, depth }) { const svgString = `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><style>.mix { mix-blend-mode: screen; }</style><defs><linearGradient id="Y" x1="0" x2="0" y1="${Math.ceil((radius / height) * 15)}%" y2="${Math.floor(100 - (radius / height) * 15)}%"><stop offset="0%" stop-color="#0F0" /><stop offset="100%" stop-color="#000" /></linearGradient><linearGradient id="X" x1="${Math.ceil((radius / width) * 15)}%" x2="${Math.floor(100 - (radius / width) * 15)}%" y1="0" y2="0"><stop offset="0%" stop-color="#F00" /><stop offset="100%" stop-color="#000" /></linearGradient></defs><rect x="0" y="0" height="${height}" width="${width}" fill="#808080" /><g filter="blur(2px)"><rect x="0" y="0" height="${height}" width="${width}" fill="#000080" /><rect x="0" y="0" height="${height}" width="${width}" fill="url(#Y)" class="mix" /><rect x="0" y="0" height="${height}" width="${width}" fill="url(#X)" class="mix" /><rect x="${depth}" y="${depth}" height="${height - 2 * depth}" width="${width - 2 * depth}" fill="#808080" rx="${radius}" ry="${radius}" filter="blur(${depth}px)" /></g></svg>`; return "data:image/svg+xml;utf8," + encodeURIComponent(svgString); }
+        function getDisplacementFilter({ height, width, radius, depth, strength = 100, chromaticAberration = 0 }) { const displacementMapUrl = getDisplacementMap({ height, width, radius, depth }); const svgString = `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg"><defs><filter id="displace" color-interpolation-filters="sRGB"><feImage x="0" y="0" height="${height}" width="${width}" href="${displacementMapUrl}" result="displacementMap" /><feDisplacementMap in="SourceGraphic" in2="displacementMap" scale="${strength + chromaticAberration * 2}" xChannelSelector="R" yChannelSelector="G" /><feColorMatrix type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="displacedR" /><feDisplacementMap in="SourceGraphic" in2="displacementMap" scale="${strength + chromaticAberration}" xChannelSelector="R" yChannelSelector="G" /><feColorMatrix type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="displacedG" /><feDisplacementMap in="SourceGraphic" in2="displacementMap" scale="${strength}" xChannelSelector="R" yChannelSelector="G" /><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="displacedB" /><feBlend in="displacedR" in2="displacedG" mode="screen"/><feBlend in2="displacedB" mode="screen"/></filter></defs></svg>`; return "data:image/svg+xml;utf8," + encodeURIComponent(svgString) + "#displace"; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Lógica de Gerenciamento de Imagens (sem alterações) ---
+            const backgroundContent = document.getElementById('background-content'), imageUrlInput = document.getElementById('image-url-input'), addImageBtn = document.getElementById('add-image-btn'), imageList = document.getElementById('image-list');
+            let backgroundImageUrls = ["https://4kwallpapers.com/images/wallpapers/ghost-of-yotei-5184x2160-19074.jpg"];
+            function renderBackgroundImages() { backgroundContent.innerHTML = ''; imageList.innerHTML = ''; if (backgroundImageUrls.length === 0) { imageList.innerHTML = '<div>Nenhuma imagem.</div>'; return; } backgroundImageUrls.forEach((url, index) => { const img = document.createElement('img'); img.src = url; img.alt = "Imagem de fundo"; img.className = 'bg-image'; const listItem = document.createElement('div'); listItem.className = 'image-list-item'; const urlSpan = document.createElement('span'); urlSpan.className = 'image-url'; urlSpan.textContent = url; const removeBtn = document.createElement('button'); removeBtn.className = 'remove-image-btn'; removeBtn.textContent = 'X'; removeBtn.onclick = () => removeImage(index); listItem.appendChild(urlSpan); listItem.appendChild(removeBtn); imageList.appendChild(listItem); img.onerror = () => { listItem.classList.add('has-error'); }; backgroundContent.appendChild(img); }); }
+            function addNewImage() { const newUrl = imageUrlInput.value.trim(); if (newUrl) { backgroundImageUrls.push(newUrl); imageUrlInput.value = ''; renderBackgroundImages(); } }
+            function removeImage(indexToRemove) { backgroundImageUrls.splice(indexToRemove, 1); renderBackgroundImages(); }
+            addImageBtn.addEventListener('click', addNewImage); imageUrlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addNewImage(); });
+
+            // --- Gerenciamento dos Elementos de Vidro ---
+            document.querySelectorAll('.control-group').forEach(group => {
+                const elementId = group.dataset.targetId; if (!elementId) return;
+                const element = document.getElementById(elementId); if (!element) return;
+                const inputs = { width: group.querySelector(`#width-${elementId.split('-')[1]}`), height: group.querySelector(`#height-${elementId.split('-')[1]}`), radius: group.querySelector(`#radius-${elementId.split('-')[1]}`), depth: group.querySelector(`#depth-${elementId.split('-')[1]}`), blur: group.querySelector(`#blur-${elementId.split('-')[1]}`), chroma: group.querySelector(`#chroma-${elementId.split('-')[1]}`), };
+                const valueDisplays = { width: group.querySelector(`#width-${elementId.split('-')[1]}-value`), height: group.querySelector(`#height-${elementId.split('-')[1]}-value`), radius: group.querySelector(`#radius-${elementId.split('-')[1]}-value`), depth: group.querySelector(`#depth-${elementId.split('-')[1]}-value`), blur: group.querySelector(`#blur-${elementId.split('-')[1]}-value`), chroma: group.querySelector(`#chroma-${elementId.split('-')[1]}-value`), };
+                
+                function getParamsAndRender() {
+                    const params = { width: parseFloat(inputs.width.value), height: parseFloat(inputs.height.value), radius: parseFloat(inputs.radius.value), depth: parseFloat(inputs.depth.value), blur: parseFloat(inputs.blur.value), chromaticAberration: parseFloat(inputs.chroma.value), };
+                    params.radius = Math.min(params.radius, params.width / 2, params.height / 2); inputs.radius.value = params.radius;
+                    valueDisplays.width.textContent = `${params.width}px`; valueDisplays.height.textContent = `${params.height}px`; valueDisplays.radius.textContent = `${Math.round(params.radius)}px`; valueDisplays.depth.textContent = params.depth; valueDisplays.blur.textContent = params.blur.toFixed(1); valueDisplays.chroma.textContent = params.chromaticAberration.toFixed(1);
+                    updateGlassElement(element, params);
+                }
+
+                function updateGlassElement(element, params) {
+                    const isClicked = element.dataset.clicked === 'true';
+                    const baseDepth = params.depth;
+                    const currentDepth = isClicked ? baseDepth / 0.7 : baseDepth;
+                    const filterUrl = getDisplacementFilter({ ...params, depth: currentDepth });
+                    element.style.height = `${params.height}px`; element.style.width = `${params.width}px`; element.style.borderRadius = `${params.radius}px`;
+                    element.style.backdropFilter = `blur(${params.blur / 2}px) url('${filterUrl}') blur(${params.blur}px) brightness(1.1) saturate(1.5)`;
+                }
+
+                Object.values(inputs).forEach(input => input.addEventListener('input', getParamsAndRender));
+                
+                // --- LÓGICA DE MOVIMENTO INTELIGENTE (Clique vs. Arraste) ---
+                let isDragging = false;
+                let startX, startY, offsetX, offsetY;
+                const dragThreshold = 5; // Distância em pixels para considerar um arraste
+
+                const onPointerDown = (e) => {
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    offsetX = e.clientX - element.offsetLeft;
+                    offsetY = e.clientY - element.offsetTop;
+                    
+                    // Efeito de pressionar inicia imediatamente
+                    element.dataset.clicked = 'true';
+                    getParamsAndRender();
+
+                    window.addEventListener('pointermove', onPointerMove);
+                    window.addEventListener('pointerup', onPointerUp);
+                };
+
+                const onPointerMove = (e) => {
+                    if (isDragging) {
+                        element.style.left = `${e.clientX - offsetX}px`;
+                        element.style.top = `${e.clientY - offsetY}px`;
+                    } else {
+                        // Verifica se o limiar de arrasto foi ultrapassado
+                        const dx = Math.abs(e.clientX - startX);
+                        const dy = Math.abs(e.clientY - startY);
+                        if (dx > dragThreshold || dy > dragThreshold) {
+                            isDragging = true;
+                            element.classList.add('is-dragging');
+                            document.body.classList.add('is-dragging');
+                        }
+                    }
+                };
+
+                const onPointerUp = () => {
+                    // Efeito de soltar ocorre sempre, limpando o estado
+                    element.dataset.clicked = 'false';
+                    getParamsAndRender();
+
+                    if (isDragging) {
+                        isDragging = false;
+                        element.classList.remove('is-dragging');
+                        document.body.classList.remove('is-dragging');
+                    }
+                    
+                    // Remove os listeners globais para otimizar a performance
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+                };
+
+                element.addEventListener('pointerdown', onPointerDown);
+                
+                // Renderização inicial para cada elemento
+                getParamsAndRender();
+            });
+
+            // Renderização inicial do fundo
+            renderBackgroundImages();
+        });
+    </script>
+</body>
+</html>

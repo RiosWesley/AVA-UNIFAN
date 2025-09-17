@@ -4,7 +4,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/layout/sidebar"
-import { LiquidGlassCard } from "@/components/liquid-glass/liquid-glass-card"
+import { LiquidGlassCard } from "@/components/liquid-glass"
 import { BookOpen, Calendar, FileText, Users, TrendingUp, CheckCircle } from "lucide-react"
 
 export default function ProfessorDashboard() {

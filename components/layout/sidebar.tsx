@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LiquidGlassSidebar } from "@/components/liquid-glass/liquid-glass-sidebar"
+import { LiquidGlassSidebar } from "@/components/liquid-glass"
 import {
   Home,
   BookOpen,

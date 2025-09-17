@@ -1,10 +1,10 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
 import { Users, DollarSign, TrendingUp, AlertTriangle, Settings, FileText, Shield, Database } from "lucide-react"
 
@@ -55,19 +55,19 @@ export default function AdministradorDashboard() {
               <p className="text-muted-foreground">Visão geral completa do sistema AVA</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
+              <LiquidGlassButton variant="outline">
                 <Database className="h-4 w-4 mr-2" />
                 Backup
-              </Button>
-              <Button>
+              </LiquidGlassButton>
+              <LiquidGlassButton>
                 <Settings className="h-4 w-4 mr-2" />
                 Configurações
-              </Button>
+              </LiquidGlassButton>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard intensity="medium">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -76,9 +76,9 @@ export default function AdministradorDashboard() {
                 <div className="text-2xl font-bold text-primary">{estatisticasGerais.totalUsuarios}</div>
                 <p className="text-xs text-muted-foreground">+{estatisticasGerais.novosUsuarios} este mês</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity="medium">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Receita Mensal</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -87,9 +87,9 @@ export default function AdministradorDashboard() {
                 <div className="text-2xl font-bold text-primary">R$ {estatisticasGerais.receita.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">+2.4% vs mês anterior</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity="medium">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Inadimplência</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -98,9 +98,9 @@ export default function AdministradorDashboard() {
                 <div className="text-2xl font-bold text-destructive">{estatisticasGerais.inadimplencia}%</div>
                 <Progress value={estatisticasGerais.inadimplencia} className="mt-2" />
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity="medium">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Uptime Sistema</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -109,9 +109,9 @@ export default function AdministradorDashboard() {
                 <div className="text-2xl font-bold text-primary">{estatisticasGerais.sistemaUptime}%</div>
                 <Progress value={estatisticasGerais.sistemaUptime} className="mt-2" />
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity="medium">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Alertas Ativos</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -120,11 +120,11 @@ export default function AdministradorDashboard() {
                 <div className="text-2xl font-bold text-destructive">4</div>
                 <p className="text-xs text-muted-foreground">1 alta prioridade</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard intensity="low">
               <CardHeader>
                 <CardTitle>Crescimento de Usuários</CardTitle>
                 <CardDescription>Evolução mensal por tipo de usuário</CardDescription>
@@ -143,9 +143,9 @@ export default function AdministradorDashboard() {
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity="low">
               <CardHeader>
                 <CardTitle>Receitas vs Despesas</CardTitle>
                 <CardDescription>Comparativo financeiro mensal</CardDescription>
@@ -162,11 +162,11 @@ export default function AdministradorDashboard() {
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
+            <LiquidGlassCard intensity="low" className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <AlertTriangle className="h-5 w-5 mr-2" />
@@ -198,16 +198,16 @@ export default function AdministradorDashboard() {
                         </div>
                         <p className="text-sm">{alerta.mensagem}</p>
                       </div>
-                      <Button size="sm" variant="outline">
+                      <LiquidGlassButton size="sm" variant="outline">
                         Resolver
-                      </Button>
+                      </LiquidGlassButton>
                     </div>
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity="low">
               <CardHeader>
                 <CardTitle>Atalhos Rápidos</CardTitle>
                 <CardDescription>Acesso rápido às principais funcionalidades</CardDescription>
@@ -217,7 +217,7 @@ export default function AdministradorDashboard() {
                   {atalhos.map((atalho, index) => {
                     const Icon = atalho.icon
                     return (
-                      <Button key={index} variant="outline" className="w-full justify-start h-auto p-4 bg-transparent">
+                      <LiquidGlassButton key={index} variant="outline" className="w-full justify-start h-auto p-4 bg-transparent">
                         <div className="flex items-start">
                           <Icon className="h-5 w-5 mr-3 mt-0.5" />
                           <div className="text-left">
@@ -225,12 +225,12 @@ export default function AdministradorDashboard() {
                             <p className="text-xs text-muted-foreground">{atalho.descricao}</p>
                           </div>
                         </div>
-                      </Button>
+                      </LiquidGlassButton>
                     )
                   })}
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
         </div>
       </main>

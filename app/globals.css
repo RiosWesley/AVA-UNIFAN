@@ -128,8 +128,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -173,6 +173,56 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "liga" 1, "kern" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
+  
+  /* Typography hierarchy */
+  h1 { 
+    @apply text-3xl md:text-4xl font-bold tracking-tight leading-tight;
+    font-weight: 700;
+  }
+  h2 { 
+    @apply text-2xl md:text-3xl font-semibold tracking-tight leading-tight;
+    font-weight: 600;
+  }
+  h3 { 
+    @apply text-xl md:text-2xl font-semibold tracking-tight leading-snug;
+    font-weight: 600;
+  }
+  h4 { 
+    @apply text-lg font-medium leading-snug;
+    font-weight: 500;
+  }
+  h5 { 
+    @apply text-base font-medium leading-snug;
+    font-weight: 500;
+  }
+  h6 { 
+    @apply text-sm font-medium leading-snug;
+    font-weight: 500;
+  }
+  
+  p { 
+    @apply leading-relaxed text-base;
+    font-weight: 400;
+  }
+  
+  small { 
+    @apply text-sm text-muted-foreground leading-normal;
+    font-weight: 400;
+  }
+  
+  /* Better text sizing for UI components */
+  .text-xs { font-size: 0.75rem; line-height: 1rem; }
+  .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+  .text-base { font-size: 1rem; line-height: 1.5rem; }
+  .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+  .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+  .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+  .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+  .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
 }

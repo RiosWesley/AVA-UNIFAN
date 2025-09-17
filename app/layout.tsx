@@ -1,11 +1,11 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
+import { Plus_Jakarta_Sans } from "next/font/google"
+import { JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
-import { LiquidGlassBackground } from "@/components/liquid-glass/liquid-glass-background"
+import { LiquidGlassBackground } from "@/components/liquid-glass"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -14,6 +14,19 @@ export const metadata: Metadata = {
   generator: "v0.app",
 }
 
+const plusJakarta = Plus_Jakarta_Sans({ 
+  subsets: ["latin"], 
+  variable: "--font-sans", 
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap"
+})
+const jetBrainsMono = JetBrains_Mono({ 
+  subsets: ["latin"], 
+  variable: "--font-mono", 
+  weight: ["400", "500", "600", "700"],
+  display: "swap"
+})
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+      <body className={`font-sans ${plusJakarta.variable} ${jetBrainsMono.variable}`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

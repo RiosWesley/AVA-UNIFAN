@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
-import { LiquidGlassCard } from "@/components/liquid-glass/liquid-glass-card"
+import { LiquidGlassCard } from "@/components/liquid-glass"
 import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp } from "lucide-react"
 
 export default function AlunoDashboard() {
