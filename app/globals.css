@@ -1,0 +1,178 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated color tokens for AVA LMS educational theme */
+  --background: #f0fdf4; /* Light green for the main background */
+  --foreground: #374151; /* Dark gray for primary text */
+  --card: #ffffff; /* White for card backgrounds */
+  --card-foreground: #374151; /* Dark gray for card text */
+  --popover: #ffffff; /* White for popover backgrounds */
+  --popover-foreground: #374151; /* Dark gray for popover text */
+  --primary: #15803d; /* Green-700 for call-to-action buttons */
+  --primary-foreground: #ffffff; /* White text on primary buttons */
+  --secondary: #84cc16; /* Bright green for accents */
+  --secondary-foreground: #374151; /* Dark gray for secondary text */
+  --muted: #f0fdf4; /* Light green for muted text */
+  --muted-foreground: #4b5563; /* Gray for muted text */
+  --accent: #84cc16; /* Bright green for alerts */
+  --accent-foreground: #ffffff; /* White text on accent elements */
+  --destructive: #be123c; /* Rose-600 for error states */
+  --destructive-foreground: #ffffff; /* White text on destructive elements */
+  --border: #e5e7eb; /* Light gray for borders */
+  --input: #ffffff; /* White for input fields */
+  --ring: rgba(20, 184, 166, 0.5); /* Soft ring for focus states */
+  --chart-1: #15803d; /* Primary chart color */
+  --chart-2: #84cc16; /* Secondary chart color */
+  --chart-3: #f97316; /* Accent chart color */
+  --chart-4: #be123c; /* Error chart color */
+  --chart-5: #4b5563; /* Neutral chart color */
+  --radius: 0.5rem; /* Standard corner rounding */
+  --sidebar: #ffffff; /* Sidebar background */
+  --sidebar-foreground: #374151; /* Sidebar text */
+  --sidebar-primary: #f0fdf4; /* Sidebar primary background */
+  --sidebar-primary-foreground: #15803d; /* Sidebar primary text */
+  --sidebar-accent: #84cc16; /* Sidebar accent color */
+  --sidebar-accent-foreground: #ffffff; /* Sidebar accent text */
+  --sidebar-border: #e5e7eb; /* Sidebar border color */
+  --sidebar-ring: rgba(20, 184, 166, 0.5); /* Soft ring for sidebar focus */
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
+  --primary: #22c55e;
+  --primary-foreground: #0f172a;
+  --secondary: #334155;
+  --secondary-foreground: #f1f5f9;
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  --accent: #22c55e;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-foreground: #f1f5f9;
+  --border: #334155;
+  --input: #1e293b;
+  --ring: rgba(34, 197, 94, 0.3);
+  --chart-1: #22c55e;
+  --chart-2: #84cc16;
+  --chart-3: #f97316;
+  --chart-4: #ef4444;
+  --chart-5: #64748b;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #0f172a;
+  --sidebar-accent: #334155;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #334155;
+  --sidebar-ring: rgba(34, 197, 94, 0.3);
+}
+
+.liquid-glass {
+  /* Adding liquid glass theme variables */
+  --background: rgba(0, 0, 0, 0.3);
+  --foreground: #ffffff;
+  --card: rgba(255, 255, 255, 0.08);
+  --card-foreground: #ffffff;
+  --popover: rgba(255, 255, 255, 0.12);
+  --popover-foreground: #ffffff;
+  --primary: #22c55e;
+  --primary-foreground: #000000;
+  --secondary: rgba(255, 255, 255, 0.08);
+  --secondary-foreground: #ffffff;
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: rgba(255, 255, 255, 0.8);
+  --accent: rgba(34, 197, 94, 0.15);
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.15);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: rgba(34, 197, 94, 0.4);
+  --sidebar: rgba(0, 0, 0, 0.4);
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: rgba(34, 197, 94, 0.15);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: rgba(34, 197, 94, 0.4);
+}
+
+/* Enhanced glassmorphism effects for liquid glass theme */
+.liquid-glass .glass-effect {
+  backdrop-filter: blur(25px) saturate(200%);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 4px 16px 0 rgba(0, 0, 0, 0.3);
+}
+
+.liquid-glass .glass-effect:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 12px 40px 0 rgba(0, 0, 0, 0.6), 0 6px 20px 0
+    rgba(0, 0, 0, 0.4);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
