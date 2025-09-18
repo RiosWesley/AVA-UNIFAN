@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { LiquidGlassCard } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,7 +51,7 @@ export default function ConfiguracoesAlunoPage() {
           </div>
 
           <div className="grid gap-6">
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5" />
@@ -89,9 +91,9 @@ export default function ConfiguracoesAlunoPage() {
                   />
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Palette className="w-5 h-5" />
@@ -113,9 +115,9 @@ export default function ConfiguracoesAlunoPage() {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="w-5 h-5" />
@@ -142,7 +144,7 @@ export default function ConfiguracoesAlunoPage() {
                 </div>
                 <Button className="bg-primary hover:bg-primary/90">Salvar Preferências</Button>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
         </div>
       </main>
