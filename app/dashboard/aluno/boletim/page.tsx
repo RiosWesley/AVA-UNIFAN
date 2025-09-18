@@ -4,7 +4,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
-import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LiquidGlassCard, LiquidGlassButton, LiquidGlassInnerCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { GraduationCap, TrendingUp, Download, Calendar } from "lucide-react"
 
@@ -129,7 +129,7 @@ export default function AlunoBoletimPage() {
             <CardContent>
               <div className="space-y-4">
                 {boletim.map((disciplina, index) => (
-                  <div key={index} className="border rounded-lg p-4">
+                  <LiquidGlassInnerCard key={index} variant="discipline" intensity="medium">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="font-semibold text-lg">{disciplina.disciplina}</h3>
@@ -172,10 +172,10 @@ export default function AlunoBoletimPage() {
 
                     <div className="grid grid-cols-4 gap-4">
                       {disciplina.notas.map((nota, noteIndex) => (
-                        <div key={noteIndex} className="text-center p-2 border rounded">
+                        <LiquidGlassInnerCard key={noteIndex} variant="bimester" intensity="low">
                           <p className="text-xs text-muted-foreground">{noteIndex + 1}º Bimestre</p>
                           <p className="font-semibold">{nota}</p>
-                        </div>
+                        </LiquidGlassInnerCard>
                       ))}
                     </div>
 
@@ -186,7 +186,7 @@ export default function AlunoBoletimPage() {
                       </div>
                       <Progress value={disciplina.frequencia} />
                     </div>
-                  </div>
+                  </LiquidGlassInnerCard>
                 ))}
               </div>
             </CardContent>

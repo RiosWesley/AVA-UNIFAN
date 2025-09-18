@@ -1,5 +1,6 @@
 export { LiquidGlassButton } from "./liquid-glass-button"
 export { LiquidGlassCard } from "./liquid-glass-card"
+export { LiquidGlassInnerCard } from "./liquid-glass-inner-card"
 export { LiquidGlassSidebar } from "./liquid-glass-sidebar"
 
 export { getDisplacementFilter, getDisplacementMap } from "./liquid-glass-utils"
