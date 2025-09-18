@@ -1,6 +1,6 @@
 export type LiquidGlassIntensity = "low" | "medium" | "high"
 
-export const LIQUID_GLASS_DEFAULT_INTENSITY: LiquidGlassIntensity = "low"
+export const LIQUID_GLASS_DEFAULT_INTENSITY: LiquidGlassIntensity = "high"
 
 export const LIQUID_GLASS_RADIUS = {
   card: 12,
@@ -10,9 +10,9 @@ export const LIQUID_GLASS_RADIUS = {
 
 export const LIQUID_GLASS_PRESETS = {
   card: {
-    low: { blur: 4, depth: 6, chroma: 5, strength: 200 },
+    low: { blur: 0, depth: 6, chroma: 5, strength: 60 },
     medium: { blur: 8, depth: 10, chroma: 5, strength: 90 },
-    high: { blur: 12, depth: 14, chroma: 6, strength: 90 },
+    high: { blur: 0, depth: 14, chroma: 6, strength: 400 },
   },
   button: {
     low: { blur: 3, depth: 5, chroma: 1, strength: 85 },

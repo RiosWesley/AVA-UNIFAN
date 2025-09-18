@@ -1,12 +1,13 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { MessageSquare, Megaphone, Search, Plus, Clock, Pin } from "lucide-react"
 
 export default function AlunoComunicacaoPage() {
@@ -105,10 +106,10 @@ export default function AlunoComunicacaoPage() {
               <h1 className="text-3xl font-bold text-foreground">Comunicação</h1>
               <p className="text-muted-foreground">Fóruns, mensagens e comunicados</p>
             </div>
-            <Button>
+            <LiquidGlassButton>
               <Plus className="h-4 w-4 mr-2" />
               Nova Mensagem
-            </Button>
+            </LiquidGlassButton>
           </div>
 
           <Tabs defaultValue="forum" className="space-y-6">
@@ -127,15 +128,15 @@ export default function AlunoComunicacaoPage() {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input placeholder="Buscar tópicos..." className="pl-10 w-64" />
                     </div>
-                    <Button>
+                    <LiquidGlassButton>
                       <Plus className="h-4 w-4 mr-2" />
                       Novo Tópico
-                    </Button>
+                    </LiquidGlassButton>
                   </div>
                 </div>
 
                 {forumTopicos.map((topico) => (
-                  <Card key={topico.id} className="hover:shadow-md transition-shadow">
+                  <LiquidGlassCard key={topico.id} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -166,12 +167,12 @@ export default function AlunoComunicacaoPage() {
                             </div>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <LiquidGlassButton variant="outline" size="sm">
                           Ver Discussão
-                        </Button>
+                        </LiquidGlassButton>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 ))}
               </div>
             </TabsContent>
@@ -179,7 +180,7 @@ export default function AlunoComunicacaoPage() {
             <TabsContent value="mensagens">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
-                  <Card>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle className="flex items-center">
                         <MessageSquare className="h-5 w-5 mr-2" />
@@ -206,11 +207,11 @@ export default function AlunoComunicacaoPage() {
                         ))}
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 </div>
 
                 <div className="lg:col-span-2">
-                  <Card>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle>Sobre a prova de amanhã</CardTitle>
                       <CardDescription>De: Prof. Carlos Silva • Hoje, 14:30</CardDescription>
@@ -230,11 +231,11 @@ export default function AlunoComunicacaoPage() {
                         <p>Boa sorte!</p>
                         <p>Prof. Carlos Silva</p>
                         <div className="border-t pt-4">
-                          <Button>Responder</Button>
+                          <LiquidGlassButton>Responder</LiquidGlassButton>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 </div>
               </div>
             </TabsContent>
@@ -252,7 +253,7 @@ export default function AlunoComunicacaoPage() {
                 </div>
 
                 {comunicados.map((comunicado) => (
-                  <Card key={comunicado.id} className="hover:shadow-md transition-shadow">
+                  <LiquidGlassCard key={comunicado.id} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -273,12 +274,12 @@ export default function AlunoComunicacaoPage() {
                             <span>{comunicado.data}</span>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <LiquidGlassButton variant="outline" size="sm">
                           Ler Mais
-                        </Button>
+                        </LiquidGlassButton>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 ))}
               </div>
             </TabsContent>

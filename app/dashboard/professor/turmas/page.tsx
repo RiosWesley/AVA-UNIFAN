@@ -3,6 +3,7 @@
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Users, BookOpen, FileText, CheckCircle, Calendar, TrendingUp } from "lucide-react"
 import Link from "next/link"
@@ -71,7 +72,7 @@ export default function ProfessorTurmasPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <LiquidGlassCard>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -82,7 +83,7 @@ export default function ProfessorTurmasPage() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média Geral</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -93,7 +94,7 @@ export default function ProfessorTurmasPage() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -107,7 +108,7 @@ export default function ProfessorTurmasPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {turmas.map((turma) => (
-              <LiquidGlassCard key={turma.id} className="hover:shadow-lg transition-shadow">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={turma.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>

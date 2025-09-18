@@ -6,6 +6,7 @@ import { LiquidGlassButton } from "@/components/liquid-glass"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp } from "lucide-react"
 
 export default function AlunoDashboard() {
@@ -45,7 +46,7 @@ export default function AlunoDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Frequência Geral</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -56,7 +57,7 @@ export default function AlunoDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média Geral</CardTitle>
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -67,7 +68,7 @@ export default function AlunoDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -78,7 +79,7 @@ export default function AlunoDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Mensalidade</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -92,7 +93,7 @@ export default function AlunoDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <LiquidGlassCard intensity="low">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Calendar className="h-5 w-5 mr-2" />
@@ -118,7 +119,7 @@ export default function AlunoDashboard() {
                 </CardContent>
               </LiquidGlassCard>
 
-              <LiquidGlassCard intensity="low">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <GraduationCap className="h-5 w-5 mr-2" />
@@ -145,7 +146,7 @@ export default function AlunoDashboard() {
             </div>
 
             <div>
-              <LiquidGlassCard intensity="low">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Bell className="h-5 w-5 mr-2" />

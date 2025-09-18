@@ -1,10 +1,11 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { GraduationCap, TrendingUp, Download, Calendar } from "lucide-react"
 
 export default function AlunoBoletimPage() {
@@ -74,19 +75,19 @@ export default function AlunoBoletimPage() {
               <p className="text-muted-foreground">Suas notas e desempenho acadêmico</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
+              <LiquidGlassButton variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
-              </Button>
-              <Button variant="outline">
+              </LiquidGlassButton>
+              <LiquidGlassButton variant="outline">
                 <Calendar className="h-4 w-4 mr-2" />
                 Histórico
-              </Button>
+              </LiquidGlassButton>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média Geral</CardTitle>
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -95,9 +96,9 @@ export default function AlunoBoletimPage() {
                 <div className="text-2xl font-bold text-primary">{mediaGeral.toFixed(1)}</div>
                 <p className="text-xs text-muted-foreground">+0.3 desde o último bimestre</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Frequência Geral</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -106,9 +107,9 @@ export default function AlunoBoletimPage() {
                 <div className="text-2xl font-bold text-primary">{frequenciaGeral.toFixed(0)}%</div>
                 <Progress value={frequenciaGeral} className="mt-2" />
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Situação</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -117,10 +118,10 @@ export default function AlunoBoletimPage() {
                 <div className="text-2xl font-bold text-primary">Aprovado</div>
                 <p className="text-xs text-muted-foreground">1 disciplina em recuperação</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
-          <Card>
+          <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
             <CardHeader>
               <CardTitle>Desempenho por Disciplina</CardTitle>
               <CardDescription>Detalhamento das suas notas e frequência</CardDescription>
@@ -189,7 +190,7 @@ export default function AlunoBoletimPage() {
                 ))}
               </div>
             </CardContent>
-          </Card>
+          </LiquidGlassCard>
         </div>
       </main>
     </div>

@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Settings, Bell, Palette, Crown } from "lucide-react"
 
 export default function ConfiguracoesAdministradorPage() {
@@ -49,7 +50,7 @@ export default function ConfiguracoesAdministradorPage() {
           </div>
 
           <div className="grid gap-6">
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Bell className="w-5 h-5" />

@@ -1,11 +1,12 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { CreditCard, Download, Calendar, AlertCircle, CheckCircle, Clock, DollarSign } from "lucide-react"
 
 export default function AlunoFinanceiroPage() {
@@ -127,19 +128,19 @@ export default function AlunoFinanceiroPage() {
               <p className="text-muted-foreground">Acompanhe suas mensalidades e pagamentos</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
+              <LiquidGlassButton variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Comprovantes
-              </Button>
-              <Button>
+              </LiquidGlassButton>
+              <LiquidGlassButton>
                 <CreditCard className="h-4 w-4 mr-2" />
                 Pagar Agora
-              </Button>
+              </LiquidGlassButton>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Valor Total Anual</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -150,9 +151,9 @@ export default function AlunoFinanceiroPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">12 mensalidades</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Valor Pago</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -163,9 +164,9 @@ export default function AlunoFinanceiroPage() {
                 </div>
                 <Progress value={(resumoFinanceiro.valorPago / resumoFinanceiro.valorTotal) * 100} className="mt-2" />
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Próximo Vencimento</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -176,9 +177,9 @@ export default function AlunoFinanceiroPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">{resumoFinanceiro.proximoVencimento}</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Desconto Acumulado</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -189,7 +190,7 @@ export default function AlunoFinanceiroPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">Pontualidade nos pagamentos</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <Tabs defaultValue="mensalidades" className="space-y-6">
@@ -199,7 +200,7 @@ export default function AlunoFinanceiroPage() {
             </TabsList>
 
             <TabsContent value="mensalidades">
-              <Card>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle>Mensalidades 2024</CardTitle>
                   <CardDescription>Acompanhe o status das suas mensalidades</CardDescription>
@@ -243,32 +244,32 @@ export default function AlunoFinanceiroPage() {
                         </div>
                         <div className="flex flex-col space-y-2">
                           {mensalidade.status === "Pendente" && (
-                            <Button size="sm">
+                            <LiquidGlassButton size="sm">
                               <CreditCard className="h-4 w-4 mr-2" />
                               Pagar
-                            </Button>
+                            </LiquidGlassButton>
                           )}
                           {mensalidade.status === "Pago" && (
-                            <Button variant="outline" size="sm">
+                            <LiquidGlassButton variant="outline" size="sm">
                               <Download className="h-4 w-4 mr-2" />
                               Comprovante
-                            </Button>
+                            </LiquidGlassButton>
                           )}
                           {mensalidade.status === "Agendado" && (
-                            <Button variant="outline" size="sm" disabled>
+                            <LiquidGlassButton variant="outline" size="sm" disabled>
                               Agendado
-                            </Button>
+                            </LiquidGlassButton>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+              </LiquidGlassCard>
             </TabsContent>
 
             <TabsContent value="historico">
-              <Card>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle>Histórico de Pagamentos</CardTitle>
                   <CardDescription>Todos os seus pagamentos realizados</CardDescription>
@@ -292,16 +293,16 @@ export default function AlunoFinanceiroPage() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-lg">R$ {pagamento.valor.toLocaleString("pt-BR")}</p>
-                          <Button variant="outline" size="sm" className="mt-1 bg-transparent">
+                          <LiquidGlassButton variant="outline" size="sm" className="mt-1 bg-transparent">
                             <Download className="h-4 w-4 mr-1" />
                             Comprovante
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+              </LiquidGlassCard>
             </TabsContent>
           </Tabs>
         </div>

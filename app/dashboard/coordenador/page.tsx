@@ -4,6 +4,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { BookOpen, Users, Calendar, TrendingUp, GraduationCap } from "lucide-react"
 
@@ -97,7 +98,7 @@ export default function CoordenadorDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <LiquidGlassCard className="lg:col-span-2" intensity="low">
+            <LiquidGlassCard className="lg:col-span-2" intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle>Desempenho por Curso</CardTitle>
                 <CardDescription>Média e frequência dos cursos</CardDescription>
@@ -116,7 +117,7 @@ export default function CoordenadorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="low">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle>Distribuição de Alunos</CardTitle>
                 <CardDescription>Por nível de ensino</CardDescription>

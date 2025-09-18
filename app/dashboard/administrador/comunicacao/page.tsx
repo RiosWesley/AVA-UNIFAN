@@ -1,11 +1,12 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
 import { MessageSquare, Users, TrendingUp, Eye, Shield, Settings, AlertTriangle } from "lucide-react"
 
@@ -76,19 +77,19 @@ export default function AdministradorComunicacaoPage() {
               <p className="text-muted-foreground">Monitore e gerencie toda a comunicação do sistema</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
+              <LiquidGlassButton variant="outline">
                 <Shield className="h-4 w-4 mr-2" />
                 Moderação
-              </Button>
-              <Button>
+              </LiquidGlassButton>
+              <LiquidGlassButton>
                 <Settings className="h-4 w-4 mr-2" />
                 Configurações
-              </Button>
+              </LiquidGlassButton>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Mensagens Totais</CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -97,9 +98,9 @@ export default function AdministradorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasGerais.mensagensTotais}</div>
                 <p className="text-xs text-muted-foreground">+12% vs mês anterior</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Comunicados Ativos</CardTitle>
                 <Eye className="h-4 w-4 text-muted-foreground" />
@@ -108,9 +109,9 @@ export default function AdministradorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasGerais.comunicadosAtivos}</div>
                 <p className="text-xs text-muted-foreground">3 publicados hoje</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Usuários Ativos</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -119,9 +120,9 @@ export default function AdministradorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasGerais.usuariosAtivos}</div>
                 <p className="text-xs text-muted-foreground">97% do total de usuários</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Taxa de Engajamento</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -130,7 +131,7 @@ export default function AdministradorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasGerais.taxaEngajamento}%</div>
                 <p className="text-xs text-muted-foreground">+2% vs mês anterior</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
           <Tabs defaultValue="analytics" className="space-y-6">

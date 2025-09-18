@@ -1,10 +1,11 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BookOpen, Clock, User } from "lucide-react"
 import Link from "next/link"
 
@@ -75,7 +76,7 @@ export default function AlunodisciplinasPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {disciplinas.map((disciplina) => (
-              <Card key={disciplina.id} className="hover:shadow-lg transition-shadow">
+              <LiquidGlassCard key={disciplina.id} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -108,14 +109,14 @@ export default function AlunodisciplinasPage() {
                     </div>
 
                     <Link href={`/dashboard/aluno/disciplinas/${disciplina.id}`}>
-                      <Button className="w-full">
+                      <LiquidGlassButton className="w-full">
                         <BookOpen className="h-4 w-4 mr-2" />
                         Acessar Disciplina
-                      </Button>
+                      </LiquidGlassButton>
                     </Link>
                   </div>
                 </CardContent>
-              </Card>
+              </LiquidGlassCard>
             ))}
           </div>
         </div>

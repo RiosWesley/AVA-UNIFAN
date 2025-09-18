@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { Sidebar } from "@/components/layout/sidebar"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Settings, Bell, Shield, Camera } from "lucide-react"
 
 export default function PerfilAlunoPage() {
@@ -20,13 +22,17 @@ export default function PerfilAlunoPage() {
 
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
-          <p className="text-gray-600">Gerencie suas informações pessoais e configurações</p>
-        </div>
-      </div>
+    <div className="flex h-screen bg-background">
+      <Sidebar userRole="aluno" />
+
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Meu Perfil</h1>
+              <p className="text-muted-foreground">Gerencie suas informações pessoais e configurações</p>
+            </div>
+          </div>
 
       <Tabs defaultValue="perfil" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
@@ -37,7 +43,7 @@ export default function PerfilAlunoPage() {
 
         <TabsContent value="perfil" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-3">
-            <Card className="md:col-span-1">
+            <LiquidGlassCard className="md:col-span-1" intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle>Foto do Perfil</CardTitle>
                 <CardDescription>Atualize sua foto de perfil</CardDescription>
@@ -47,14 +53,14 @@ export default function PerfilAlunoPage() {
                   <AvatarImage src="/student-profile.png" />
                   <AvatarFallback className="text-2xl">JS</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" className="w-full bg-transparent">
+                <LiquidGlassButton variant="outline" className="w-full bg-transparent">
                   <Camera className="w-4 h-4 mr-2" />
                   Alterar Foto
-                </Button>
+                </LiquidGlassButton>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card className="md:col-span-2">
+            <LiquidGlassCard className="md:col-span-2" intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle>Informações Pessoais</CardTitle>
                 <CardDescription>Atualize suas informações básicas</CardDescription>
@@ -82,12 +88,12 @@ export default function PerfilAlunoPage() {
                     <Input id="endereco" defaultValue="Rua das Flores, 123 - São Paulo, SP" />
                   </div>
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">Salvar Alterações</Button>
+                <LiquidGlassButton className="bg-green-600 hover:bg-green-700">Salvar Alterações</LiquidGlassButton>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
-          <Card>
+          <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
             <CardHeader>
               <CardTitle>Informações Acadêmicas</CardTitle>
               <CardDescription>Dados sobre seu curso e matrícula</CardDescription>
@@ -132,11 +138,11 @@ export default function PerfilAlunoPage() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </LiquidGlassCard>
         </TabsContent>
 
         <TabsContent value="configuracoes" className="space-y-6">
-          <Card>
+          <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="w-5 h-5" />
@@ -176,9 +182,9 @@ export default function PerfilAlunoPage() {
                 />
               </div>
             </CardContent>
-          </Card>
+          </LiquidGlassCard>
 
-          <Card>
+          <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="w-5 h-5" />
@@ -211,13 +217,13 @@ export default function PerfilAlunoPage() {
                   <option>América/Manaus</option>
                 </select>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700">Salvar Preferências</Button>
+              <LiquidGlassButton className="bg-green-600 hover:bg-green-700">Salvar Preferências</LiquidGlassButton>
             </CardContent>
-          </Card>
+          </LiquidGlassCard>
         </TabsContent>
 
         <TabsContent value="seguranca" className="space-y-6">
-          <Card>
+          <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="w-5 h-5" />
@@ -239,7 +245,7 @@ export default function PerfilAlunoPage() {
                   <Label htmlFor="confirmar-senha">Confirmar Nova Senha</Label>
                   <Input id="confirmar-senha" type="password" />
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">Alterar Senha</Button>
+                <LiquidGlassButton className="bg-green-600 hover:bg-green-700">Alterar Senha</LiquidGlassButton>
               </div>
 
               <div className="border-t pt-6">
@@ -259,16 +265,18 @@ export default function PerfilAlunoPage() {
                       <p className="text-sm text-gray-600">Android - São Paulo, SP</p>
                       <p className="text-sm text-gray-600">Último acesso: 2 horas atrás</p>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <LiquidGlassButton variant="outline" size="sm">
                       Encerrar
-                    </Button>
+                    </LiquidGlassButton>
                   </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </LiquidGlassCard>
         </TabsContent>
       </Tabs>
+        </div>
+      </main>
     </div>
   )
 }

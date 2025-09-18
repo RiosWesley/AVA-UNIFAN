@@ -3,6 +3,7 @@
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -86,7 +87,7 @@ export default function TurmaDetalhePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <LiquidGlassCard>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média da Turma</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -97,7 +98,7 @@ export default function TurmaDetalhePage() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Frequência Média</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -108,7 +109,7 @@ export default function TurmaDetalhePage() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -129,7 +130,7 @@ export default function TurmaDetalhePage() {
             </TabsList>
 
             <TabsContent value="alunos">
-              <LiquidGlassCard>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle>Lista de Alunos</CardTitle>
                   <CardDescription>Desempenho individual dos alunos</CardDescription>
@@ -178,7 +179,7 @@ export default function TurmaDetalhePage() {
                 </div>
 
                 {atividades.map((atividade) => (
-                  <LiquidGlassCard key={atividade.id}>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={atividade.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
@@ -224,7 +225,7 @@ export default function TurmaDetalhePage() {
                 </div>
 
                 {materiais.map((material) => (
-                  <LiquidGlassCard key={material.id}>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={material.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
@@ -252,7 +253,7 @@ export default function TurmaDetalhePage() {
             </TabsContent>
 
             <TabsContent value="notas">
-              <LiquidGlassCard>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle>Lançamento de Notas</CardTitle>
                   <CardDescription>Registre as notas dos alunos</CardDescription>

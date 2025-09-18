@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
 import { Users, DollarSign, TrendingUp, AlertTriangle, Settings, FileText, Shield, Database } from "lucide-react"
 
@@ -67,7 +68,7 @@ export default function AdministradorDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -78,7 +79,7 @@ export default function AdministradorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Receita Mensal</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -89,7 +90,7 @@ export default function AdministradorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Inadimplência</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -100,7 +101,7 @@ export default function AdministradorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Uptime Sistema</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -111,7 +112,7 @@ export default function AdministradorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Alertas Ativos</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -124,7 +125,7 @@ export default function AdministradorDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <LiquidGlassCard intensity="low">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle>Crescimento de Usuários</CardTitle>
                 <CardDescription>Evolução mensal por tipo de usuário</CardDescription>
@@ -145,7 +146,7 @@ export default function AdministradorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="low">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle>Receitas vs Despesas</CardTitle>
                 <CardDescription>Comparativo financeiro mensal</CardDescription>
@@ -166,7 +167,7 @@ export default function AdministradorDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <LiquidGlassCard intensity="low" className="lg:col-span-2">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <AlertTriangle className="h-5 w-5 mr-2" />
@@ -207,7 +208,7 @@ export default function AdministradorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="low">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle>Atalhos Rápidos</CardTitle>
                 <CardDescription>Acesso rápido às principais funcionalidades</CardDescription>

@@ -2,9 +2,9 @@
 
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Sidebar } from "@/components/layout/sidebar"
-import { LiquidGlassCard } from "@/components/liquid-glass"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BookOpen, Calendar, FileText, Users, TrendingUp, CheckCircle } from "lucide-react"
 
 export default function ProfessorDashboard() {
@@ -40,19 +40,19 @@ export default function ProfessorDashboard() {
               <p className="text-muted-foreground">Gerencie suas turmas e atividades</p>
             </div>
             <div className="flex gap-2">
-              <Button>
+              <LiquidGlassButton>
                 <FileText className="h-4 w-4 mr-2" />
                 Lançar Notas
-              </Button>
-              <Button variant="outline">
+              </LiquidGlassButton>
+              <LiquidGlassButton variant="outline">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Registrar Frequência
-              </Button>
+              </LiquidGlassButton>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total de Turmas</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -63,7 +63,7 @@ export default function ProfessorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Aulas Hoje</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -74,7 +74,7 @@ export default function ProfessorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -85,7 +85,7 @@ export default function ProfessorDashboard() {
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity="medium">
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média das Turmas</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -99,7 +99,7 @@ export default function ProfessorDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <LiquidGlassCard intensity="low">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <BookOpen className="h-5 w-5 mr-2" />
@@ -119,9 +119,9 @@ export default function ProfessorDashboard() {
                         <div className="text-right">
                           <p className="text-sm font-medium">Próxima aula</p>
                           <p className="text-sm text-muted-foreground">{turma.proxima}</p>
-                          <Button size="sm" variant="outline" className="mt-2 bg-transparent">
+                          <LiquidGlassButton size="sm" variant="outline" className="mt-2 bg-transparent">
                             Gerenciar
-                          </Button>
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     ))}
@@ -129,7 +129,7 @@ export default function ProfessorDashboard() {
                 </CardContent>
               </LiquidGlassCard>
 
-              <LiquidGlassCard intensity="low">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <FileText className="h-5 w-5 mr-2" />
@@ -167,7 +167,7 @@ export default function ProfessorDashboard() {
             </div>
 
             <div>
-              <LiquidGlassCard intensity="low">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Calendar className="h-5 w-5 mr-2" />
