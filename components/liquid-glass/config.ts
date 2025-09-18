@@ -10,7 +10,7 @@ export const LIQUID_GLASS_RADIUS = {
 
 export const LIQUID_GLASS_PRESETS = {
   card: {
-    low: { blur: 4, depth: 6, chroma: 5, strength: 90 },
+    low: { blur: 4, depth: 6, chroma: 5, strength: 200 },
     medium: { blur: 8, depth: 10, chroma: 5, strength: 90 },
     high: { blur: 12, depth: 14, chroma: 6, strength: 90 },
   },
