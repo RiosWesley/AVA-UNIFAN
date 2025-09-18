@@ -71,6 +71,16 @@ export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
   const items = menuItems[userRole]
 
+  // Persist user role for background scoping
+  if (typeof window !== "undefined") {
+    try {
+      const stored = window.localStorage.getItem("ava:userRole")
+      if (stored !== userRole) {
+        window.localStorage.setItem("ava:userRole", userRole)
+      }
+    } catch {}
+  }
+
   return (
     <LiquidGlassSidebar
       className={cn("relative flex flex-col h-full transition-all duration-300", isCollapsed ? "w-16" : "w-64")}

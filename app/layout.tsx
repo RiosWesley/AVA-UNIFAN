@@ -5,7 +5,6 @@ import { JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
-import { LiquidGlassBackground } from "@/components/liquid-glass"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -42,7 +41,6 @@ export default function RootLayout({
           themes={["light", "dark", "liquid-glass"]}
           storageKey="ava-theme"
         >
-          <LiquidGlassBackground />
           <Suspense fallback={null}>{children}</Suspense>
           <Analytics />
         </ThemeProvider>
