@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,24 @@ import { BookOpen, Users, Settings, BarChart3 } from "lucide-react"
 import Link from "next/link"
 
 export default function AuthPage() {
+  const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"))
+    }
+
+    checkTheme()
+
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"]
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
@@ -40,7 +58,9 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className={`min-h-screen flex items-center justify-center p-4 ${
+      isLiquidGlass ? 'bg-black/90' : 'bg-gray-50 dark:bg-gray-900'
+    }`}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">

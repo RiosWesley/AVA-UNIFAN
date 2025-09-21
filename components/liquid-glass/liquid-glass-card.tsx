@@ -106,6 +106,7 @@ export function LiquidGlassCard({ children, className, intensity = LIQUID_GLASS_
         "hover:bg-white/20",
         className,
       )}
+      data-lg-card
       style={{
         borderRadius: radiusPx,
         boxShadow:

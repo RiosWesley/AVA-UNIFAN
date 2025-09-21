@@ -131,7 +131,7 @@ export default function AlunoBoletimPage() {
           {/* Header aprimorado */}
           <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
             isLiquidGlass
-              ? 'bg-gray-50/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+              ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="flex items-center space-x-4">
@@ -165,16 +165,16 @@ export default function AlunoBoletimPage() {
             <div className="flex items-center space-x-3">
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
+                  ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
               }`}>
                 <Download className="h-5 w-5 mr-2 text-emerald-600" />
                 <span className="font-semibold">Exportar PDF</span>
               </LiquidGlassButton>
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
+                  ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
               }`}>
                 <Calendar className="h-5 w-5 mr-2 text-green-600" />
                 <span className="font-semibold">Histórico</span>
@@ -188,7 +188,7 @@ export default function AlunoBoletimPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
@@ -211,7 +211,7 @@ export default function AlunoBoletimPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
@@ -232,7 +232,7 @@ export default function AlunoBoletimPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
@@ -261,7 +261,7 @@ export default function AlunoBoletimPage() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
                   isLiquidGlass
-                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >

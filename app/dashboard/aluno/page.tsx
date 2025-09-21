@@ -84,7 +84,7 @@ export default function AlunoDashboard() {
           {/* Header com gradiente e animações */}
           <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
             isLiquidGlass
-              ? 'bg-gray-50/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+              ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="flex items-center space-x-4">
@@ -131,7 +131,7 @@ export default function AlunoDashboard() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
@@ -152,7 +152,7 @@ export default function AlunoDashboard() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
@@ -175,7 +175,7 @@ export default function AlunoDashboard() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
@@ -198,7 +198,7 @@ export default function AlunoDashboard() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
@@ -225,7 +225,7 @@ export default function AlunoDashboard() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`${
                   isLiquidGlass
-                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >
@@ -283,7 +283,7 @@ export default function AlunoDashboard() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`${
                   isLiquidGlass
-                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >
@@ -354,7 +354,7 @@ export default function AlunoDashboard() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`${
                   isLiquidGlass
-                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >
@@ -397,7 +397,7 @@ export default function AlunoDashboard() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`${
                   isLiquidGlass
-                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >
@@ -471,7 +471,7 @@ export default function AlunoDashboard() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`${
                   isLiquidGlass
-                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >

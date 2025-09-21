@@ -123,3 +123,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Liquid Glass: aumentar contraste de textos sobre fundos escuros/translúcidos */
+@layer base {
+  .liquid-glass .bg-black\/30,
+  .liquid-glass .bg-black\/30 * {
+    color: rgba(255,255,255,0.92) !important;
+  }
+
+  /* Componentes marcados */
+  .liquid-glass [data-lg-card],
+  .liquid-glass [data-lg-card] * {
+    color: rgba(255,255,255,0.92);
+  }
+  .liquid-glass [data-lg-card] .text-gray-900,
+  .liquid-glass [data-lg-card] .text-gray-800,
+  .liquid-glass [data-lg-card] .text-gray-700 {
+    color: rgba(255,255,255,0.94) !important;
+  }
+  .liquid-glass [data-lg-card] .text-gray-600,
+  .liquid-glass [data-lg-card] .text-gray-500,
+  .liquid-glass [data-lg-card] .text-muted-foreground {
+    color: rgba(255,255,255,0.78) !important;
+  }
+}
