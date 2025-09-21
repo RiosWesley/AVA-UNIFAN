@@ -76,16 +76,20 @@ export default function AlunoDashboard() {
   ]
 
   return (
-    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/20' : 'bg-background'}`}>
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           {/* Header com gradiente e animações */}
-          <div className="flex items-center justify-between mb-8 p-6 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl border border-blue-500/20 backdrop-blur-sm">
+          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+            isLiquidGlass
+              ? 'bg-gray-50/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+              : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+          }`}>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <Star className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
@@ -93,7 +97,7 @@ export default function AlunoDashboard() {
                 </div>
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                   Bem-vindo, João!
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
@@ -125,10 +129,14 @@ export default function AlunoDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30"
+              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+                isLiquidGlass
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
+              }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Frequência Geral</CardTitle>
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Frequência Geral</CardTitle>
                 <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
                   <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
@@ -136,23 +144,27 @@ export default function AlunoDashboard() {
               <CardContent>
                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">92%</div>
                 <Progress value={92} className="h-2 mb-2" />
-                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">Excelente participação!</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Excelente participação!</p>
               </CardContent>
             </LiquidGlassCard>
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/50 dark:to-green-900/30"
+              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+                isLiquidGlass
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
+              }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">Média Geral</CardTitle>
-                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
-                  <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Média Geral</CardTitle>
+                <div className="p-2 bg-emerald-500/20 rounded-lg group-hover:bg-emerald-500/30 transition-colors">
+                  <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">8.6</div>
-                <div className="flex items-center text-xs text-green-600/70 dark:text-green-400/70">
+                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">8.6</div>
+                <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   +0.3 desde o último mês
                 </div>
@@ -161,17 +173,21 @@ export default function AlunoDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30"
+              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+                isLiquidGlass
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
+              }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-orange-700 dark:text-orange-300">Atividades</CardTitle>
-                <div className="p-2 bg-orange-500/20 rounded-lg group-hover:bg-orange-500/30 transition-colors">
-                  <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Atividades</CardTitle>
+                <div className="p-2 bg-amber-500/20 rounded-lg group-hover:bg-amber-500/30 transition-colors">
+                  <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">3</div>
-                <div className="flex items-center text-xs text-orange-600/70 dark:text-orange-400/70">
+                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">3</div>
+                <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Target className="h-3 w-3 mr-1" />
                   2 com prazo próximo
                 </div>
@@ -180,17 +196,21 @@ export default function AlunoDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/30"
+              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+                isLiquidGlass
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
+              }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Financeiro</CardTitle>
+                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Financeiro</CardTitle>
                 <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors">
                   <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">✓</div>
-                <div className="flex items-center text-xs text-purple-600/70 dark:text-purple-400/70">
+                <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Clock className="h-3 w-3 mr-1" />
                   Vence em 15 dias
                 </div>
@@ -198,12 +218,16 @@ export default function AlunoDashboard() {
             </LiquidGlassCard>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6">
+            <div className="md:col-span-1 xl:col-span-8 space-y-6">
               {/* Próximas Aulas */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className="bg-gradient-to-br from-blue-50/50 to-cyan-50/30 dark:from-blue-950/30 dark:to-cyan-950/20"
+                className={`${
+                  isLiquidGlass
+                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                }`}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -257,7 +281,11 @@ export default function AlunoDashboard() {
               {/* Últimas Notas */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className="bg-gradient-to-br from-green-50/50 to-emerald-50/30 dark:from-green-950/30 dark:to-emerald-950/20"
+                className={`${
+                  isLiquidGlass
+                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                }`}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -318,10 +346,17 @@ export default function AlunoDashboard() {
                 </CardContent>
               </LiquidGlassCard>
 
+            </div>
+
+            <div className="md:col-span-1 xl:col-span-4 space-y-6">
               {/* Conquistas */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className="bg-gradient-to-br from-yellow-50/50 to-amber-50/30 dark:from-yellow-950/30 dark:to-amber-950/20"
+                className={`${
+                  isLiquidGlass
+                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                }`}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -342,7 +377,7 @@ export default function AlunoDashboard() {
                             ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-yellow-200/30 dark:border-yellow-800/30'
                             : 'bg-white/60 dark:bg-gray-800/60 border-yellow-200/50 dark:border-yellow-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
                         }`}>
-                          <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                          <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
                             <IconComponent className="h-5 w-5 text-white" />
                           </div>
                           <div className="flex-1">
@@ -356,13 +391,15 @@ export default function AlunoDashboard() {
                   </div>
                 </CardContent>
               </LiquidGlassCard>
-            </div>
 
-            <div className="space-y-6">
               {/* Comunicados */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className="bg-gradient-to-br from-red-50/50 to-pink-50/30 dark:from-red-950/30 dark:to-pink-950/20"
+                className={`${
+                  isLiquidGlass
+                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                }`}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -426,11 +463,17 @@ export default function AlunoDashboard() {
                   </div>
                 </CardContent>
               </LiquidGlassCard>
+            </div>
 
+            <div className="md:col-span-1 xl:col-span-4 space-y-6">
               {/* Ações Rápidas */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className="bg-gradient-to-br from-purple-50/50 to-indigo-50/30 dark:from-purple-950/30 dark:to-indigo-950/20"
+                className={`${
+                  isLiquidGlass
+                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                }`}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">

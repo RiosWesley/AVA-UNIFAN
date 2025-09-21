@@ -146,16 +146,20 @@ export default function AlunodisciplinasPage() {
   }
 
   return (
-    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/20' : 'bg-background'}`}>
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           {/* Header aprimorado */}
-          <div className="flex items-center justify-between mb-8 p-6 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl border border-blue-500/20 backdrop-blur-sm">
+          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+            isLiquidGlass
+              ? 'bg-gray-50/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+              : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+          }`}>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <BookOpen className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
@@ -163,7 +167,7 @@ export default function AlunodisciplinasPage() {
                 </div>
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                   Minhas Disciplinas
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
@@ -184,16 +188,16 @@ export default function AlunodisciplinasPage() {
             <div className="flex items-center space-x-3">
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
-                  ? 'bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-800/20'
-                  : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70'
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
               }`}>
                 <FileText className="h-5 w-5 mr-2" />
                 Relatório
               </LiquidGlassButton>
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
-                  ? 'bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-800/20'
-                  : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70'
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
               }`}>
                 <Calendar className="h-5 w-5 mr-2" />
                 Horário
@@ -209,36 +213,22 @@ export default function AlunodisciplinasPage() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                   isLiquidGlass
-                    ? `bg-gradient-to-br ${
-                        disciplina.cor === "blue" ? "from-blue-500/5 to-blue-600/10 dark:from-blue-950/30 dark:to-blue-900/20" :
-                        disciplina.cor === "green" ? "from-green-500/5 to-green-600/10 dark:from-green-950/30 dark:to-green-900/20" :
-                        disciplina.cor === "purple" ? "from-purple-500/5 to-purple-600/10 dark:from-purple-950/30 dark:to-purple-900/20" :
-                        disciplina.cor === "orange" ? "from-orange-500/5 to-orange-600/10 dark:from-orange-950/30 dark:to-orange-900/20" :
-                        disciplina.cor === "emerald" ? "from-emerald-500/5 to-emerald-600/10 dark:from-emerald-950/30 dark:to-emerald-900/20" :
-                        "from-teal-500/5 to-teal-600/10 dark:from-teal-950/30 dark:to-teal-900/20"
-                      }`
-                    : `bg-gradient-to-br ${
-                        disciplina.cor === "blue" ? "from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30" :
-                        disciplina.cor === "green" ? "from-green-50 to-green-100/50 dark:from-green-950/50 dark:to-green-900/30" :
-                        disciplina.cor === "purple" ? "from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/30" :
-                        disciplina.cor === "orange" ? "from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30" :
-                        disciplina.cor === "emerald" ? "from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30" :
-                        "from-teal-50 to-teal-100/50 dark:from-teal-950/50 dark:to-teal-900/30"
-                      }`
+                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <CardHeader className="pb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-r ${
-                        disciplina.cor === "blue" ? "from-blue-500 to-blue-600" :
-                        disciplina.cor === "green" ? "from-green-500 to-green-600" :
-                        disciplina.cor === "purple" ? "from-purple-500 to-purple-600" :
-                        disciplina.cor === "orange" ? "from-orange-500 to-orange-600" :
-                        disciplina.cor === "emerald" ? "from-emerald-500 to-emerald-600" :
-                        "from-teal-500 to-teal-600"
-                      } shadow-lg`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                        disciplina.cor === "blue" ? "bg-blue-600" :
+                        disciplina.cor === "green" ? "bg-green-600" :
+                        disciplina.cor === "purple" ? "bg-purple-600" :
+                        disciplina.cor === "orange" ? "bg-orange-600" :
+                        disciplina.cor === "emerald" ? "bg-emerald-600" :
+                        "bg-teal-600"
+                      }`}>
                         <BookOpen className="h-6 w-6 text-white" />
                       </div>
                       <div>

@@ -123,16 +123,20 @@ export default function AlunoBoletimPage() {
   }
 
   return (
-    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-emerald-50/30 via-green-50/20 to-blue-50/30 dark:from-emerald-950/20 dark:via-green-950/10 dark:to-blue-950/20' : 'bg-background'}`}>
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           {/* Header aprimorado */}
-          <div className="flex items-center justify-between mb-8 p-6 bg-gradient-to-r from-emerald-500/10 via-green-500/10 to-blue-500/10 rounded-2xl border border-emerald-500/20 backdrop-blur-sm">
+          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+            isLiquidGlass
+              ? 'bg-gray-50/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+              : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+          }`}>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <GraduationCap className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
@@ -140,7 +144,7 @@ export default function AlunoBoletimPage() {
                 </div>
               </div>
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                   Boletim Digital
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
@@ -161,16 +165,16 @@ export default function AlunoBoletimPage() {
             <div className="flex items-center space-x-3">
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
-                  ? 'bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-800/20'
-                  : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70'
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
               }`}>
                 <Download className="h-5 w-5 mr-2 text-emerald-600" />
                 <span className="font-semibold">Exportar PDF</span>
               </LiquidGlassButton>
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
-                  ? 'bg-white/10 dark:bg-gray-800/10 hover:bg-white/20 dark:hover:bg-gray-800/20'
-                  : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70'
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20 hover:bg-gray-50/50 dark:hover:bg-gray-800/30'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
               }`}>
                 <Calendar className="h-5 w-5 mr-2 text-green-600" />
                 <span className="font-semibold">Histórico</span>
@@ -184,8 +188,8 @@ export default function AlunoBoletimPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-emerald-500/5 to-emerald-600/10 dark:from-emerald-950/30 dark:to-emerald-900/20'
-                  : 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/50 dark:to-emerald-900/30'
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -207,8 +211,8 @@ export default function AlunoBoletimPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-blue-500/5 to-blue-600/10 dark:from-blue-950/30 dark:to-blue-900/20'
-                  : 'bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30'
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -228,8 +232,8 @@ export default function AlunoBoletimPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-green-500/5 to-green-600/10 dark:from-green-950/30 dark:to-green-900/20'
-                  : 'bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/50 dark:to-green-900/30'
+                  ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -257,35 +261,21 @@ export default function AlunoBoletimPage() {
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
                   isLiquidGlass
-                    ? `bg-gradient-to-br ${
-                        disciplina.cor === "blue" ? "from-blue-500/5 to-blue-600/10 dark:from-blue-950/30 dark:to-blue-900/20" :
-                        disciplina.cor === "green" ? "from-green-500/5 to-green-600/10 dark:from-green-950/30 dark:to-green-900/20" :
-                        disciplina.cor === "purple" ? "from-purple-500/5 to-purple-600/10 dark:from-purple-950/30 dark:to-purple-900/20" :
-                        disciplina.cor === "orange" ? "from-orange-500/5 to-orange-600/10 dark:from-orange-950/30 dark:to-orange-900/20" :
-                        disciplina.cor === "red" ? "from-red-500/5 to-red-600/10 dark:from-red-950/30 dark:to-red-900/20" :
-                        "from-emerald-500/5 to-emerald-600/10 dark:from-emerald-950/30 dark:to-emerald-900/20"
-                      }`
-                    : `bg-gradient-to-br ${
-                        disciplina.cor === "blue" ? "from-blue-50/50 to-blue-100/30 dark:from-blue-950/30 dark:to-blue-900/20" :
-                        disciplina.cor === "green" ? "from-green-50/50 to-green-100/30 dark:from-green-950/30 dark:to-green-900/20" :
-                        disciplina.cor === "purple" ? "from-purple-50/50 to-purple-100/30 dark:from-purple-950/30 dark:to-purple-900/20" :
-                        disciplina.cor === "orange" ? "from-orange-50/50 to-orange-100/30 dark:from-orange-950/30 dark:to-orange-900/20" :
-                        disciplina.cor === "red" ? "from-red-50/50 to-red-100/30 dark:from-red-950/30 dark:to-red-900/20" :
-                        "from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-900/20"
-                      }`
+                    ? 'bg-gray-50/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >
                 <CardHeader className="pb-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-r ${
-                        disciplina.cor === "blue" ? "from-blue-500 to-blue-600" :
-                        disciplina.cor === "green" ? "from-green-500 to-green-600" :
-                        disciplina.cor === "purple" ? "from-purple-500 to-purple-600" :
-                        disciplina.cor === "orange" ? "from-orange-500 to-orange-600" :
-                        disciplina.cor === "red" ? "from-red-500 to-red-600" :
-                        "from-emerald-500 to-emerald-600"
-                      } shadow-lg`}>
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
+                        disciplina.cor === "blue" ? "bg-blue-600" :
+                        disciplina.cor === "green" ? "bg-green-600" :
+                        disciplina.cor === "purple" ? "bg-purple-600" :
+                        disciplina.cor === "orange" ? "bg-orange-600" :
+                        disciplina.cor === "red" ? "bg-red-600" :
+                        "bg-emerald-600"
+                      }`}>
                         <GraduationCap className="h-7 w-7 text-white" />
                       </div>
                       <div>

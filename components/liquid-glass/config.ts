@@ -12,7 +12,7 @@ export const LIQUID_GLASS_PRESETS = {
   card: {
     low: { blur: 0, depth: 6, chroma: 5, strength: 60 },
     medium: { blur: 8, depth: 10, chroma: 5, strength: 90 },
-    high: { blur: 1, depth: 14, chroma: 6, strength: 50 },
+    high: { blur: 4, depth: 14, chroma: 6, strength: 100 },
   },
   button: {
     low: { blur: 3, depth: 5, chroma: 1, strength: 85 },

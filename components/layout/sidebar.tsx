@@ -126,14 +126,14 @@ export function Sidebar({ userRole }: SidebarProps) {
           isCollapsed && "justify-center"
         )}>
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-            <div className="relative bg-gradient-to-r from-blue-600 to-purple-700 p-2 rounded-lg">
+            <div className="absolute inset-0 bg-blue-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+            <div className="relative bg-blue-600 p-2 rounded-lg">
               <GraduationCap className="h-6 w-6 text-white" />
             </div>
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-sidebar-foreground text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="font-bold text-sidebar-foreground text-lg text-blue-600 dark:text-blue-400">
                 AVA-UNIFAN
               </span>
               <span className="text-xs text-sidebar-foreground/60 font-medium">
@@ -149,7 +149,7 @@ export function Sidebar({ userRole }: SidebarProps) {
           className={cn(
             "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300",
             "hover:scale-110 active:scale-95",
-            isCollapsed && "bg-gradient-to-r from-blue-500/10 to-purple-500/10"
+            isCollapsed && "bg-blue-500/10"
           )}
         >
           {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
@@ -169,7 +169,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                   className={cn(
                     "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground relative group transition-all duration-300",
                     "hover:scale-[1.02] active:scale-[0.98]",
-                    isActive && "bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-blue-400 shadow-lg border border-blue-500/20",
+                    isActive && "bg-blue-500/20 text-blue-600 dark:text-blue-400 shadow-lg border border-blue-500/20",
                     isCollapsed && "px-2 justify-center",
                     !isCollapsed && "h-12 px-4"
                   )}
@@ -223,18 +223,18 @@ export function Sidebar({ userRole }: SidebarProps) {
       <div className="p-4 border-t border-sidebar-border/30 space-y-4 backdrop-blur-sm">
         {!isCollapsed && (
           <div className="flex justify-center">
-            <div className="p-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg backdrop-blur-sm">
+            <div className="p-2 bg-blue-500/10 rounded-lg backdrop-blur-sm">
               <ThemeToggle />
             </div>
           </div>
         )}
 
         <div className={cn(
-          "flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 border border-blue-500/10 transition-all duration-300 hover:from-blue-500/10 hover:to-purple-500/10",
+          "flex items-center space-x-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 transition-all duration-300 hover:bg-blue-500/10",
           isCollapsed && "justify-center"
         )}>
           <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
               <span className="text-sm font-semibold text-white">
                 {userRole === "aluno" ? "A" : userRole === "professor" ? "P" : userRole === "coordenador" ? "C" : "AD"}
               </span>
