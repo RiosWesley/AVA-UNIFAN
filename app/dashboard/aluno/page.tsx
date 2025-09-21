@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LiquidGlassButton } from "@/components/liquid-glass"
@@ -7,111 +8,245 @@ import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp } from "lucide-react"
+import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Award, Target, Activity, ChevronRight, Sparkles, Trophy, BookOpen, MessageSquare } from "lucide-react"
 
 export default function AlunoDashboard() {
+  const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"))
+    }
+
+    checkTheme()
+
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"]
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
   const proximasAulas = [
-    { disciplina: "Matemática", horario: "08:00 - 09:40", sala: "A-101", professor: "Prof. Carlos Silva" },
-    { disciplina: "Português", horario: "10:00 - 11:40", sala: "B-205", professor: "Prof. Ana Santos" },
-    { disciplina: "História", horario: "14:00 - 15:40", sala: "C-301", professor: "Prof. João Costa" },
+    {
+      disciplina: "Matemática",
+      horario: "08:00 - 09:40",
+      sala: "A-101",
+      professor: "Prof. Carlos Silva",
+      status: "Próxima",
+      tipo: "Teórica"
+    },
+    {
+      disciplina: "Português",
+      horario: "10:00 - 11:40",
+      sala: "B-205",
+      professor: "Prof. Ana Santos",
+      status: "Em breve",
+      tipo: "Prática"
+    },
+    {
+      disciplina: "História",
+      horario: "14:00 - 15:40",
+      sala: "C-301",
+      professor: "Prof. João Costa",
+      status: "Hoje",
+      tipo: "Teórica"
+    },
   ]
 
   const ultimasNotas = [
-    { disciplina: "Matemática", nota: 8.5, data: "15/03/2024" },
-    { disciplina: "Português", nota: 9.2, data: "12/03/2024" },
-    { disciplina: "Física", nota: 7.8, data: "10/03/2024" },
-    { disciplina: "Química", nota: 8.9, data: "08/03/2024" },
+    { disciplina: "Matemática", nota: 8.5, data: "15/03/2024", conceito: "Ótimo" },
+    { disciplina: "Português", nota: 9.2, data: "12/03/2024", conceito: "Excelente" },
+    { disciplina: "Física", nota: 7.8, data: "10/03/2024", conceito: "Bom" },
+    { disciplina: "Química", nota: 8.9, data: "08/03/2024", conceito: "Ótimo" },
   ]
 
   const comunicados = [
-    { titulo: "Prova de Matemática", data: "20/03/2024", tipo: "Avaliação" },
-    { titulo: "Entrega do Projeto de História", data: "25/03/2024", tipo: "Atividade" },
-    { titulo: "Reunião de Pais", data: "30/03/2024", tipo: "Evento" },
+    { titulo: "Prova de Matemática", data: "20/03/2024", tipo: "Avaliação", prioridade: "alta" },
+    { titulo: "Entrega do Projeto de História", data: "25/03/2024", tipo: "Atividade", prioridade: "média" },
+    { titulo: "Reunião de Pais", data: "30/03/2024", tipo: "Evento", prioridade: "baixa" },
+  ]
+
+  const conquistas = [
+    { titulo: "Excelência Acadêmica", descricao: "Média acima de 9.0", icone: Star },
+    { titulo: "Frequência Perfeita", descricao: "100% de presença", icone: Award },
+    { titulo: "Primeiro Lugar", descricao: "Melhor nota da turma", icone: Trophy },
   ]
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Bem-vindo, João!</h1>
-              <p className="text-muted-foreground">Aqui está um resumo das suas atividades acadêmicas</p>
+        <div className="p-8">
+          {/* Header com gradiente e animações */}
+          <div className="flex items-center justify-between mb-8 p-6 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl border border-blue-500/20 backdrop-blur-sm">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Star className="h-8 w-8 text-white" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Sparkles className="h-3 w-3 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Bem-vindo, João!
+                </h1>
+                <p className="text-muted-foreground text-lg mt-1">
+                  Aqui está um resumo das suas atividades acadêmicas
+                </p>
+                <div className="flex items-center mt-2 space-x-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                    <Activity className="h-3 w-3 mr-1" />
+                    Ativo
+                  </Badge>
+                  <Badge variant="outline" className="text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800">
+                    <Target className="h-3 w-3 mr-1" />
+                    Meta: 9.0
+                  </Badge>
+                </div>
+              </div>
             </div>
-            <LiquidGlassButton variant="outline" size="sm">
-              <Bell className="h-4 w-4 mr-2" />3 Notificações
+            <LiquidGlassButton
+              variant="outline"
+              size="lg"
+              className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-300"
+            >
+              <Bell className="h-5 w-5 mr-2 text-blue-600" />
+              <span className="font-semibold">3 Notificações</span>
             </LiquidGlassButton>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Frequência Geral</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          {/* Cards de estatísticas aprimorados */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Frequência Geral</CardTitle>
+                <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
+                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">92%</div>
-                <Progress value={92} className="mt-2" />
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">92%</div>
+                <Progress value={92} className="h-2 mb-2" />
+                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">Excelente participação!</p>
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Média Geral</CardTitle>
-                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/50 dark:to-green-900/30"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">Média Geral</CardTitle>
+                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
+                  <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">8.6</div>
-                <p className="text-xs text-muted-foreground">+0.3 desde o último mês</p>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">8.6</div>
+                <div className="flex items-center text-xs text-green-600/70 dark:text-green-400/70">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  +0.3 desde o último mês
+                </div>
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-orange-950/50 dark:to-orange-900/30"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-orange-700 dark:text-orange-300">Atividades</CardTitle>
+                <div className="p-2 bg-orange-500/20 rounded-lg group-hover:bg-orange-500/30 transition-colors">
+                  <FileText className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-destructive">3</div>
-                <p className="text-xs text-muted-foreground">2 com prazo próximo</p>
+                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">3</div>
+                <div className="flex items-center text-xs text-orange-600/70 dark:text-orange-400/70">
+                  <Target className="h-3 w-3 mr-1" />
+                  2 com prazo próximo
+                </div>
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Mensalidade</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className="group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/30"
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-sm font-semibold text-purple-700 dark:text-purple-300">Financeiro</CardTitle>
+                <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors">
+                  <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">Em dia</div>
-                <p className="text-xs text-muted-foreground">Vence em 15 dias</p>
+                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">✓</div>
+                <div className="flex items-center text-xs text-purple-600/70 dark:text-purple-400/70">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Vence em 15 dias
+                </div>
               </CardContent>
             </LiquidGlassCard>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+              {/* Próximas Aulas */}
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className="bg-gradient-to-br from-blue-50/50 to-cyan-50/30 dark:from-blue-950/30 dark:to-cyan-950/20"
+              >
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Calendar className="h-5 w-5 mr-2" />
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="p-2 bg-blue-500/20 rounded-lg mr-3">
+                      <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
                     Próximas Aulas
                   </CardTitle>
-                  <CardDescription>Suas aulas de hoje</CardDescription>
+                  <CardDescription className="text-base">Suas aulas de hoje e próximas</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {proximasAulas.map((aula, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{aula.disciplina}</h4>
-                          <p className="text-sm text-muted-foreground">{aula.professor}</p>
+                      <div key={index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-blue-200/30 dark:border-blue-800/30'
+                          : 'bg-white/60 dark:bg-gray-800/60 border-blue-200/50 dark:border-blue-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${
+                            aula.status === "Hoje" ? "bg-green-500" :
+                            aula.status === "Próxima" ? "bg-blue-500" : "bg-orange-500"
+                          } animate-pulse`}></div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">{aula.disciplina}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{aula.professor}</p>
+                            <div className="flex items-center mt-1">
+                              <Badge variant="outline" className="text-xs mr-2">
+                                {aula.tipo}
+                              </Badge>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                aula.status === "Hoje" ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300" :
+                                aula.status === "Próxima" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" :
+                                "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
+                              }`}>
+                                {aula.status}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{aula.horario}</p>
-                          <p className="text-sm text-muted-foreground">{aula.sala}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{aula.horario}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{aula.sala}</p>
                         </div>
                       </div>
                     ))}
@@ -119,57 +254,239 @@ export default function AlunoDashboard() {
                 </CardContent>
               </LiquidGlassCard>
 
-              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+              {/* Últimas Notas */}
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className="bg-gradient-to-br from-green-50/50 to-emerald-50/30 dark:from-green-950/30 dark:to-emerald-950/20"
+              >
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <GraduationCap className="h-5 w-5 mr-2" />
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="p-2 bg-green-500/20 rounded-lg mr-3">
+                      <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
                     Últimas Notas
                   </CardTitle>
-                  <CardDescription>Suas avaliações recentes</CardDescription>
+                  <CardDescription className="text-base">Suas avaliações recentes</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {ultimasNotas.map((nota, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{nota.disciplina}</p>
-                          <p className="text-sm text-muted-foreground">{nota.data}</p>
+                      <div key={index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                          : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            nota.nota >= 9 ? "bg-green-500/20" :
+                            nota.nota >= 8 ? "bg-blue-500/20" :
+                            nota.nota >= 6 ? "bg-yellow-500/20" : "bg-red-500/20"
+                          }`}>
+                            <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                              {nota.nota}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">{nota.disciplina}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{nota.data}</p>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs mt-1 ${
+                                nota.nota >= 9 ? "border-green-500 text-green-700 dark:text-green-300" :
+                                nota.nota >= 8 ? "border-blue-500 text-blue-700 dark:text-blue-300" :
+                                nota.nota >= 6 ? "border-yellow-500 text-yellow-700 dark:text-yellow-300" :
+                                "border-red-500 text-red-700 dark:text-red-300"
+                              }`}
+                            >
+                              {nota.conceito}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant={nota.nota >= 8 ? "default" : nota.nota >= 6 ? "secondary" : "destructive"}>
-                          {nota.nota}
-                        </Badge>
+                        <div className="text-right">
+                          <div className={`text-sm font-semibold ${
+                            nota.nota >= 9 ? "text-green-600 dark:text-green-400" :
+                            nota.nota >= 8 ? "text-blue-600 dark:text-blue-400" :
+                            nota.nota >= 6 ? "text-yellow-600 dark:text-yellow-400" :
+                            "text-red-600 dark:text-red-400"
+                          }`}>
+                            {nota.nota}/10
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </LiquidGlassCard>
+
+              {/* Conquistas */}
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className="bg-gradient-to-br from-yellow-50/50 to-amber-50/30 dark:from-yellow-950/30 dark:to-amber-950/20"
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="p-2 bg-yellow-500/20 rounded-lg mr-3">
+                      <Trophy className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    Suas Conquistas
+                  </CardTitle>
+                  <CardDescription className="text-base">Reconhecimentos e prêmios</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {conquistas.map((conquista, index) => {
+                      const IconComponent = conquista.icone
+                      return (
+                        <div key={index} className={`group flex items-center space-x-3 p-3 rounded-xl border transition-all duration-300 ${
+                          isLiquidGlass
+                            ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-yellow-200/30 dark:border-yellow-800/30'
+                            : 'bg-white/60 dark:bg-gray-800/60 border-yellow-200/50 dark:border-yellow-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                        }`}>
+                          <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                            <IconComponent className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">{conquista.titulo}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{conquista.descricao}</p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-yellow-500 transition-colors" />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </LiquidGlassCard>
             </div>
 
-            <div>
-              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+            <div className="space-y-6">
+              {/* Comunicados */}
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className="bg-gradient-to-br from-red-50/50 to-pink-50/30 dark:from-red-950/30 dark:to-pink-950/20"
+              >
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Bell className="h-5 w-5 mr-2" />
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="p-2 bg-red-500/20 rounded-lg mr-3">
+                      <Bell className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    </div>
                     Comunicados
                   </CardTitle>
-                  <CardDescription>Avisos importantes</CardDescription>
+                  <CardDescription className="text-base">Avisos importantes</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {comunicados.map((comunicado, index) => (
-                      <div key={index} className="p-3 border rounded-lg">
+                      <div key={index} className={`group p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                        isLiquidGlass
+                          ? (comunicado.prioridade === "alta"
+                              ? "bg-transparent border-red-200/30 dark:border-red-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10"
+                              : comunicado.prioridade === "média"
+                                ? "bg-transparent border-orange-200/30 dark:border-orange-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10"
+                                : "bg-transparent border-blue-200/30 dark:border-blue-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10")
+                          : (comunicado.prioridade === "alta"
+                              ? "bg-red-50/60 dark:bg-red-950/30 border-red-200 dark:border-red-800"
+                              : comunicado.prioridade === "média"
+                                ? "bg-orange-50/60 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800"
+                                : "bg-blue-50/60 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800")
+                      }`}>
                         <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-sm">{comunicado.titulo}</h4>
-                          <Badge variant="outline" className="text-xs">
-                            {comunicado.tipo}
-                          </Badge>
+                          <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1">
+                            {comunicado.titulo}
+                          </h4>
+                          <div className="flex items-center space-x-2">
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${
+                                comunicado.prioridade === "alta"
+                                  ? "border-red-500 text-red-700 dark:text-red-300"
+                                  : comunicado.prioridade === "média"
+                                    ? "border-orange-500 text-orange-700 dark:text-orange-300"
+                                    : "border-blue-500 text-blue-700 dark:text-blue-300"
+                              }`}
+                            >
+                              {comunicado.tipo}
+                            </Badge>
+                            <div className={`w-2 h-2 rounded-full ${
+                              comunicado.prioridade === "alta" ? "bg-red-500" :
+                              comunicado.prioridade === "média" ? "bg-orange-500" : "bg-blue-500"
+                            } animate-pulse`}></div>
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground flex items-center">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {comunicado.data}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {comunicado.data}
+                          </p>
+                          <button className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium transition-colors">
+                            Ver mais
+                          </button>
+                        </div>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </LiquidGlassCard>
+
+              {/* Ações Rápidas */}
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className="bg-gradient-to-br from-purple-50/50 to-indigo-50/30 dark:from-purple-950/30 dark:to-indigo-950/20"
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="p-2 bg-purple-500/20 rounded-lg mr-3">
+                      <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    Ações Rápidas
+                  </CardTitle>
+                  <CardDescription className="text-base">Atalhos para funcionalidades</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <LiquidGlassButton
+                      variant="outline"
+                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
+                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}
+                    >
+                      <BookOpen className="h-5 w-5 mb-1 text-blue-600" />
+                      <span className="text-xs font-medium">Disciplinas</span>
+                    </LiquidGlassButton>
+                    <LiquidGlassButton
+                      variant="outline"
+                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
+                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}
+                    >
+                      <FileText className="h-5 w-5 mb-1 text-green-600" />
+                      <span className="text-xs font-medium">Atividades</span>
+                    </LiquidGlassButton>
+                    <LiquidGlassButton
+                      variant="outline"
+                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
+                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}
+                    >
+                      <Calendar className="h-5 w-5 mb-1 text-purple-600" />
+                      <span className="text-xs font-medium">Horário</span>
+                    </LiquidGlassButton>
+                    <LiquidGlassButton
+                      variant="outline"
+                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
+                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}
+                    >
+                      <MessageSquare className="h-5 w-5 mb-1 text-orange-600" />
+                      <span className="text-xs font-medium">Chat</span>
+                    </LiquidGlassButton>
                   </div>
                 </CardContent>
               </LiquidGlassCard>
