@@ -70,7 +70,7 @@ export function LiquidGlassButton({ children, className, intensity = LIQUID_GLAS
       className={cn(
         "border transition-all duration-300 text-white px-4 md:px-5",
         `backdrop-blur ${border}`,
-        "hover:scale-105 hover:shadow-lg",
+        "hover:shadow-lg",
         "active:scale-95",
         className,
       )}

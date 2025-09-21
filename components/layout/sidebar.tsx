@@ -143,7 +143,7 @@ export function Sidebar({ userRole }: SidebarProps) {
           onClick={toggleCollapsed}
           className={cn(
             "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300",
-            "hover:scale-110 active:scale-95",
+            "active:scale-95",
             isCollapsed && "bg-green-500/10"
           )}
         >
@@ -163,8 +163,8 @@ export function Sidebar({ userRole }: SidebarProps) {
                   variant={isActive ? "secondary" : "ghost"}
                   className={cn(
                     "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground relative group transition-all duration-300",
-                    "hover:scale-[1.02] active:scale-[0.98]",
-                    isActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow-lg border border-green-500/20",
+                    "border border-transparent hover:border-sidebar-border/50",
+                    isActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow-lg border-green-500/20",
                     isCollapsed && "px-2 justify-center",
                     !isCollapsed && "h-12 px-6"
                   )}
@@ -180,7 +180,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                         "h-5 w-5 transition-all duration-300",
                         isActive && "text-green-600 dark:text-green-400",
                         !isCollapsed && "mr-3",
-                        hoveredItem === item.href && "scale-110"
+                        hoveredItem === item.href && "text-green-500"
                       )}
                     />
                     {isActive && (
@@ -196,7 +196,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                           isActive
                             ? "bg-green-500 text-white shadow-lg"
                             : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
-                          hoveredItem === item.href && "scale-110"
+                          hoveredItem === item.href && "text-green-500"
                         )}>
                           {item.badge}
                         </div>

@@ -211,7 +211,7 @@ export default function AlunodisciplinasPage() {
               <LiquidGlassCard
                 key={disciplina.id}
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+                className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'

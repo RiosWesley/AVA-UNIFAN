@@ -195,7 +195,7 @@ export default function AdministradorDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -218,7 +218,7 @@ export default function AdministradorDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -241,7 +241,7 @@ export default function AdministradorDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -262,7 +262,7 @@ export default function AdministradorDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -283,7 +283,7 @@ export default function AdministradorDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -306,7 +306,7 @@ export default function AdministradorDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group hover:scale-105 transition-all duration-300 hover:shadow-2xl border-0 ${
+              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -336,7 +336,7 @@ export default function AdministradorDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <LiquidGlassCard
                   intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                  className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
+                  className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20'
                       : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -367,7 +367,7 @@ export default function AdministradorDashboard() {
 
                 <LiquidGlassCard
                   intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                  className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
+                  className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20'
                       : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -398,7 +398,7 @@ export default function AdministradorDashboard() {
               {/* Status do Sistema */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
+                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -444,7 +444,7 @@ export default function AdministradorDashboard() {
               {/* Alertas do Sistema */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
+                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -512,7 +512,7 @@ export default function AdministradorDashboard() {
               {/* Atalhos Rápidos */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
+                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -562,7 +562,7 @@ export default function AdministradorDashboard() {
               {/* Comunicados */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
+                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -613,7 +613,7 @@ export default function AdministradorDashboard() {
               {/* Ações Rápidas */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group hover:scale-[1.02] transition-all duration-300 hover:shadow-xl border-0 ${
+                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
