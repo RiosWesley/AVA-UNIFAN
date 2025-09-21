@@ -114,11 +114,6 @@ export function Sidebar({ userRole }: SidebarProps) {
         isCollapsed ? "w-16" : "w-72",
         "shadow-2xl border-r border-sidebar-border/50"
       )}
-      style={{
-        background: isCollapsed
-          ? "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)"
-          : "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.05) 100%)"
-      }}
     >
       <div className="flex items-center justify-between p-6 border-b border-sidebar-border/30 backdrop-blur-sm">
         <div className={cn(
@@ -126,14 +121,14 @@ export function Sidebar({ userRole }: SidebarProps) {
           isCollapsed && "justify-center"
         )}>
           <div className="relative">
-            <div className="absolute inset-0 bg-blue-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-            <div className="relative bg-blue-600 p-2 rounded-lg">
+            <div className="absolute inset-0 bg-green-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+            <div className="relative bg-green-600 p-2 rounded-lg">
               <GraduationCap className="h-6 w-6 text-white" />
             </div>
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="font-bold text-sidebar-foreground text-lg text-blue-600 dark:text-blue-400">
+              <span className="font-bold text-sidebar-foreground text-lg text-green-600 dark:text-green-400">
                 AVA-UNIFAN
               </span>
               <span className="text-xs text-sidebar-foreground/60 font-medium">
@@ -149,14 +144,14 @@ export function Sidebar({ userRole }: SidebarProps) {
           className={cn(
             "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300",
             "hover:scale-110 active:scale-95",
-            isCollapsed && "bg-blue-500/10"
+            isCollapsed && "bg-green-500/10"
           )}
         >
           {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 px-4 py-6">
+      <ScrollArea className="flex-1 py-6">
         <nav className="space-y-1">
           {items.map((item, index) => {
             const Icon = item.icon
@@ -169,9 +164,9 @@ export function Sidebar({ userRole }: SidebarProps) {
                   className={cn(
                     "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground relative group transition-all duration-300",
                     "hover:scale-[1.02] active:scale-[0.98]",
-                    isActive && "bg-blue-500/20 text-blue-600 dark:text-blue-400 shadow-lg border border-blue-500/20",
+                    isActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow-lg border border-green-500/20",
                     isCollapsed && "px-2 justify-center",
-                    !isCollapsed && "h-12 px-4"
+                    !isCollapsed && "h-12 px-6"
                   )}
                   onMouseEnter={() => setHoveredItem(item.href)}
                   onMouseLeave={() => setHoveredItem(null)}
@@ -183,24 +178,24 @@ export function Sidebar({ userRole }: SidebarProps) {
                     <Icon
                       className={cn(
                         "h-5 w-5 transition-all duration-300",
-                        isActive && "text-blue-600 dark:text-blue-400",
+                        isActive && "text-green-600 dark:text-green-400",
                         !isCollapsed && "mr-3",
                         hoveredItem === item.href && "scale-110"
                       )}
                     />
                     {isActive && (
-                      <div className="absolute -inset-1 bg-blue-500/20 rounded-full blur-sm animate-pulse"></div>
+                      <div className="absolute -inset-1 bg-green-500/20 rounded-full blur-sm animate-pulse"></div>
                     )}
                   </div>
                   {!isCollapsed && (
                     <>
                       <span className="font-medium flex-1 text-left">{item.label}</span>
-                      {item.badge && (
+                      {'badge' in item && item.badge && (
                         <div className={cn(
                           "flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold transition-all duration-300",
                           isActive
-                            ? "bg-blue-500 text-white shadow-lg"
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
+                            ? "bg-green-500 text-white shadow-lg"
+                            : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
                           hoveredItem === item.href && "scale-110"
                         )}>
                           {item.badge}
@@ -210,7 +205,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                   )}
                   {!isCollapsed && hoveredItem === item.href && (
                     <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     </div>
                   )}
                 </Button>
@@ -223,18 +218,18 @@ export function Sidebar({ userRole }: SidebarProps) {
       <div className="p-4 border-t border-sidebar-border/30 space-y-4 backdrop-blur-sm">
         {!isCollapsed && (
           <div className="flex justify-center">
-            <div className="p-2 bg-blue-500/10 rounded-lg backdrop-blur-sm">
+            <div className="p-2 bg-green-500/10 rounded-lg backdrop-blur-sm">
               <ThemeToggle />
             </div>
           </div>
         )}
 
         <div className={cn(
-          "flex items-center space-x-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 transition-all duration-300 hover:bg-blue-500/10",
+          "flex items-center space-x-3 p-3 rounded-xl bg-green-500/5 border border-green-500/10 transition-all duration-300 hover:bg-green-500/10",
           isCollapsed && "justify-center"
         )}>
           <div className="relative">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center shadow-lg">
               <span className="text-sm font-semibold text-white">
                 {userRole === "aluno" ? "A" : userRole === "professor" ? "P" : userRole === "coordenador" ? "C" : "AD"}
               </span>

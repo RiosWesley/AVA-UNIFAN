@@ -39,7 +39,7 @@ export default function AlunoBoletimPage() {
       conceito: "Ótimo",
       tendencia: "Estável",
       destaque: "Melhor média",
-      cor: "blue"
+      cor: "green"
     },
     {
       disciplina: "Português",
@@ -117,7 +117,7 @@ export default function AlunoBoletimPage() {
   const getTendenciaIcon = (tendencia: string) => {
     switch (tendencia) {
       case "Melhorando": return <TrendingUp className="h-4 w-4 text-green-500" />
-      case "Estável": return <Activity className="h-4 w-4 text-blue-500" />
+      case "Estável": return <Activity className="h-4 w-4 text-green-500" />
       default: return <Target className="h-4 w-4 text-gray-500" />
     }
   }
@@ -216,15 +216,15 @@ export default function AlunoBoletimPage() {
               }`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-blue-700 dark:text-blue-300">Frequência Geral</CardTitle>
-                <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                  <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <CardTitle className="text-sm font-semibold text-green-700 dark:text-green-300">Frequência Geral</CardTitle>
+                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
+                  <Activity className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">{frequenciaGeral.toFixed(0)}%</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{frequenciaGeral.toFixed(0)}%</div>
                 <Progress value={frequenciaGeral} className="h-2 mb-2" />
-                <p className="text-xs text-blue-600/70 dark:text-blue-400/70">Excelente participação!</p>
+                <p className="text-xs text-green-600/70 dark:text-green-400/70">Excelente participação!</p>
               </CardContent>
             </LiquidGlassCard>
 
@@ -269,7 +269,7 @@ export default function AlunoBoletimPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
-                        disciplina.cor === "blue" ? "bg-blue-600" :
+                        disciplina.cor === "green" ? "bg-green-600" :
                         disciplina.cor === "green" ? "bg-green-600" :
                         disciplina.cor === "purple" ? "bg-purple-600" :
                         disciplina.cor === "orange" ? "bg-orange-600" :

@@ -38,7 +38,7 @@ export default function AlunodisciplinasPage() {
       progresso: 75,
       proximaAula: "Segunda, 08:00",
       status: "Em andamento",
-      cor: "blue",
+      cor: "green",
       dificuldade: "Média",
       aulasAssistidas: 18,
       totalAulas: 24,
@@ -131,7 +131,7 @@ export default function AlunodisciplinasPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Concluída": return "bg-emerald-500"
-      case "Em andamento": return "bg-blue-500"
+      case "Em andamento": return "bg-green-500"
       default: return "bg-gray-500"
     }
   }
@@ -159,7 +159,7 @@ export default function AlunodisciplinasPage() {
           }`}>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <BookOpen className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
@@ -167,14 +167,14 @@ export default function AlunodisciplinasPage() {
                 </div>
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
                   Minhas Disciplinas
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
                   Acompanhe o progresso das suas disciplinas
                 </p>
                 <div className="flex items-center mt-2 space-x-2">
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                     <Star className="h-3 w-3 mr-1" />
                     {disciplinas.filter((d) => d.status === "Em andamento").length} disciplinas ativas
                   </Badge>
@@ -222,7 +222,7 @@ export default function AlunodisciplinasPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
-                        disciplina.cor === "blue" ? "bg-blue-600" :
+                        disciplina.cor === "green" ? "bg-green-600" :
                         disciplina.cor === "green" ? "bg-green-600" :
                         disciplina.cor === "purple" ? "bg-purple-600" :
                         disciplina.cor === "orange" ? "bg-orange-600" :
@@ -242,7 +242,7 @@ export default function AlunodisciplinasPage() {
                         className={`${
                           disciplina.status === "Concluída"
                             ? "bg-emerald-500 text-white"
-                            : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+                            : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300"
                         }`}
                       >
                         {disciplina.status}

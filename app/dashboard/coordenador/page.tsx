@@ -158,7 +158,7 @@ export default function CoordenadorDashboard() {
                 <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <GraduationCap className="h-8 w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
                   <Sparkles className="h-3 w-3 text-white" />
                 </div>
               </div>
@@ -174,7 +174,7 @@ export default function CoordenadorDashboard() {
                     <Star className="h-3 w-3 mr-1" />
                     {cursos.length} cursos ativos
                   </Badge>
-                  <Badge variant="outline" className="text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800">
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
                     <Award className="h-3 w-3 mr-1" />
                     870 alunos
                   </Badge>
@@ -236,12 +236,12 @@ export default function CoordenadorDashboard() {
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total de Alunos</CardTitle>
-                <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
+                  <Users className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">870</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">870</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   +15 novos este mês
@@ -341,7 +341,7 @@ export default function CoordenadorDashboard() {
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                      <Users className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                      <Users className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
                       Distribuição de Alunos
                     </CardTitle>
                     <CardDescription className="text-gray-600 dark:text-gray-400">Por nível de ensino</CardDescription>
@@ -391,7 +391,7 @@ export default function CoordenadorDashboard() {
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <BookOpen className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                    <BookOpen className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
                     Resumo dos Cursos
                   </CardTitle>
                   <CardDescription className="text-gray-600 dark:text-gray-400">Informações gerais por curso</CardDescription>
@@ -470,11 +470,11 @@ export default function CoordenadorDashboard() {
                       <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-center space-x-3">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg ${
-                            evento.tipo === "Reunião" ? "bg-blue-500/20" :
+                            evento.tipo === "Reunião" ? "bg-green-500/20" :
                             evento.tipo === "Prazo" ? "bg-amber-500/20" : "bg-green-500/20"
                           }`}>
                             <Clock className={`h-5 w-5 ${
-                              evento.tipo === "Reunião" ? "text-blue-600 dark:text-blue-400" :
+                              evento.tipo === "Reunião" ? "text-green-600 dark:text-green-400" :
                               evento.tipo === "Prazo" ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"
                             }`} />
                           </div>
@@ -528,7 +528,7 @@ export default function CoordenadorDashboard() {
                     {professoresDisponibilidade.map((professor, index) => (
                       <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
                             <Users className="h-5 w-5 text-white" />
                           </div>
                           <div>
@@ -595,7 +595,7 @@ export default function CoordenadorDashboard() {
                             <Clock className="h-3 w-3 mr-1" />
                             {comunicado.data}
                           </p>
-                          <button className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium transition-colors">
+                          <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
                             Ver mais
                           </button>
                         </div>

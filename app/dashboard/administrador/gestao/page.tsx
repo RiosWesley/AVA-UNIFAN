@@ -172,7 +172,7 @@ export default function GestaoAdminPage() {
             <CardContent>
               <div className="grid gap-4">
                 {configuracoes.map((config, index) => (
-                  <Card key={index} className="border-l-4 border-l-blue-500">
+                  <Card key={index} className="border-l-4 border-l-green-500">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="space-y-2">

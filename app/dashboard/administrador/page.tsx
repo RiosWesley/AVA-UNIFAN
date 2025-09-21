@@ -87,7 +87,7 @@ export default function AdministradorDashboard() {
       titulo: "Gerenciar Usuários",
       descricao: "Adicionar, editar ou remover usuários",
       icon: Users,
-      cor: "blue"
+      cor: "green"
     },
     {
       titulo: "Configurações",
@@ -203,12 +203,12 @@ export default function AdministradorDashboard() {
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total de Usuários</CardTitle>
-                <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
+                  <Users className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">{estatisticasGerais.totalUsuarios}</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{estatisticasGerais.totalUsuarios}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <TrendingUp className="h-3 w-3 mr-1" />
                   +{estatisticasGerais.novosUsuarios} este mês
@@ -344,7 +344,7 @@ export default function AdministradorDashboard() {
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                      <Users className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                      <Users className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
                       Crescimento de Usuários
                     </CardTitle>
                     <CardDescription className="text-gray-600 dark:text-gray-400">Evolução mensal por tipo de usuário</CardDescription>
@@ -537,12 +537,12 @@ export default function AdministradorDashboard() {
                         }`}>
                           <div className="flex items-start">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 ${
-                              atalho.cor === "blue" ? "bg-blue-500/20" :
+                              atalho.cor === "green" ? "bg-green-500/20" :
                               atalho.cor === "purple" ? "bg-purple-500/20" :
                               atalho.cor === "emerald" ? "bg-emerald-500/20" : "bg-orange-500/20"
                             }`}>
                               <Icon className={`h-4 w-4 ${
-                                atalho.cor === "blue" ? "text-blue-600 dark:text-blue-400" :
+                                atalho.cor === "green" ? "text-green-600 dark:text-green-400" :
                                 atalho.cor === "purple" ? "text-purple-600 dark:text-purple-400" :
                                 atalho.cor === "emerald" ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"
                               }`} />
@@ -600,7 +600,7 @@ export default function AdministradorDashboard() {
                             <Clock className="h-3 w-3 mr-1" />
                             {comunicado.data}
                           </p>
-                          <button className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium transition-colors">
+                          <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
                             Ver mais
                           </button>
                         </div>

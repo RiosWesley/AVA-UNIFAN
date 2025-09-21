@@ -57,13 +57,13 @@ export function LiquidGlassSidebar({ children, className }: LiquidGlassSidebarPr
   }, [size.width, size.height, isPressed])
 
   if (!mounted || theme !== "liquid-glass") {
-    return <div className={cn("bg-sidebar border-r border-sidebar-border px-3 md:px-4", className)}>{children}</div>
+    return <div className={cn("bg-sidebar border-r border-sidebar-border", className)}>{children}</div>
   }
 
   return (
     <div
       ref={ref}
-      className={cn("bg-white/5 border-r border-white/10 px-3 md:px-4", "transition-all duration-300", className)}
+      className={cn("bg-white/5 border-r border-white/10", "transition-all duration-300", className)}
       style={{
         borderTopRightRadius: radiusPx,
         borderBottomRightRadius: radiusPx,

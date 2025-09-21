@@ -141,7 +141,7 @@ export default function ProfessorDashboard() {
           }`}>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <GraduationCap className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
@@ -149,14 +149,14 @@ export default function ProfessorDashboard() {
                 </div>
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
                   Olá, Prof. Maria!
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
                   Gerencie suas turmas e atividades
                 </p>
                 <div className="flex items-center mt-2 space-x-2">
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                     <Star className="h-3 w-3 mr-1" />
                     {turmas.length} turmas ativas
                   </Badge>
@@ -199,12 +199,12 @@ export default function ProfessorDashboard() {
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total de Turmas</CardTitle>
-                <div className="p-2 bg-blue-500/20 rounded-lg group-hover:bg-blue-500/30 transition-colors">
-                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
+                  <Users className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">3</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">3</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Activity className="h-3 w-3 mr-1" />
                   83 alunos no total
@@ -297,7 +297,7 @@ export default function ProfessorDashboard() {
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <Calendar className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                    <Calendar className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
                     Próximas Aulas
                   </CardTitle>
                   <CardDescription className="text-gray-600 dark:text-gray-400">Suas aulas de hoje e próximas</CardDescription>
@@ -307,8 +307,8 @@ export default function ProfessorDashboard() {
                     {proximasAulas.map((aula, index) => (
                       <div key={index} className="flex items-center justify-between p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                            <Play className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                            <Play className="h-5 w-5 text-green-600 dark:text-green-400" />
                           </div>
                           <div>
                             <h4 className="font-semibold text-gray-900 dark:text-gray-100">{aula.turma}</h4>
@@ -318,7 +318,7 @@ export default function ProfessorDashboard() {
                                 {aula.tipo}
                               </Badge>
                               <span className={`text-xs ${
-                                aula.status === "Próxima" ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"
+                                aula.status === "Próxima" ? "text-green-600 dark:text-green-400" : "text-green-600 dark:text-green-400"
                               }`}>
                                 {aula.status}
                               </span>
@@ -348,7 +348,7 @@ export default function ProfessorDashboard() {
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <BookOpen className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                    <BookOpen className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
                     Minhas Turmas
                   </CardTitle>
                   <CardDescription className="text-gray-600 dark:text-gray-400">Turmas sob sua responsabilidade</CardDescription>
@@ -358,7 +358,7 @@ export default function ProfessorDashboard() {
                     {turmas.map((turma, index) => (
                       <div key={index} className="flex items-center justify-between p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                          <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
                             <BookOpen className="h-6 w-6 text-white" />
                           </div>
                           <div>
@@ -412,11 +412,11 @@ export default function ProfessorDashboard() {
                         <div className="flex items-center space-x-3">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg ${
                             atividade.tipo === "Prova" ? "bg-red-500/20" :
-                            atividade.tipo === "Exercício" ? "bg-blue-500/20" : "bg-green-500/20"
+                            atividade.tipo === "Exercício" ? "bg-green-500/20" : "bg-green-500/20"
                           }`}>
                             <FileText className={`h-5 w-5 ${
                               atividade.tipo === "Prova" ? "text-red-600 dark:text-red-400" :
-                              atividade.tipo === "Exercício" ? "text-blue-600 dark:text-blue-400" : "text-green-600 dark:text-green-400"
+                              atividade.tipo === "Exercício" ? "text-green-600 dark:text-green-400" : "text-green-600 dark:text-green-400"
                             }`} />
                           </div>
                           <div>
@@ -545,7 +545,7 @@ export default function ProfessorDashboard() {
                             <Clock className="h-3 w-3 mr-1" />
                             {comunicado.data}
                           </p>
-                          <button className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium transition-colors">
+                          <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
                             Ver mais
                           </button>
                         </div>

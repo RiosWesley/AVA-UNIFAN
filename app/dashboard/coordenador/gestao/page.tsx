@@ -147,7 +147,7 @@ export default function GestaoPage() {
             <CardContent>
               <div className="grid gap-4">
                 {horarios.map((horario) => (
-                  <Card key={horario.id} className="border-l-4 border-l-blue-500">
+                  <Card key={horario.id} className="border-l-4 border-l-green-500">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="space-y-2">
