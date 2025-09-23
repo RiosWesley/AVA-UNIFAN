@@ -19,21 +19,36 @@ export default function ConfiguracoesAlunoPage() {
   })
 
   const [bgUrlInput, setBgUrlInput] = useState("")
-  
+  const [currentBgImage, setCurrentBgImage] = useState("")
+
+  const DEFAULT_BG_IMAGE = "/image-mesh-gradient (2).png"
+
   useEffect(() => {
     if (typeof window === "undefined") return
-    const url = window.localStorage.getItem(`ava:bg:aluno`) || ""
+    const url = window.localStorage.getItem(`ava:bg:aluno`) || DEFAULT_BG_IMAGE
     setBgUrlInput(url)
+    setCurrentBgImage(url)
   }, [])
 
   function saveBgUrl() {
     try {
       if (bgUrlInput.trim()) {
         window.localStorage.setItem(`ava:bg:aluno`, bgUrlInput.trim())
+        setCurrentBgImage(bgUrlInput.trim())
       } else {
         window.localStorage.removeItem(`ava:bg:aluno`)
+        setCurrentBgImage(DEFAULT_BG_IMAGE)
       }
       alert("Imagem de fundo salva para o modo Liquid Glass.")
+    } catch {}
+  }
+
+  function resetToDefault() {
+    try {
+      window.localStorage.removeItem(`ava:bg:aluno`)
+      setBgUrlInput(DEFAULT_BG_IMAGE)
+      setCurrentBgImage(DEFAULT_BG_IMAGE)
+      alert("Imagem de fundo restaurada para o padrão.")
     } catch {}
   }
 
@@ -102,17 +117,41 @@ export default function ConfiguracoesAlunoPage() {
                 <CardDescription>Personalize a aparência do sistema</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Imagem de Fundo (modo Liquid Glass)</Label>
-                  <Input 
-                    value={bgUrlInput} 
-                    onChange={(e) => setBgUrlInput(e.target.value)} 
-                    placeholder="https://exemplo.com/imagem.jpg" 
-                  />
-                  <p className="text-xs text-muted-foreground">Usada somente quando o tema Liquid Glass estiver ativo.</p>
-                  <Button onClick={saveBgUrl} className="bg-primary hover:bg-primary/90">
-                    Salvar imagem de fundo
-                  </Button>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Imagem de Fundo (modo Liquid Glass)</Label>
+                    <Input
+                      value={bgUrlInput}
+                      onChange={(e) => setBgUrlInput(e.target.value)}
+                      placeholder="https://exemplo.com/imagem.jpg"
+                    />
+                    <p className="text-xs text-muted-foreground">Usada somente quando o tema Liquid Glass estiver ativo.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Imagem Atual</Label>
+                    <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
+                      {currentBgImage || "Nenhuma imagem definida"}
+                    </div>
+                    {currentBgImage && currentBgImage !== DEFAULT_BG_IMAGE && (
+                      <p className="text-xs text-muted-foreground">
+                        Preview: <img src={currentBgImage} alt="Preview" className="max-w-32 max-h-20 mt-1 rounded border" onError={(e) => {e.currentTarget.style.display = 'none'}} />
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={saveBgUrl} className="bg-primary hover:bg-primary/90">
+                      Salvar imagem de fundo
+                    </Button>
+                    <Button
+                      onClick={resetToDefault}
+                      variant="outline"
+                      className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      Restaurar padrão
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </LiquidGlassCard>
