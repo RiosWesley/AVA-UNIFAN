@@ -1,0 +1,519 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Sidebar } from '@/components/layout/sidebar'
+import { LiquidGlassCard } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
+import { Search, Activity, CheckCircle, Clock, Target, AlertCircle, FileText, Calendar as CalIcon, Flame, Zap, Star, Plus, Filter, TrendingUp, BookOpen, Users } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+
+export default function AtividadesPage() {
+  const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [activeFilter, setActiveFilter] = useState('todas')
+
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"))
+    }
+
+    checkTheme()
+
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"]
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const atividadesPendentes = [
+    { id: 1, titulo: 'Trabalho de Matemática', descricao: 'Análise de funções quadráticas e resolução de problemas aplicados', prioridade: 'Alta', dataVencimento: '15/10/2024', disciplina: 'Matemática', status: 'urgente', participantes: 3, dificuldade: 'Médio' },
+    { id: 2, titulo: 'Resumo de História', descricao: 'Revolução Industrial no Brasil e suas consequências sociais', prioridade: 'Média', dataVencimento: '20/10/2024', disciplina: 'História', status: 'normal', participantes: 1, dificuldade: 'Fácil' },
+    { id: 3, titulo: 'Exercícios de Física', descricao: 'Leis de Newton aplicadas a sistemas mecânicos', prioridade: 'Baixa', dataVencimento: '25/10/2024', disciplina: 'Física', status: 'planejado', participantes: 2, dificuldade: 'Difícil' },
+  ]
+
+  const atividadesConcluidas = [
+    { id: 4, titulo: 'Prova de História', descricao: 'Período Colonial brasileiro', prioridade: 'Alta', dataConclusao: '10/10/2024', disciplina: 'História', status: 'concluido', participantes: 1, dificuldade: 'Médio' },
+    { id: 5, titulo: 'Apresentação de Biologia', descricao: 'Ecossistemas terrestres e aquáticos', prioridade: 'Média', dataConclusao: '05/10/2024', disciplina: 'Biologia', status: 'concluido', participantes: 4, dificuldade: 'Fácil' },
+    { id: 6, titulo: 'Quiz de Português', descricao: 'Análise sintática e gramática aplicada', prioridade: 'Baixa', dataConclusao: '01/10/2024', disciplina: 'Português', status: 'concluido', participantes: 1, dificuldade: 'Fácil' },
+  ]
+
+  const atividadesFuturas = [
+    { id: 7, titulo: 'Projeto Final de Matemática', descricao: 'Estatística aplicada a dados reais', prioridade: 'Alta', dataVencimento: '15/11/2024', disciplina: 'Matemática', status: 'planejado', participantes: 5, dificuldade: 'Difícil' },
+    { id: 8, titulo: 'Debate de Filosofia', descricao: 'Ética contemporânea e dilemas morais', prioridade: 'Média', dataVencimento: '20/11/2024', disciplina: 'Filosofia', status: 'planejado', participantes: 2, dificuldade: 'Médio' },
+  ]
+
+  const filteredPendentes = atividadesPendentes.filter(a =>
+    (activeFilter === 'todas' || a.status === activeFilter) &&
+    a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  const filteredConcluidas = atividadesConcluidas.filter(a =>
+    (activeFilter === 'todas' || a.status === activeFilter) &&
+    a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+  const filteredFuturas = atividadesFuturas.filter(a =>
+    (activeFilter === 'todas' || a.status === activeFilter) &&
+    a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const getPrioridadeConfig = (prioridade: string) => {
+    switch (prioridade) {
+      case 'Alta':
+        return {
+          bg: 'bg-gradient-to-r from-red-500 to-pink-500',
+          icon: Flame,
+          color: 'text-white',
+          badge: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 border-red-200 dark:border-red-800'
+        }
+      case 'Média':
+        return {
+          bg: 'bg-gradient-to-r from-yellow-500 to-orange-500',
+          icon: Zap,
+          color: 'text-white',
+          badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
+        }
+      case 'Baixa':
+        return {
+          bg: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          icon: Star,
+          color: 'text-white',
+          badge: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800'
+        }
+      default:
+        return {
+          bg: 'bg-gradient-to-r from-gray-500 to-slate-500',
+          icon: Target,
+          color: 'text-white',
+          badge: 'bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300 border-gray-200 dark:border-gray-800'
+        }
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'urgente': return 'border-l-red-500'
+      case 'normal': return 'border-l-blue-500'
+      case 'planejado': return 'border-l-purple-500'
+      case 'concluido': return 'border-l-green-500'
+      default: return 'border-l-gray-500'
+    }
+  }
+
+  const getDificuldadeColor = (dificuldade: string) => {
+    switch (dificuldade) {
+      case 'Fácil': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+      case 'Médio': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+      case 'Difícil': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300'
+    }
+  }
+
+  return (
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-blue-50/30 via-indigo-50/20 to-purple-50/30 dark:from-gray-900/20 dark:via-blue-900/10 dark:to-purple-900/10' : 'bg-background'}`}>
+      <Sidebar userRole="aluno" />
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-8">
+          {/* Header Hero Section */}
+          <div className={`relative overflow-hidden rounded-3xl border backdrop-blur-sm ${
+            isLiquidGlass
+              ? 'bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 dark:from-blue-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-blue-200/30 dark:border-blue-700/50'
+              : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
+          }`}>
+            <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.05]" />
+            <div className="relative p-8">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    Minhas Atividades
+                  </h1>
+                  <p className="text-lg text-muted-foreground">
+                    Gerencie suas tarefas e atividades acadêmicas com estilo
+                  </p>
+                  <div className="flex items-center gap-6 pt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-pink-500"></div>
+                      <span className="text-sm font-medium">Pendentes</span>
+                      <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                        {atividadesPendentes.length}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></div>
+                      <span className="text-sm font-medium">Concluídas</span>
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                        {atividadesConcluidas.length}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"></div>
+                      <span className="text-sm font-medium">Futuras</span>
+                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                        {atividadesFuturas.length}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="hidden md:flex items-center space-x-4">
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-foreground">
+                      {atividadesPendentes.length + atividadesConcluidas.length + atividadesFuturas.length}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total de Atividades</div>
+                  </div>
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                    <Activity className="h-8 w-8 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de busca e filtros */}
+          <div className="flex flex-col lg:flex-row gap-4">
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className={`flex-1 p-6 rounded-2xl border backdrop-blur-sm ${
+                isLiquidGlass
+                  ? 'bg-white/20 dark:bg-gray-800/30 border-gray-200/30 dark:border-gray-700/50'
+                  : 'bg-white/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500">
+                  <Search className="h-5 w-5 text-white" />
+                </div>
+                <Input
+                  placeholder="Buscar atividades..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 border-none bg-transparent focus-visible:ring-0 text-lg placeholder:text-muted-foreground/60"
+                />
+              </div>
+            </LiquidGlassCard>
+
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className={`p-6 rounded-2xl border backdrop-blur-sm ${
+                isLiquidGlass
+                  ? 'bg-white/20 dark:bg-gray-800/30 border-gray-200/30 dark:border-gray-700/50'
+                  : 'bg-white/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5 text-muted-foreground" />
+                <div className="flex gap-2">
+                  {[
+                    { key: 'todas', label: 'Todas', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+                    { key: 'urgente', label: 'Urgentes', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' },
+                    { key: 'normal', label: 'Normais', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' },
+                    { key: 'planejado', label: 'Planejadas', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' },
+                    { key: 'concluido', label: 'Concluídas', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' }
+                  ].map((filter) => (
+                    <Button
+                      key={filter.key}
+                      variant={activeFilter === filter.key ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setActiveFilter(filter.key)}
+                      className={`rounded-full transition-all duration-200 ${
+                        activeFilter === filter.key
+                          ? `${filter.color} shadow-lg scale-105`
+                          : 'hover:scale-105'
+                      }`}
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </LiquidGlassCard>
+          </div>
+          
+          {/* Cards de Atividades */}
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {/* Atividades Pendentes */}
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+                isLiquidGlass
+                  ? 'bg-gradient-to-br from-red-500/10 via-orange-500/5 to-pink-500/10 dark:from-red-900/20 dark:via-orange-900/10 dark:to-pink-900/20 border-red-200/30 dark:border-red-700/50'
+                  : 'bg-gradient-to-br from-red-50/60 via-orange-50/30 to-pink-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-red-200 dark:border-red-700'
+              }`}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-red-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">Pendentes</h2>
+                      <p className="text-sm text-muted-foreground">{filteredPendentes.length} atividades</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-red-100 to-pink-100 text-red-700 dark:from-red-900/50 dark:to-pink-900/50 dark:text-red-300 border-red-200 dark:border-red-800 px-3 py-1">
+                    Urgentes
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {filteredPendentes.map((atividade) => {
+                    const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
+                    const PriorityIcon = prioridadeConfig.icon
+                    return (
+                      <div key={atividade.id} className={`group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-red-200/50 dark:border-red-800/30 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg ${getStatusColor(atividade.status)}`}>
+                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="relative">
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="font-bold text-foreground group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                              {atividade.titulo}
+                            </h3>
+                            <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
+                              <PriorityIcon className={`h-4 w-4 ${prioridadeConfig.color}`} />
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                            {atividade.descricao}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1 text-xs">
+                                <BookOpen className="h-3 w-3" />
+                                <span className="font-medium">{atividade.disciplina}</span>
+                              </div>
+                              <Badge className={getDificuldadeColor(atividade.dificuldade)}>
+                                {atividade.dificuldade}
+                              </Badge>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                                <CalIcon className="h-3 w-3" />
+                                <span className="font-bold">Vence: {atividade.dataVencimento}</span>
+                              </div>
+                              {atividade.participantes > 1 && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Users className="h-3 w-3" />
+                                  <span>{atividade.participantes} participantes</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {filteredPendentes.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle className="h-8 w-8 text-green-500" />
+                      </div>
+                      <p className="text-muted-foreground font-medium">Todas as atividades concluídas!</p>
+                      <p className="text-sm text-muted-foreground">Excelente trabalho! 🎉</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </LiquidGlassCard>
+
+            {/* Atividades Concluídas */}
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+                isLiquidGlass
+                  ? 'bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-teal-500/10 dark:from-green-900/20 dark:via-emerald-900/10 dark:to-teal-900/20 border-green-200/30 dark:border-green-700/50'
+                  : 'bg-gradient-to-br from-green-50/60 via-emerald-50/30 to-teal-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-green-200 dark:border-green-700'
+              }`}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">Concluídas</h2>
+                      <p className="text-sm text-muted-foreground">{filteredConcluidas.length} atividades</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 dark:from-green-900/50 dark:to-emerald-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
+                    Sucesso
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {filteredConcluidas.map((atividade) => {
+                    const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
+                    const PriorityIcon = prioridadeConfig.icon
+                    return (
+                      <div key={atividade.id} className={`group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-green-200/50 dark:border-green-800/30 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg ${getStatusColor(atividade.status)}`}>
+                        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="relative">
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                              {atividade.titulo}
+                            </h3>
+                            <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
+                              <PriorityIcon className={`h-4 w-4 ${prioridadeConfig.color}`} />
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                            {atividade.descricao}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1 text-xs">
+                                <BookOpen className="h-3 w-3" />
+                                <span className="font-medium">{atividade.disciplina}</span>
+                              </div>
+                              <Badge className={getDificuldadeColor(atividade.dificuldade)}>
+                                {atividade.dificuldade}
+                              </Badge>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                <CheckCircle className="h-3 w-3" />
+                                <span className="font-bold">Concluída: {atividade.dataConclusao}</span>
+                              </div>
+                              {atividade.participantes > 1 && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Users className="h-3 w-3" />
+                                  <span>{atividade.participantes} participantes</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {filteredConcluidas.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+                        <Target className="h-8 w-8 text-blue-500" />
+                      </div>
+                      <p className="text-muted-foreground font-medium">Complete suas primeiras atividades!</p>
+                      <p className="text-sm text-muted-foreground">Elas aparecerão aqui quando concluídas</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </LiquidGlassCard>
+
+            {/* Atividades Futuras */}
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+                isLiquidGlass
+                  ? 'bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-purple-500/10 dark:from-blue-900/20 dark:via-cyan-900/10 dark:to-purple-900/20 border-blue-200/30 dark:border-blue-700/50'
+                  : 'bg-gradient-to-br from-blue-50/60 via-cyan-50/30 to-purple-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-blue-200 dark:border-blue-700'
+              }`}
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                      <Target className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">Futuras</h2>
+                      <p className="text-sm text-muted-foreground">{filteredFuturas.length} atividades</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900/50 dark:to-purple-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800 px-3 py-1">
+                    Planejadas
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {filteredFuturas.map((atividade) => {
+                    const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
+                    const PriorityIcon = prioridadeConfig.icon
+                    return (
+                      <div key={atividade.id} className={`group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-blue-200/50 dark:border-blue-800/30 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg ${getStatusColor(atividade.status)}`}>
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="relative">
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              {atividade.titulo}
+                            </h3>
+                            <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
+                              <PriorityIcon className={`h-4 w-4 ${prioridadeConfig.color}`} />
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                            {atividade.descricao}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1 text-xs">
+                                <BookOpen className="h-3 w-3" />
+                                <span className="font-medium">{atividade.disciplina}</span>
+                              </div>
+                              <Badge className={getDificuldadeColor(atividade.dificuldade)}>
+                                {atividade.dificuldade}
+                              </Badge>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                                <CalIcon className="h-3 w-3" />
+                                <span className="font-bold">Previsto: {atividade.dataVencimento}</span>
+                              </div>
+                              {atividade.participantes > 1 && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Users className="h-3 w-3" />
+                                  <span>{atividade.participantes} participantes</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {filteredFuturas.length === 0 && (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mx-auto mb-4">
+                        <Clock className="h-8 w-8 text-orange-500" />
+                      </div>
+                      <p className="text-muted-foreground font-medium">Planeje suas próximas atividades!</p>
+                      <p className="text-sm text-muted-foreground">Elas aparecerão aqui quando agendadas</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </LiquidGlassCard>
+          </div>
+
+          {/* Botão para adicionar nova atividade */}
+          <LiquidGlassCard
+            intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+            className={`group relative overflow-hidden rounded-3xl border border-dashed transition-all duration-300 hover:scale-[1.02] ${
+              isLiquidGlass
+                ? 'bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5 dark:from-purple-900/10 dark:via-pink-900/10 dark:to-blue-900/10 border-purple-200/30 dark:border-purple-700/50'
+                : 'bg-gradient-to-r from-purple-50/30 via-pink-50/30 to-blue-50/30 dark:from-gray-800/20 dark:to-gray-900/20 border-purple-200 dark:border-purple-700'
+            }`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="relative p-8 text-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Plus className="h-10 w-10 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Adicionar Nova Atividade</h3>
+              <p className="text-muted-foreground mb-6">Crie uma nova tarefa para organizar seus estudos</p>
+              <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300">
+                <Activity className="h-5 w-5 mr-2" />
+                Criar Atividade
+              </Button>
+            </div>
+          </LiquidGlassCard>
+        </div>
+      </main>
+    </div>
+  )
+}

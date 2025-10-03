@@ -222,12 +222,14 @@ export default function AlunoDashboard() {
             <div className="md:col-span-1 xl:col-span-8 space-y-6">
               {/* Próximas Aulas */}
               <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}  // Fixed to correct type for max blur
+                className={`
+                  ${
+                    isLiquidGlass
+                      ? 'bg-black/30 dark:bg-gray-800/20'
+                      : 'bg-gray-50/60 dark:bg-gray-800/40'
+                  }
+                `}
               >
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -241,10 +243,10 @@ export default function AlunoDashboard() {
                 <CardContent>
                   <div className="space-y-3">
                     {proximasAulas.map((aula, index) => (
-                      <div key={index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                      <div key={index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 hover:shadow-lg backdrop-blur-lg ${  // Keep backdrop-blur-lg for extra blur
                         isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                          : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                          ? 'bg-transparent/50 hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'  // Adjusted for better visibility with less transparency
+                          : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
                       }`}>
                         <div className="flex items-center space-x-3">
                           <div className={`w-3 h-3 rounded-full ${

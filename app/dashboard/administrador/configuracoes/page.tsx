@@ -18,22 +18,26 @@ export default function ConfiguracoesAdministradorPage() {
   })
 
   const [bgUrlInput, setBgUrlInput] = useState("")
-  
+
   useEffect(() => {
     if (typeof window === "undefined") return
-    const url = window.localStorage.getItem(`ava:bg:administrador`) || ""
+    const url = window.localStorage.getItem("ava:bg:administrador") || ""
     setBgUrlInput(url)
   }, [])
 
-  function saveBgUrl() {
-    try {
-      if (bgUrlInput.trim()) {
-        window.localStorage.setItem(`ava:bg:administrador`, bgUrlInput.trim())
-      } else {
-        window.localStorage.removeItem(`ava:bg:administrador`)
+  const saveBgUrl = () => {
+    if (typeof window !== "undefined") {
+      try {
+        if (bgUrlInput.trim()) {
+          window.localStorage.setItem("ava:bg:administrador", bgUrlInput.trim())
+        } else {
+          window.localStorage.removeItem("ava:bg:administrador")
+        }
+        console.log("Imagem de fundo salva para o modo Liquid Glass.")
+      } catch (error) {
+        console.error("Erro ao salvar imagem de fundo:", error)
       }
-      alert("Imagem de fundo salva para o modo Liquid Glass.")
-    } catch {}
+    }
   }
 
   return (
@@ -49,101 +53,115 @@ export default function ConfiguracoesAdministradorPage() {
             </div>
           </div>
 
-          <div className="grid gap-6">
+          <div className="space-y-6">
             <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Bell className="w-5 h-5" />
-                  Notificações
+                  <Settings className="h-5 w-5" />
+                  Configurações Gerais
                 </CardTitle>
-                <CardDescription>Configure como você deseja receber notificações</CardDescription>
+                <CardDescription>
+                  Gerencie suas preferências de interface e comportamento
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">Notificações por Email</p>
-                    <p className="text-sm text-muted-foreground">Relatórios do sistema e alertas críticos</p>
+                  <div className="space-y-0.5">
+                    <Label>Notificações por Email</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Receba atualizações importantes por email
+                    </div>
                   </div>
                   <Switch
                     checked={notificacoes.email}
-                    onCheckedChange={(checked) => setNotificacoes({ ...notificacoes, email: checked })}
+                    onCheckedChange={(checked) =>
+                      setNotificacoes(prev => ({ ...prev, email: checked }))
+                    }
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">Notificações Push</p>
-                    <p className="text-sm text-muted-foreground">Alertas em tempo real sobre o sistema</p>
+                  <div className="space-y-0.5">
+                    <Label>Notificações Push</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Receba notificações instantâneas no navegador
+                    </div>
                   </div>
                   <Switch
                     checked={notificacoes.push}
-                    onCheckedChange={(checked) => setNotificacoes({ ...notificacoes, push: checked })}
+                    onCheckedChange={(checked) =>
+                      setNotificacoes(prev => ({ ...prev, push: checked }))
+                    }
                   />
                 </div>
+
                 <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="font-medium">Notificações por SMS</p>
-                    <p className="text-sm text-muted-foreground">Emergências e falhas críticas</p>
+                  <div className="space-y-0.5">
+                    <Label>Notificações SMS</Label>
+                    <div className="text-sm text-muted-foreground">
+                      Receba mensagens de texto no celular
+                    </div>
                   </div>
                   <Switch
                     checked={notificacoes.sms}
-                    onCheckedChange={(checked) => setNotificacoes({ ...notificacoes, sms: checked })}
+                    onCheckedChange={(checked) =>
+                      setNotificacoes(prev => ({ ...prev, sms: checked }))
+                    }
                   />
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Palette className="w-5 h-5" />
+                  <Palette className="h-5 w-5" />
                   Aparência
                 </CardTitle>
-                <CardDescription>Personalize a aparência do sistema</CardDescription>
+                <CardDescription>
+                  Personalize a aparência do seu dashboard
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Imagem de Fundo (modo Liquid Glass)</Label>
-                  <Input 
-                    value={bgUrlInput} 
-                    onChange={(e) => setBgUrlInput(e.target.value)} 
-                    placeholder="https://exemplo.com/imagem.jpg" 
-                  />
-                  <p className="text-xs text-muted-foreground">Usada somente quando o tema Liquid Glass estiver ativo.</p>
-                  <Button onClick={saveBgUrl} className="bg-primary hover:bg-primary/90">
-                    Salvar imagem de fundo
-                  </Button>
+                  <Label htmlFor="bgUrl">URL da Imagem de Fundo (Liquid Glass)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="bgUrl"
+                      placeholder="https://exemplo.com/imagem.jpg"
+                      value={bgUrlInput}
+                      onChange={(e) => setBgUrlInput(e.target.value)}
+                    />
+                    <LiquidGlassButton onClick={saveBgUrl} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                      Salvar
+                    </LiquidGlassButton>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Cole a URL de uma imagem para usar como fundo no modo Liquid Glass
+                  </div>
                 </div>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Crown className="w-5 h-5" />
-                  Preferências Administrativas
+                  <Crown className="h-5 w-5" />
+                  Configurações de Administrador
                 </CardTitle>
-                <CardDescription>Configure suas preferências de administração</CardDescription>
+                <CardDescription>
+                  Opções avançadas para administradores do sistema
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Frequência de Backup Automático</Label>
-                  <select className="w-full p-2 border rounded-md">
-                    <option>Diário</option>
-                    <option>Semanal</option>
-                    <option>Mensal</option>
-                  </select>
+                  <Label>Permissões do Sistema</Label>
+                  <div className="text-sm text-muted-foreground">
+                    Você tem acesso total ao sistema como administrador
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Retenção de Logs (dias)</Label>
-                  <Input type="number" defaultValue="90" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Timeout de Sessão (minutos)</Label>
-                  <Input type="number" defaultValue="30" />
-                </div>
-                <Button className="bg-primary hover:bg-primary/90">Salvar Preferências</Button>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
         </div>
       </main>
