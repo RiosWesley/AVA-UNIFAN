@@ -168,6 +168,399 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ===== CUSTOM SCROLLBARS ===== */
+
+/* Scrollbar para todos os elementos - Base styles */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0fdf4 !important;
+  border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #15803d !important;
+  border-radius: 4px !important;
+  border: 1px solid #f0fdf4 !important;
+  transition: all 0.2s ease !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #15803d !important;
+  transform: scale(1.1) !important;
+  opacity: 0.8 !important;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #15803d !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: #f0fdf4 !important;
+}
+
+/* Firefox scrollbar styles - Global */
+html * {
+  scrollbar-width: thin !important;
+  scrollbar-color: #15803d #f0fdf4 !important;
+}
+
+/* Estilos globais ultra-específicos para garantir que funcionem */
+*::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f0fdf4 !important;
+  border-radius: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #15803d !important;
+  border-radius: 4px !important;
+  border: 1px solid #f0fdf4 !important;
+  transition: all 0.2s ease !important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #15803d !important;
+  transform: scale(1.1) !important;
+  opacity: 0.8 !important;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #f0fdf4 !important;
+}
+
+/* Estilos globais para modo dark */
+.dark *::-webkit-scrollbar-track {
+  background: #0f172a !important;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: #22c55e !important;
+  border-color: #0f172a !important;
+}
+
+.dark *::-webkit-scrollbar-thumb:hover {
+  background: #22c55e !important;
+  opacity: 0.9 !important;
+}
+
+.dark *::-webkit-scrollbar-corner {
+  background: #0f172a !important;
+}
+
+.dark * {
+  scrollbar-color: #22c55e #0f172a !important;
+}
+
+/* Estilos globais para modo liquid glass */
+.liquid-glass *::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.liquid-glass *::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.liquid-glass *::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.8) !important;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3) !important;
+}
+
+.liquid-glass *::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.liquid-glass * {
+  scrollbar-color: rgba(34, 197, 94, 0.6) rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Scrollbar para elementos específicos */
+html ::-webkit-scrollbar,
+body ::-webkit-scrollbar,
+div ::-webkit-scrollbar,
+main ::-webkit-scrollbar,
+section ::-webkit-scrollbar,
+article ::-webkit-scrollbar,
+aside ::-webkit-scrollbar,
+nav ::-webkit-scrollbar,
+header ::-webkit-scrollbar,
+footer ::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+html ::-webkit-scrollbar-track,
+body ::-webkit-scrollbar-track,
+div ::-webkit-scrollbar-track,
+main ::-webkit-scrollbar-track,
+section ::-webkit-scrollbar-track,
+article ::-webkit-scrollbar-track,
+aside ::-webkit-scrollbar-track,
+nav ::-webkit-scrollbar-track,
+header ::-webkit-scrollbar-track,
+footer ::-webkit-scrollbar-track {
+  background: #f0fdf4 !important;
+  border-radius: 4px !important;
+}
+
+html ::-webkit-scrollbar-thumb,
+body ::-webkit-scrollbar-thumb,
+div ::-webkit-scrollbar-thumb,
+main ::-webkit-scrollbar-thumb,
+section ::-webkit-scrollbar-thumb,
+article ::-webkit-scrollbar-thumb,
+aside ::-webkit-scrollbar-thumb,
+nav ::-webkit-scrollbar-thumb,
+header ::-webkit-scrollbar-thumb,
+footer ::-webkit-scrollbar-thumb {
+  background: #15803d !important;
+  border-radius: 4px !important;
+  border: 1px solid #f0fdf4 !important;
+  transition: all 0.2s ease !important;
+}
+
+html ::-webkit-scrollbar-thumb:hover,
+body ::-webkit-scrollbar-thumb:hover,
+div ::-webkit-scrollbar-thumb:hover,
+main ::-webkit-scrollbar-thumb:hover,
+section ::-webkit-scrollbar-thumb:hover,
+article ::-webkit-scrollbar-thumb:hover,
+aside ::-webkit-scrollbar-thumb:hover,
+nav ::-webkit-scrollbar-thumb:hover,
+header ::-webkit-scrollbar-thumb:hover,
+footer ::-webkit-scrollbar-thumb:hover {
+  background: #15803d !important;
+  transform: scale(1.1) !important;
+  opacity: 0.8 !important;
+}
+
+/* Modo Dark - Scrollbar adjustments */
+.dark html ::-webkit-scrollbar-track,
+.dark body ::-webkit-scrollbar-track,
+.dark div ::-webkit-scrollbar-track,
+.dark main ::-webkit-scrollbar-track,
+.dark section ::-webkit-scrollbar-track,
+.dark article ::-webkit-scrollbar-track,
+.dark aside ::-webkit-scrollbar-track,
+.dark nav ::-webkit-scrollbar-track,
+.dark header ::-webkit-scrollbar-track,
+.dark footer ::-webkit-scrollbar-track {
+  background: #0f172a !important;
+}
+
+.dark html ::-webkit-scrollbar-thumb,
+.dark body ::-webkit-scrollbar-thumb,
+.dark div ::-webkit-scrollbar-thumb,
+.dark main ::-webkit-scrollbar-thumb,
+.dark section ::-webkit-scrollbar-thumb,
+.dark article ::-webkit-scrollbar-thumb,
+.dark aside ::-webkit-scrollbar-thumb,
+.dark nav ::-webkit-scrollbar-thumb,
+.dark header ::-webkit-scrollbar-thumb,
+.dark footer ::-webkit-scrollbar-thumb {
+  background: #22c55e !important;
+  border-color: #0f172a !important;
+}
+
+.dark html ::-webkit-scrollbar-thumb:hover,
+.dark body ::-webkit-scrollbar-thumb:hover,
+.dark div ::-webkit-scrollbar-thumb:hover,
+.dark main ::-webkit-scrollbar-thumb:hover,
+.dark section ::-webkit-scrollbar-thumb:hover,
+.dark article ::-webkit-scrollbar-thumb:hover,
+.dark aside ::-webkit-scrollbar-thumb:hover,
+.dark nav ::-webkit-scrollbar-thumb:hover,
+.dark header ::-webkit-scrollbar-thumb:hover,
+.dark footer ::-webkit-scrollbar-thumb:hover {
+  background: #22c55e !important;
+  opacity: 0.9 !important;
+}
+
+.dark html ::-webkit-scrollbar-corner,
+.dark body ::-webkit-scrollbar-corner,
+.dark div ::-webkit-scrollbar-corner,
+.dark main ::-webkit-scrollbar-corner,
+.dark section ::-webkit-scrollbar-corner,
+.dark article ::-webkit-scrollbar-corner,
+.dark aside ::-webkit-scrollbar-corner,
+.dark nav ::-webkit-scrollbar-corner,
+.dark header ::-webkit-scrollbar-corner,
+.dark footer ::-webkit-scrollbar-corner {
+  background: #0f172a !important;
+}
+
+.dark html *,
+.dark body *,
+.dark div *,
+.dark main *,
+.dark section *,
+.dark article *,
+.dark aside *,
+.dark nav *,
+.dark header *,
+.dark footer * {
+  scrollbar-color: #22c55e #0f172a !important;
+}
+
+/* Modo Liquid Glass - Scrollbar adjustments */
+.liquid-glass html ::-webkit-scrollbar-track,
+.liquid-glass body ::-webkit-scrollbar-track,
+.liquid-glass div ::-webkit-scrollbar-track,
+.liquid-glass main ::-webkit-scrollbar-track,
+.liquid-glass section ::-webkit-scrollbar-track,
+.liquid-glass article ::-webkit-scrollbar-track,
+.liquid-glass aside ::-webkit-scrollbar-track,
+.liquid-glass nav ::-webkit-scrollbar-track,
+.liquid-glass header ::-webkit-scrollbar-track,
+.liquid-glass footer ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.liquid-glass html ::-webkit-scrollbar-thumb,
+.liquid-glass body ::-webkit-scrollbar-thumb,
+.liquid-glass div ::-webkit-scrollbar-thumb,
+.liquid-glass main ::-webkit-scrollbar-thumb,
+.liquid-glass section ::-webkit-scrollbar-thumb,
+.liquid-glass article ::-webkit-scrollbar-thumb,
+.liquid-glass aside ::-webkit-scrollbar-thumb,
+.liquid-glass nav ::-webkit-scrollbar-thumb,
+.liquid-glass header ::-webkit-scrollbar-thumb,
+.liquid-glass footer ::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.liquid-glass html ::-webkit-scrollbar-thumb:hover,
+.liquid-glass body ::-webkit-scrollbar-thumb:hover,
+.liquid-glass div ::-webkit-scrollbar-thumb:hover,
+.liquid-glass main ::-webkit-scrollbar-thumb:hover,
+.liquid-glass section ::-webkit-scrollbar-thumb:hover,
+.liquid-glass article ::-webkit-scrollbar-thumb:hover,
+.liquid-glass aside ::-webkit-scrollbar-thumb:hover,
+.liquid-glass nav ::-webkit-scrollbar-thumb:hover,
+.liquid-glass header ::-webkit-scrollbar-thumb:hover,
+.liquid-glass footer ::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.8) !important;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3) !important;
+}
+
+.liquid-glass html ::-webkit-scrollbar-corner,
+.liquid-glass body ::-webkit-scrollbar-corner,
+.liquid-glass div ::-webkit-scrollbar-corner,
+.liquid-glass main ::-webkit-scrollbar-corner,
+.liquid-glass section ::-webkit-scrollbar-corner,
+.liquid-glass article ::-webkit-scrollbar-corner,
+.liquid-glass aside ::-webkit-scrollbar-corner,
+.liquid-glass nav ::-webkit-scrollbar-corner,
+.liquid-glass header ::-webkit-scrollbar-corner,
+.liquid-glass footer ::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.liquid-glass html *,
+.liquid-glass body *,
+.liquid-glass div *,
+.liquid-glass main *,
+.liquid-glass section *,
+.liquid-glass article *,
+.liquid-glass aside *,
+.liquid-glass nav *,
+.liquid-glass header *,
+.liquid-glass footer * {
+  scrollbar-color: rgba(34, 197, 94, 0.6) rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Scrollbar horizontal específica para containers que podem precisar */
+.scroll-x::-webkit-scrollbar {
+  height: 6px !important;
+}
+
+.scroll-x::-webkit-scrollbar-thumb {
+  border-radius: 3px !important;
+}
+
+.scroll-y::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.scroll-y::-webkit-scrollbar-thumb {
+  border-radius: 3px !important;
+}
+
+/* Scrollbar para áreas específicas como sidebar, cards, etc. */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #15803d !important;
+  border-color: #f0fdf4 !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #15803d !important;
+  opacity: 0.8 !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: #f0fdf4 !important;
+}
+
+.dark .sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #22c55e !important;
+}
+
+.dark .sidebar-scroll::-webkit-scrollbar-track {
+  background: #0f172a !important;
+}
+
+.liquid-glass .sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.5) !important;
+}
+
+.liquid-glass .sidebar-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ===== FIM CUSTOM SCROLLBARS ===== */
+
+/* ScrollArea sem scrollbars visíveis */
+.no-scrollbars {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.no-scrollbars::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbars * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.no-scrollbars *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -150,7 +150,7 @@ export function Sidebar({ userRole }: SidebarProps) {
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 py-6">
+      <ScrollArea className="flex-1 py-6" showScrollbars={false}>
         <nav className="space-y-1">
           {items.map((item, index) => {
             const Icon = item.icon
