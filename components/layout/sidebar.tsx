@@ -42,7 +42,6 @@ const menuItems = {
     { icon: Target, label: "Atividades", href: "/dashboard/aluno/atividades", badge: "2" },
     { icon: Award, label: "Boletim", href: "/dashboard/aluno/boletim" },
     { icon: Trophy, label: "Desempenho", href: "/dashboard/aluno/desempenho" },
-    { icon: TrendingUp, label: "Progresso", href: "/dashboard/aluno/progresso" },
     { icon: MessageSquare, label: "Comunicação", href: "/dashboard/aluno/comunicacao", badge: "1" },
     { icon: CreditCard, label: "Financeiro", href: "/dashboard/aluno/financeiro" },
     { icon: Calendar, label: "Agenda", href: "/dashboard/aluno/agenda" },
