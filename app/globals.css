@@ -620,3 +620,425 @@ footer ::-webkit-scrollbar-thumb:hover {
   .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
   .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
 }
+
+/* ===== TOOLTIP PREDOMINANCE ===== */
+
+/* Garantir que tooltips apareçam acima de todos os elementos */
+[data-radix-tooltip-content] {
+  z-index: 999999 !important;
+  position: relative !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* No liquid glass theme, usar z-index ainda mais alto */
+.liquid-glass [data-radix-tooltip-content] {
+  z-index: 1000000 !important;
+  position: relative !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Forçar tooltips a aparecerem acima de backdrop filters e glass effects */
+.liquid-glass [data-radix-tooltip-content] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Sobrescrever elementos específicos que podem estar bloqueando tooltips */
+div[style*="backdrop-filter"] [data-radix-tooltip-content],
+div[style*="-webkit-backdrop-filter"] [data-radix-tooltip-content] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Garantir que tooltips apareçam acima de elementos com grid background */
+.bg-grid-white [data-radix-tooltip-content],
+[class*="bg-grid"] [data-radix-tooltip-content] {
+  z-index: 1000001 !important;
+}
+
+/* Sobrescrever elementos com backdrop-blur que podem estar bloqueando */
+[class*="backdrop-blur"] [data-radix-tooltip-content],
+[class*="backdrop-blur-sm"] [data-radix-tooltip-content],
+[class*="backdrop-blur-md"] [data-radix-tooltip-content],
+[class*="backdrop-blur-lg"] [data-radix-tooltip-content] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Forçar tooltips acima de cards com backdrop-blur */
+[class*="rounded-2xl"][class*="backdrop-blur"] [data-radix-tooltip-content],
+[class*="rounded-3xl"][class*="backdrop-blur"] [data-radix-tooltip-content] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  z-index: 1000002 !important;
+}
+
+/* ===== CARD SPECIFIC OVERRIDES ===== */
+
+/* Cards de boas-vindas/resumo com backdrop-blur */
+.flex.items-center.justify-between.mb-8.p-6.rounded-2xl.border.backdrop-blur-sm [data-radix-tooltip-content],
+[class*="bg-gray-50/60"][class*="dark:bg-gray-800/40"] [data-radix-tooltip-content] {
+  z-index: 1000003 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Cards com cores específicas do gray-50/gray-800 */
+[class*="bg-gray-50/60"] [data-radix-tooltip-content],
+[class*="dark:bg-gray-800/40"] [data-radix-tooltip-content],
+[class*="bg-gray-50/50"] [data-radix-tooltip-content],
+[class*="dark:bg-gray-800/50"] [data-radix-tooltip-content] {
+  z-index: 1000004 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Cards de dashboard genéricos com backdrop-blur */
+.dashboard-card [data-radix-tooltip-content],
+[class*="dashboard"] [class*="card"] [data-radix-tooltip-content],
+[class*="summary-card"] [data-radix-tooltip-content] {
+  z-index: 1000005 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Cards com botões de notificação (como o card de boas-vindas) */
+[class*="bg-white/50"][class*="dark:bg-gray-800/50"] [data-radix-tooltip-content],
+[class*="hover:bg-green-50"] [data-radix-tooltip-content] {
+  z-index: 1000006 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* ===== ALL CARDS OVERRIDES ===== */
+
+/* Todos os cards do sistema - regra geral */
+.card [data-radix-tooltip-content],
+[class*="card"] [data-radix-tooltip-content] {
+  z-index: 1000007 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Cards de atividades específicas */
+.activity-card [data-radix-tooltip-content],
+[class*="activity"][class*="card"] [data-radix-tooltip-content] {
+  z-index: 1000008 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Cards de estatísticas e métricas */
+.stats-card [data-radix-tooltip-content],
+.metric-card [data-radix-tooltip-content],
+[class*="stats"][class*="card"] [data-radix-tooltip-content],
+[class*="metric"][class*="card"] [data-radix-tooltip-content] {
+  z-index: 1000009 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Cards de informações e resumo */
+.info-card [data-radix-tooltip-content],
+summary-card [data-radix-tooltip-content],
+[class*="info"][class*="card"] [data-radix-tooltip-content],
+[class*="summary"][class*="card"] [data-radix-tooltip-content] {
+  z-index: 1000010 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Cards de navegação e menu */
+.nav-card [data-radix-tooltip-content],
+menu-card [data-radix-tooltip-content],
+[class*="nav"][class*="card"] [data-radix-tooltip-content],
+[class*="menu"][class*="card"] [data-radix-tooltip-content] {
+  z-index: 1000011 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* ===== ULTIMATE OVERRIDES ===== */
+
+/* Regra específica para o card de boas-vindas do dashboard do aluno */
+.flex.items-center.justify-between.mb-8.p-6.rounded-2xl.border.backdrop-blur-sm.bg-gray-50\/60.dark\:bg-gray-800\/40.border-gray-200.dark\:border-gray-700 [data-radix-tooltip-content] {
+  z-index: 1000012 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Regra para todos os elementos com backdrop-filter - máxima prioridade */
+*[style*="backdrop-filter"] [data-radix-tooltip-content],
+*[style*="-webkit-backdrop-filter"] [data-radix-tooltip-content],
+*[style*="backdrop-filter: blur"] [data-radix-tooltip-content],
+*[style*="-webkit-backdrop-filter: blur"] [data-radix-tooltip-content] {
+  z-index: 2147483647 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+}
+
+/* Regra absoluta final - tooltips sempre no topo de tudo */
+* [data-radix-tooltip-content] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: block !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+}
+
+/* ===== SPECIFIC ELEMENT OVERRIDES ===== */
+
+/* Sobrescrever elementos com grid background específicos */
+.bg-grid-white\/\[0\.02\] [data-radix-tooltip-content],
+.bg-grid-white\/\[0\.05\] [data-radix-tooltip-content],
+[class*="bg-grid-white"] [data-radix-tooltip-content] {
+  z-index: 1000003 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Sobrescrever elementos com absolute inset-0 (overlays) */
+.absolute.inset-0 [data-radix-tooltip-content] {
+  z-index: 1000004 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Sobrescrever elementos específicos do dashboard de atividades */
+[class*="md:p-5"][class*="overflow-hidden"][class*="backdrop-blur-sm"] [data-radix-tooltip-content],
+[class*="p-4"][class*="md:p-5"][class*="relative"][class*="overflow-hidden"][class*="rounded-3xl"] [data-radix-tooltip-content] {
+  z-index: 1000005 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Regras ultra-específicas para elementos com múltiplas classes problemáticas */
+.relative.overflow-hidden.rounded-2xl.border.backdrop-blur-sm [data-radix-tooltip-content],
+.relative.overflow-hidden.rounded-3xl.border.shadow-lg [data-radix-tooltip-content] {
+  z-index: 1000006 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Forçar todos os tooltips a aparecerem acima de elementos com backdrop-filter via atributo style */
+div[style*="backdrop-filter"] + [data-radix-tooltip-content],
+div[style*="-webkit-backdrop-filter"] + [data-radix-tooltip-content] {
+  z-index: 1000007 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Última linha de defesa - tooltips sempre no topo */
+body [data-radix-tooltip-content] {
+  z-index: 9999999 !important;
+  position: fixed !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* ===== ABSOLUTE OVERRIDE FOR TOOLTIP PREDOMINANCE ===== */
+
+/* Garantir que tooltips apareçam acima de elementos com backdrop-blur via JavaScript */
+div[style*="backdrop-filter: blur"],
+div[style*="-webkit-backdrop-filter: blur"] {
+  position: relative;
+}
+
+div[style*="backdrop-filter: blur"] [data-radix-tooltip-content],
+div[style*="-webkit-backdrop-filter: blur"] [data-radix-tooltip-content] {
+  z-index: 9999999 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Forçar tooltips acima de todos os elementos com qualquer tipo de blur */
+*[style*="blur("] [data-radix-tooltip-content] {
+  z-index: 10000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+}
+
+/* Regra final - tooltips sempre no topo absoluto */
+html [data-radix-tooltip-content],
+* [data-radix-tooltip-content] {
+  z-index: 2147483647 !important; /* Maximum possible z-index */
+  position: fixed !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  display: block !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+}
