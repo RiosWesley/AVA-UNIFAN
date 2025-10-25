@@ -226,58 +226,49 @@ export default function DesempenhoPage() {
   }
 
   return (
-    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-purple-50/30 via-pink-50/20 to-blue-50/30 dark:from-gray-900/20 dark:via-purple-900/10 dark:to-blue-900/10' : 'bg-background'}`}>
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-8">
-          {/* Header Hero Section */}
-          <div className={`relative overflow-hidden rounded-3xl border backdrop-blur-sm ${
+          {/* Header com gradiente e animações */}
+          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
             isLiquidGlass
-              ? 'bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 dark:from-purple-900/30 dark:via-pink-900/30 dark:to-blue-900/30 border-purple-200/30 dark:border-purple-700/50'
-              : 'bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
+              ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+              : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.05]" />
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
-            <div className="relative p-8">
-              <div className="flex items-center justify-between">
-                <div className="space-y-3">
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-                    Meu Desempenho
-                  </h1>
-                  <p className="text-lg text-muted-foreground">
-                    Acompanhe seu progresso acadêmico e conquistas com métricas detalhadas
-                  </p>
-                  <div className="flex items-center gap-6 pt-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                        <TrendingUp className="h-2 w-2 text-white" />
-                      </div>
-                      <span className="text-sm font-medium">Tendência Positiva</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center">
-                        <Sparkles className="h-2 w-2 text-white" />
-                      </div>
-                      <span className="text-sm font-medium">Excelente Progresso</span>
-                    </div>
-                    <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 dark:from-green-900/50 dark:to-emerald-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
-                      <Trophy className="h-3 w-3 mr-1" />
-                      Top Performer
-                    </Badge>
-                  </div>
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <GraduationCap className="h-8 w-8 text-white" />
                 </div>
-                <div className="hidden md:flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                      8.5
-                    </div>
-                    <div className="text-sm text-muted-foreground">Média Geral</div>
-                  </div>
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                    <GraduationCap className="h-10 w-10 text-white" />
-                  </div>
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Sparkles className="h-3 w-3 text-white" />
                 </div>
               </div>
+              <div>
+                <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+                  Meu Desempenho
+                </h1>
+                <p className="text-muted-foreground text-lg mt-1">
+                  Acompanhe seu progresso acadêmico e conquistas com métricas detalhadas
+                </p>
+                <div className="flex items-center mt-2 space-x-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Ativo
+                  </Badge>
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
+                    <Target className="h-3 w-3 mr-1" />
+                    Meta: 9.0
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                8.5
+              </div>
+              <div className="text-sm text-muted-foreground">Média Geral</div>
             </div>
           </div>
           
@@ -290,34 +281,42 @@ export default function DesempenhoPage() {
                 <LiquidGlassCard
                   key={index}
                   intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                  className={`group relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+                  className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
                     isLiquidGlass
-                      ? 'bg-white/20 dark:bg-gray-800/30 border-gray-200/30 dark:border-gray-700/50'
-                      : 'bg-white/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                      ? 'bg-black/30 dark:bg-gray-800/20'
+                      : 'bg-gray-50/60 dark:bg-gray-800/40'
                   }`}
                 >
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-full -translate-y-12 translate-x-12" />
-                  <div className="relative p-6">
-                  <div className="flex items-center justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-2xl ${metrica.bg} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className="h-6 w-6 text-white" />
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">{metrica.titulo}</div>
+                      <div className={`p-2 ${metrica.titulo.includes('Média') || metrica.titulo.includes('Melhor') ? 'bg-green-500/20' :
+                        metrica.titulo.includes('Disciplinas') ? 'bg-blue-500/20' :
+                        metrica.titulo.includes('Frequência') ? 'bg-purple-500/20' : 'bg-gray-500/20'
+                      } rounded-lg group-hover:bg-green-500/30 transition-colors`}>
+                        <Icon className={`h-5 w-5 ${metrica.titulo.includes('Média') || metrica.titulo.includes('Melhor') ? 'text-green-600 dark:text-green-400' :
+                          metrica.titulo.includes('Disciplinas') ? 'text-blue-600 dark:text-blue-400' :
+                          metrica.titulo.includes('Frequência') ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'
+                        }`} />
                       </div>
-                      {metrica.tendencia && (
-                        <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded-full">
-                          <ChevronUp className="h-3 w-3 text-green-600 dark:text-green-400" />
-                          <span className="text-xs font-bold text-green-600 dark:text-green-400">{metrica.tendencia}</span>
-                        </div>
-                      )}
                     </div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{metrica.titulo}</h3>
-                    <div className={`text-4xl font-bold mb-2 ${metrica.cor} group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`text-3xl font-bold mb-2 ${metrica.titulo.includes('Média') || metrica.titulo.includes('Melhor') ? 'text-green-600 dark:text-green-400' :
+                      metrica.titulo.includes('Disciplinas') ? 'text-blue-600 dark:text-blue-400' :
+                      metrica.titulo.includes('Frequência') ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'
+                    }`}>
                       {animatedValues[counterKey] ? (
                         <AnimatedCounter value={metrica.valor} suffix={metrica.titulo === 'Disciplinas Aprovadas' ? '/8' : metrica.titulo === 'Frequência' ? '%' : ''} delay={index * 200} />
                       ) : (
                         '0'
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">{metrica.descricao}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{metrica.descricao}</p>
+                    {metrica.tendencia && (
+                      <div className="flex items-center mt-2">
+                        <ChevronUp className="h-3 w-3 text-green-600 dark:text-green-400 mr-1" />
+                        <span className="text-xs text-green-600 dark:text-green-400 font-medium">{metrica.tendencia}</span>
+                      </div>
+                    )}
                   </div>
                 </LiquidGlassCard>
               )
@@ -328,18 +327,17 @@ export default function DesempenhoPage() {
             {/* Notas Recentes */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] lg:col-span-2 ${
+              className={`lg:col-span-2 ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-purple-500/10 dark:from-blue-900/20 dark:via-cyan-900/10 dark:to-purple-900/20 border-blue-200/30 dark:border-blue-700/50'
-                  : 'bg-gradient-to-br from-blue-50/60 via-cyan-50/30 to-purple-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-blue-200 dark:border-blue-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
-              <div className="relative p-6">
+              <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
-                      <BarChart3 className="h-6 w-6 text-white" />
+                    <div className="p-2 bg-green-500/20 rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Notas Recentes</h2>
@@ -352,41 +350,35 @@ export default function DesempenhoPage() {
                   </Button>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {notasRecentes.map((nota, index) => (
-                    <div key={index} className={`group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg ${
-                      nota.tendencia === 'up' ? 'border-l-green-500' :
-                      nota.tendencia === 'down' ? 'border-l-red-500' : 'border-l-blue-500'
+                    <div key={index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+                      isLiquidGlass
+                        ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                        : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
                     }`}>
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-cyan-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="relative">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
-                              <BookOpen className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <h3 className="font-bold text-foreground">{nota.disciplina}</h3>
-                              <p className="text-sm text-muted-foreground">{nota.professor}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-foreground">{nota.nota}</div>
-                            <div className="flex items-center gap-1">
-                              {getTendenciaIcon(nota.tendencia)}
-                        <Badge className={getConceitoColor(nota.conceito)}>{nota.conceito}</Badge>
-                            </div>
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          nota.nota >= 9 ? "bg-green-500/20" :
+                          nota.nota >= 8 ? "bg-green-500/20" :
+                          nota.nota >= 6 ? "bg-yellow-500/20" : "bg-red-500/20"
+                        }`}>
+                          <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                            {nota.nota}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{nota.disciplina}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{nota.professor}</p>
+                          <div className="flex items-center mt-1">
+                            {getTendenciaIcon(nota.tendencia)}
+                            <Badge className={getConceitoColor(nota.conceito)}>{nota.conceito}</Badge>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{nota.data}</span>
-                          <div className="flex items-center gap-2">
-                            <Progress value={(nota.nota / 10) * 100} className="w-16 h-1" />
-                            <span className="text-xs text-muted-foreground">
-                              {((nota.nota / 10) * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">{nota.data}</div>
+                        <Progress value={(nota.nota / 10) * 100} className="w-16 h-1 mt-1" />
                       </div>
                     </div>
                   ))}
@@ -397,18 +389,17 @@ export default function DesempenhoPage() {
             {/* Conquistas com Gamificação */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ${
+              className={`${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-yellow-500/10 via-orange-500/5 to-red-500/10 dark:from-yellow-900/20 dark:via-orange-900/10 dark:to-red-900/20 border-yellow-200/30 dark:border-yellow-700/50'
-                  : 'bg-gradient-to-br from-yellow-50/60 via-orange-50/30 to-red-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-yellow-200 dark:border-yellow-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-yellow-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
-              <div className="relative p-6">
+              <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center">
-                      <Trophy className="h-6 w-6 text-white" />
+                    <div className="p-2 bg-yellow-500/20 rounded-lg">
+                      <Trophy className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Conquistas</h2>
@@ -423,50 +414,49 @@ export default function DesempenhoPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
                   {conquistas.map((conquista, index) => {
                     const raridadeConfig = getRaridadeConfig(conquista.raridade)
                     const RaridadeIcon = raridadeConfig.icon
                     return (
-                      <div key={index} className="group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-yellow-200/50 dark:border-yellow-800/30 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg">
-                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-orange-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="relative">
-                          <div className="flex items-start gap-4">
-                            <div className={`w-12 h-12 rounded-xl ${raridadeConfig.color} flex items-center justify-center shadow-lg`}>
-                              <conquista.icone className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-bold text-foreground group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
-                                  {conquista.titulo}
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={`${raridadeConfig.color} text-white text-xs`}>
-                                    <RaridadeIcon className="h-3 w-3 mr-1" />
-                                    {raridadeConfig.text}
-                                  </Badge>
-                                  <div className="text-sm font-bold text-yellow-600 dark:text-yellow-400">
-                                    +{conquista.pontos} XP
-                                  </div>
-                                </div>
+                      <div key={index} className={`group flex items-center space-x-3 p-3 rounded-xl border transition-all duration-300 ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-yellow-200/30 dark:border-yellow-800/30'
+                          : 'bg-white/60 dark:bg-gray-800/60 border-yellow-200/50 dark:border-yellow-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}>
+                        <div className={`w-10 h-10 ${raridadeConfig.color} rounded-full flex items-center justify-center shadow-lg`}>
+                          <conquista.icone className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                              {conquista.titulo}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <Badge className={`${raridadeConfig.color} text-white text-xs`}>
+                                <RaridadeIcon className="h-3 w-3 mr-1" />
+                                {raridadeConfig.text}
+                              </Badge>
+                              <div className="text-sm font-bold text-yellow-600 dark:text-yellow-400">
+                                +{conquista.pontos} XP
                               </div>
-                              <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
-                                {conquista.descricao}
-                              </p>
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-muted-foreground">{conquista.data}</span>
-                                <div className="flex items-center gap-1">
-                                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">Desbloqueado</span>
-                                </div>
-                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            {conquista.descricao}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600 dark:text-gray-400">{conquista.data}</span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              <span className="text-xs text-green-600 dark:text-green-400 font-medium">Desbloqueado</span>
                             </div>
                           </div>
                         </div>
                       </div>
                     )
                   })}
-                    </div>
+                </div>
 
                 <div className="mt-6 pt-4 border-t border-yellow-200/50 dark:border-yellow-800/50">
                   <div className="flex items-center justify-between">
@@ -481,18 +471,17 @@ export default function DesempenhoPage() {
             {/* Gráfico de Barras Interativo */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] col-span-2 ${
+              className={`col-span-2 ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-green-500/10 via-blue-500/5 to-purple-500/10 dark:from-green-900/20 dark:via-blue-900/10 dark:to-purple-900/20 border-green-200/30 dark:border-green-700/50'
-                  : 'bg-gradient-to-br from-green-50/60 via-blue-50/30 to-purple-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-green-200 dark:border-green-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
-              <div className="relative p-6">
+              <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-blue-500 flex items-center justify-center">
-                      <BarChart3 className="h-6 w-6 text-white" />
+                    <div className="p-2 bg-green-500/20 rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Performance por Disciplina</h2>
@@ -506,28 +495,21 @@ export default function DesempenhoPage() {
                 </div>
 
                 <div className="h-64 relative">
-                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/5 dark:to-gray-900/5" />
                   <div className="flex items-end justify-around h-full space-x-3 px-4">
                     {[
-                      { disc: 'Matemática', nota: 9.2, cor: 'from-blue-500 to-cyan-500', altura: 'h-36' },
-                      { disc: 'Português', nota: 8.7, cor: 'from-green-500 to-emerald-500', altura: 'h-32' },
-                      { disc: 'Física', nota: 7.5, cor: 'from-yellow-500 to-orange-500', altura: 'h-28' },
-                      { disc: 'História', nota: 9.0, cor: 'from-purple-500 to-pink-500', altura: 'h-34' },
+                      { disc: 'Matemática', nota: 9.2, cor: 'bg-blue-500', altura: 'h-36' },
+                      { disc: 'Português', nota: 8.7, cor: 'bg-green-500', altura: 'h-32' },
+                      { disc: 'Física', nota: 7.5, cor: 'bg-yellow-500', altura: 'h-28' },
+                      { disc: 'História', nota: 9.0, cor: 'bg-purple-500', altura: 'h-34' },
                     ].map((item, i) => (
                       <div key={i} className="flex flex-col items-center group">
-                        <div className="relative">
-                          <div className={`w-16 ${item.altura} bg-gradient-to-t ${item.cor} rounded-t-2xl shadow-lg group-hover:scale-105 transition-all duration-300 flex items-end justify-center pb-2`}>
-                            <span className="text-white font-bold text-sm">{item.nota}</span>
-                          </div>
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <Star className="h-3 w-3 text-white" />
-                          </div>
+                        <div className={`w-16 ${item.altura} ${item.cor} rounded-t-2xl shadow-lg group-hover:scale-105 transition-all duration-300 flex items-end justify-center pb-2`}>
+                          <span className="text-white font-bold text-sm">{item.nota}</span>
                         </div>
                         <span className="text-sm font-medium mt-3 text-center max-w-16 break-words">{item.disc}</span>
                     </div>
                   ))}
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-200/50 to-transparent dark:from-gray-700/50" />
                 </div>
               </div>
             </LiquidGlassCard>
@@ -535,18 +517,17 @@ export default function DesempenhoPage() {
             {/* Gráfico de Linha Avançado */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] col-span-3 ${
+              className={`col-span-3 ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-blue-500/10 dark:from-purple-900/20 dark:via-pink-900/10 dark:to-blue-900/20 border-purple-200/30 dark:border-purple-700/50'
-                  : 'bg-gradient-to-br from-purple-50/60 via-pink-50/30 to-blue-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-purple-200 dark:border-purple-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
-              <div className="relative p-6">
+              <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                      <LineChart className="h-6 w-6 text-white" />
+                    <div className="p-2 bg-green-500/20 rounded-lg">
+                      <LineChart className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Evolução Semestral</h2>
@@ -557,7 +538,7 @@ export default function DesempenhoPage() {
                     <Button variant="outline" size="sm" className="rounded-full">
                       2024
                     </Button>
-                    <Button variant="default" size="sm" className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
+                    <Button variant="default" size="sm" className="rounded-full bg-gradient-to-r from-green-500 to-emerald-500">
                       <TrendingUp className="h-4 w-4 mr-2" />
                       +15%
                     </Button>
@@ -565,26 +546,18 @@ export default function DesempenhoPage() {
                 </div>
 
                 <div className="h-64 relative">
-                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/5 dark:to-gray-900/5" />
                   <svg width="100%" height="100%" viewBox="0 0 400 200" className="absolute inset-0">
-                    <defs>
-                      <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#8b5cf6" />
-                        <stop offset="50%" stopColor="#ec4899" />
-                        <stop offset="100%" stopColor="#3b82f6" />
-                      </linearGradient>
-                    </defs>
                     <path
                       d="M20 160 Q60 140 100 120 Q140 100 180 80 Q220 60 260 40 Q300 20 340 10"
                       fill="none"
-                      stroke="url(#lineGradient)"
+                      stroke="#22c55e"
                       strokeWidth="4"
                       className="drop-shadow-sm"
                     />
                     <path
                       d="M20 160 Q60 140 100 120 Q140 100 180 80 Q220 60 260 40 Q300 20 340 10"
                       fill="none"
-                      stroke="url(#lineGradient)"
+                      stroke="#22c55e"
                       strokeWidth="2"
                       opacity="0.3"
                     />
@@ -596,7 +569,7 @@ export default function DesempenhoPage() {
                       { cx: 340, cy: 10, nota: '8.5' },
                     ].map((point, i) => (
                       <g key={i}>
-                        <circle cx={point.cx} cy={point.cy} r="6" fill="url(#lineGradient)" className="hover:r-8 transition-all duration-300" />
+                        <circle cx={point.cx} cy={point.cy} r="6" fill="#22c55e" className="hover:r-8 transition-all duration-300" />
                         <circle cx={point.cx} cy={point.cy} r="3" fill="white" />
                         <text x={point.cx} y={point.cy - 15} textAnchor="middle" className="text-xs font-bold fill-current text-gray-700 dark:text-gray-300">
                           {point.nota}
@@ -604,7 +577,6 @@ export default function DesempenhoPage() {
                       </g>
                     ))}
                   </svg>
-                  <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-gray-200/50 to-transparent dark:from-gray-700/50" />
                 </div>
               </div>
             </LiquidGlassCard>

@@ -9,6 +9,26 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+interface Evento {
+  hora: string
+  titulo: string
+  tipo: string
+  sala: string
+  professor: string
+  participantes: number
+  descricao: string
+  prioridade: string
+  cor: string
+}
+
+interface DayInfo {
+  day: number
+  hasEvents: boolean
+  dayName: string
+}
+
+type EventosPorDia = Record<string, Evento[]>
+
 export default function AgendaPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [selectedDay, setSelectedDay] = useState('Ter')
@@ -33,7 +53,7 @@ export default function AgendaPage() {
 
   const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
-  const eventosPorDia = {
+  const eventosPorDia: EventosPorDia = {
     Seg: [
       {
         hora: '08:00 - 09:40',
@@ -164,10 +184,10 @@ export default function AgendaPage() {
       case 'Aula':
         return {
           icon: BookOpen,
-          color: 'bg-gradient-to-r from-blue-500 to-cyan-500',
-          textColor: 'text-blue-700 dark:text-blue-300',
-          bgColor: 'bg-blue-100 dark:bg-blue-900/50',
-          borderColor: 'border-blue-200 dark:border-blue-800'
+          color: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          textColor: 'text-green-700 dark:text-green-300',
+          bgColor: 'bg-green-100 dark:bg-green-900/50',
+          borderColor: 'border-green-200 dark:border-green-800'
         }
       case 'Laboratório':
         return {
@@ -180,34 +200,34 @@ export default function AgendaPage() {
       case 'Evento':
         return {
           icon: Trophy,
-          color: 'bg-gradient-to-r from-purple-500 to-pink-500',
-          textColor: 'text-purple-700 dark:text-purple-300',
-          bgColor: 'bg-purple-100 dark:bg-purple-900/50',
-          borderColor: 'border-purple-200 dark:border-purple-800'
+          color: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          textColor: 'text-green-700 dark:text-green-300',
+          bgColor: 'bg-green-100 dark:bg-green-900/50',
+          borderColor: 'border-green-200 dark:border-green-800'
         }
       case 'Prática':
         return {
           icon: Sparkles,
-          color: 'bg-gradient-to-r from-orange-500 to-red-500',
-          textColor: 'text-orange-700 dark:text-orange-300',
-          bgColor: 'bg-orange-100 dark:bg-orange-900/50',
-          borderColor: 'border-orange-200 dark:border-orange-800'
+          color: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          textColor: 'text-green-700 dark:text-green-300',
+          bgColor: 'bg-green-100 dark:bg-green-900/50',
+          borderColor: 'border-green-200 dark:border-green-800'
         }
       case 'Atividade':
         return {
           icon: CheckCircle,
-          color: 'bg-gradient-to-r from-yellow-500 to-amber-500',
-          textColor: 'text-yellow-700 dark:text-yellow-300',
-          bgColor: 'bg-yellow-100 dark:bg-yellow-900/50',
-          borderColor: 'border-yellow-200 dark:border-yellow-800'
+          color: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          textColor: 'text-green-700 dark:text-green-300',
+          bgColor: 'bg-green-100 dark:bg-green-900/50',
+          borderColor: 'border-green-200 dark:border-green-800'
         }
       default:
         return {
           icon: Info,
-          color: 'bg-gradient-to-r from-gray-500 to-slate-500',
-          textColor: 'text-gray-700 dark:text-gray-300',
-          bgColor: 'bg-gray-100 dark:bg-gray-900/50',
-          borderColor: 'border-gray-200 dark:border-gray-800'
+          color: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          textColor: 'text-green-700 dark:text-green-300',
+          bgColor: 'bg-green-100 dark:bg-green-900/50',
+          borderColor: 'border-green-200 dark:border-green-800'
         }
     }
   }
@@ -215,15 +235,15 @@ export default function AgendaPage() {
   const getPrioridadeIcon = (prioridade: string) => {
     switch (prioridade) {
       case 'alta': return <AlertCircle className="h-3 w-3 text-red-500" />
-      case 'média': return <Clock className="h-3 w-3 text-yellow-500" />
-      case 'baixa': return <CheckCircle className="h-3 w-3 text-green-500" />
-      default: return <Info className="h-3 w-3 text-gray-500" />
+      case 'média': return <Clock className="h-3 w-3 text-green-600" />
+      case 'baixa': return <CheckCircle className="h-3 w-3 text-green-600" />
+      default: return <Info className="h-3 w-3 text-green-600" />
     }
   }
 
   // Memoized calendar days to avoid recalculation on every render
-  const calendarDays = useMemo(() => {
-    const days = []
+  const calendarDays: (DayInfo | null)[] = useMemo(() => {
+    const days: (DayInfo | null)[] = []
     const firstDay = new Date(currentYear, currentMonth, 1).getDay()
     const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate()
 
@@ -251,54 +271,54 @@ export default function AgendaPage() {
   ]
 
   return (
-    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-cyan-50/30 via-blue-50/20 to-purple-50/30 dark:from-gray-900/20 dark:via-cyan-900/10 dark:to-purple-900/10' : 'bg-background'}`}>
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-8">
           {/* Header Hero Section */}
           <div className={`relative overflow-hidden rounded-3xl border backdrop-blur-sm ${
             isLiquidGlass
-              ? 'bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 dark:from-cyan-900/30 dark:via-blue-900/30 dark:to-purple-900/30 border-cyan-200/30 dark:border-cyan-700/50'
-              : 'bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
+              ? 'bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 dark:from-green-900/30 dark:via-emerald-900/30 dark:to-green-900/30 border-green-200/30 dark:border-green-700/50'
+              : 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.05]" />
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-cyan-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
             <div className="relative p-8">
               <div className="flex items-center justify-between">
                 <div className="space-y-3">
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
                     Minha Agenda
                   </h1>
                   <p className="text-lg text-muted-foreground">
                     Organize suas aulas, eventos e compromissos acadêmicos
                   </p>
-                  <div className="flex items-center gap-6 pt-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
-                        <Calendar className="h-2 w-2 text-white" />
+                    <div className="flex items-center gap-6 pt-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                          <Calendar className="h-2 w-2 text-white" />
+                        </div>
+                        <span className="text-sm font-medium">Agenda Inteligente</span>
                       </div>
-                      <span className="text-sm font-medium">Agenda Inteligente</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                        <Bell className="h-2 w-2 text-white" />
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                          <Bell className="h-2 w-2 text-white" />
+                        </div>
+                        <span className="text-sm font-medium">Lembretes Ativos</span>
                       </div>
-                      <span className="text-sm font-medium">Lembretes Ativos</span>
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Atualizado
+                      </Badge>
                     </div>
-                    <Badge className="bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-700 dark:from-cyan-900/50 dark:to-blue-900/50 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 px-3 py-1">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Atualizado
-                    </Badge>
-                  </div>
                 </div>
                 <div className="hidden md:flex items-center space-x-4">
                   <div className="text-right">
-                    <div className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">
                       {eventosHoje.length}
                     </div>
                     <div className="text-sm text-muted-foreground">Eventos Hoje</div>
                   </div>
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
                     <Calendar className="h-10 w-10 text-white" />
                   </div>
                 </div>
@@ -312,15 +332,15 @@ export default function AgendaPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] lg:col-span-2 ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-purple-500/10 dark:from-blue-900/20 dark:via-cyan-900/10 dark:to-purple-900/20 border-blue-200/30 dark:border-blue-700/50'
-                  : 'bg-gradient-to-br from-blue-50/60 via-cyan-50/30 to-purple-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-blue-200 dark:border-blue-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
               }`}
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
               <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                       <Calendar className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -383,11 +403,11 @@ export default function AgendaPage() {
                       className={`p-3 rounded-2xl border transition-all duration-300 cursor-pointer group ${
                         dayInfo
                           ? dayInfo.hasEvents
-                            ? 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-700 hover:shadow-lg'
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 hover:shadow-lg'
                             : 'bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-white/80 dark:hover:bg-gray-800/80'
                           : 'bg-transparent'
                       } ${
-                        selectedDay === dayInfo?.dayName ? 'ring-2 ring-blue-500 shadow-lg' : ''
+                        selectedDay === dayInfo?.dayName ? 'ring-2 ring-green-500 shadow-lg' : ''
                       }`}
                       onClick={() => dayInfo?.dayName && setSelectedDay(dayInfo.dayName)}
                     >
@@ -396,7 +416,7 @@ export default function AgendaPage() {
                           <div className="font-semibold text-sm mb-2">{dayInfo.day}</div>
                           {dayInfo.hasEvents && (
                             <div className="space-y-1">
-                              {(eventosPorDia[dayInfo.dayName] || []).slice(0, 2).map((evento, idx) => (
+                              {(eventosPorDia[dayInfo.dayName] || []).slice(0, 2).map((evento: Evento, idx: number) => (
                                 <div
                                   key={idx}
                                   className={`text-xs rounded-lg px-2 py-1 ${getTipoConfig(evento.tipo).bgColor} ${getTipoConfig(evento.tipo).borderColor} border`}
@@ -407,7 +427,7 @@ export default function AgendaPage() {
                               ))}
                               {(eventosPorDia[dayInfo.dayName] || []).length > 2 && (
                                 <div className="text-xs text-center text-muted-foreground font-medium">
-                                  +{(eventosPorDia[dayInfo.dayName] || []).length - 2}
+                                  +{(eventosPorDia[dayInfo.dayName] as Evento[]).length - 2}
                                 </div>
                               )}
                             </div>
@@ -418,11 +438,11 @@ export default function AgendaPage() {
                   ))}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-blue-200/50 dark:border-blue-800/50">
+                <div className="mt-6 pt-4 border-t border-green-200/50 dark:border-green-800/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
                         <span>Com eventos</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -444,8 +464,8 @@ export default function AgendaPage() {
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-teal-500/10 dark:from-green-900/20 dark:via-emerald-900/10 dark:to-teal-900/20 border-green-200/30 dark:border-green-700/50'
-                  : 'bg-gradient-to-br from-green-50/60 via-emerald-50/30 to-teal-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-green-200 dark:border-green-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
               }`}
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
@@ -473,11 +493,15 @@ export default function AgendaPage() {
                 </div>
 
                 <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                  {eventosHoje.length > 0 ? eventosHoje.map((evento, index) => {
+                  {eventosHoje.length > 0 ? eventosHoje.map((evento: Evento, index: number) => {
                     const tipoConfig = getTipoConfig(evento.tipo)
                     const TipoIcon = tipoConfig.icon
                     return (
-                      <div key={index} className="group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg">
+                      <div key={index} className={`group relative p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                          : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                      }`}>
                         <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <div className="relative">
                           <div className="flex items-start justify-between mb-3">
@@ -574,15 +598,15 @@ export default function AgendaPage() {
             intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
             className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ${
               isLiquidGlass
-                ? 'bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-blue-500/10 dark:from-purple-900/20 dark:via-pink-900/10 dark:to-blue-900/20 border-purple-200/30 dark:border-purple-700/50'
-                : 'bg-gradient-to-br from-purple-50/60 via-pink-50/30 to-blue-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-purple-200 dark:border-purple-700'
+                ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
+                : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
             }`}
           >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-purple-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
             <div className="relative p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -597,23 +621,31 @@ export default function AgendaPage() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="group p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg">
+                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                  isLiquidGlass
+                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                }`}>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                       <BookOpen className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground">Total</div>
-                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400">24</div>
+                      <div className="text-lg font-bold text-green-600 dark:text-green-400">24</div>
                     </div>
                   </div>
                   <div className="text-sm font-medium text-foreground mb-1">Aulas</div>
-                  <div className="w-full bg-blue-200 dark:bg-blue-900/50 rounded-full h-1">
-                    <div className="w-4/5 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
+                  <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-1">
+                    <div className="w-4/5 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
                   </div>
                 </div>
 
-                <div className="group p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg">
+                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                  isLiquidGlass
+                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                }`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                       <Trophy className="h-5 w-5 text-white" />
@@ -629,46 +661,54 @@ export default function AgendaPage() {
                   </div>
                 </div>
 
-                <div className="group p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg">
+                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                  isLiquidGlass
+                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                }`}>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                       <Target className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground">Pendentes</div>
-                      <div className="text-lg font-bold text-orange-600 dark:text-orange-400">12</div>
+                      <div className="text-lg font-bold text-green-600 dark:text-green-400">12</div>
                     </div>
                   </div>
                   <div className="text-sm font-medium text-foreground mb-1">Atividades</div>
-                  <div className="w-full bg-orange-200 dark:bg-orange-900/50 rounded-full h-1">
-                    <div className="w-2/3 h-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
+                  <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-1">
+                    <div className="w-2/3 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
                   </div>
                 </div>
 
-                <div className="group p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg">
+                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                  isLiquidGlass
+                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                }`}>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                       <CheckCircle className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground">Concluídas</div>
-                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400">8</div>
+                      <div className="text-lg font-bold text-green-600 dark:text-green-400">8</div>
                     </div>
                   </div>
                   <div className="text-sm font-medium text-foreground mb-1">Avaliações</div>
-                  <div className="w-full bg-purple-200 dark:bg-purple-900/50 rounded-full h-1">
-                    <div className="w-4/5 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                  <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-1">
+                    <div className="w-4/5 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-purple-200/50 dark:border-purple-800/50">
+              <div className="mt-6 pt-4 border-t border-green-200/50 dark:border-green-800/50">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Taxa de Participação</span>
-                  <span className="font-bold text-purple-600 dark:text-purple-400">89%</span>
+                  <span className="font-bold text-green-600 dark:text-green-400">89%</span>
                 </div>
-                <div className="w-full bg-purple-200 dark:bg-purple-900/50 rounded-full h-2 mt-2">
-                  <div className="w-4/5 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full relative">
+                <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-2 mt-2">
+                  <div className="w-4/5 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
                   </div>
                 </div>

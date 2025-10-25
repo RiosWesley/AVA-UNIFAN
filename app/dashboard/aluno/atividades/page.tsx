@@ -113,21 +113,21 @@ export default function AtividadesPage() {
   }
 
   return (
-    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gradient-to-br from-blue-50/30 via-indigo-50/20 to-purple-50/30 dark:from-gray-900/20 dark:via-blue-900/10 dark:to-purple-900/10' : 'bg-background'}`}>
+    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-8">
           {/* Header Hero Section */}
-          <div className={`relative overflow-hidden rounded-3xl border backdrop-blur-sm ${
+          <div className={`relative overflow-hidden rounded-2xl border backdrop-blur-sm mb-8 p-6 ${
             isLiquidGlass
-              ? 'bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 dark:from-blue-900/30 dark:via-purple-900/30 dark:to-pink-900/30 border-blue-200/30 dark:border-blue-700/50'
-              : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
+              ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+              : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.05]" />
             <div className="relative p-8">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
-                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
                     Minhas Atividades
                   </h1>
                   <p className="text-lg text-muted-foreground">
@@ -135,21 +135,21 @@ export default function AtividadesPage() {
                   </p>
                   <div className="flex items-center gap-6 pt-2">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-pink-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
                       <span className="text-sm font-medium">Pendentes</span>
                       <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
                         {atividadesPendentes.length}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
                       <span className="text-sm font-medium">Concluídas</span>
                       <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                         {atividadesConcluidas.length}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                       <span className="text-sm font-medium">Futuras</span>
                       <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                         {atividadesFuturas.length}
@@ -164,7 +164,7 @@ export default function AtividadesPage() {
                     </div>
                     <div className="text-sm text-muted-foreground">Total de Atividades</div>
                   </div>
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center shadow-lg">
                     <Activity className="h-8 w-8 text-white" />
                   </div>
                 </div>
@@ -176,15 +176,15 @@ export default function AtividadesPage() {
           <div className="flex flex-col lg:flex-row gap-4">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`flex-1 p-6 rounded-2xl border backdrop-blur-sm ${
+              className={`flex-1 p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-2xl border-border/50 hover:border-border/80 ${
                 isLiquidGlass
-                  ? 'bg-white/20 dark:bg-gray-800/30 border-gray-200/30 dark:border-gray-700/50'
-                  : 'bg-white/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
               <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500">
-                  <Search className="h-5 w-5 text-white" />
+                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
+                  <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <Input
                   placeholder="Buscar atividades..."
@@ -197,10 +197,10 @@ export default function AtividadesPage() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`p-6 rounded-2xl border backdrop-blur-sm ${
+              className={`p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-2xl border-border/50 hover:border-border/80 ${
                 isLiquidGlass
-                  ? 'bg-white/20 dark:bg-gray-800/30 border-gray-200/30 dark:border-gray-700/50'
-                  : 'bg-white/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -237,25 +237,24 @@ export default function AtividadesPage() {
             {/* Atividades Pendentes */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-border/50 hover:border-border/80 group ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-red-500/10 via-orange-500/5 to-pink-500/10 dark:from-red-900/20 dark:via-orange-900/10 dark:to-pink-900/20 border-red-200/30 dark:border-red-700/50'
-                  : 'bg-gradient-to-br from-red-50/60 via-orange-50/30 to-pink-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-red-200 dark:border-red-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-red-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
               <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center">
-                      <Clock className="h-6 w-6 text-white" />
+                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
+                      <Clock className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Pendentes</h2>
                       <p className="text-sm text-muted-foreground">{filteredPendentes.length} atividades</p>
                     </div>
                   </div>
-                  <Badge className="bg-gradient-to-r from-red-100 to-pink-100 text-red-700 dark:from-red-900/50 dark:to-pink-900/50 dark:text-red-300 border-red-200 dark:border-red-800 px-3 py-1">
+                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
                     Urgentes
                   </Badge>
                 </div>
@@ -265,11 +264,14 @@ export default function AtividadesPage() {
                     const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
                     const PriorityIcon = prioridadeConfig.icon
                     return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-red-200/50 dark:border-red-800/30 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg ${getStatusColor(atividade.status)}`}>
-                        <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-pink-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
+                          : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
+                      }`}>
                         <div className="relative">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-foreground group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                            <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                               {atividade.titulo}
                             </h3>
                             <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
@@ -290,7 +292,7 @@ export default function AtividadesPage() {
                               </Badge>
                             </div>
                             <div className="text-right">
-                              <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                                 <CalIcon className="h-3 w-3" />
                                 <span className="font-bold">Vence: {atividade.dataVencimento}</span>
                               </div>
@@ -322,25 +324,24 @@ export default function AtividadesPage() {
             {/* Atividades Concluídas */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-border/50 hover:border-border/80 group ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-teal-500/10 dark:from-green-900/20 dark:via-emerald-900/10 dark:to-teal-900/20 border-green-200/30 dark:border-green-700/50'
-                  : 'bg-gradient-to-br from-green-50/60 via-emerald-50/30 to-teal-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-green-200 dark:border-green-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
               <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                      <CheckCircle className="h-6 w-6 text-white" />
+                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Concluídas</h2>
                       <p className="text-sm text-muted-foreground">{filteredConcluidas.length} atividades</p>
                     </div>
                   </div>
-                  <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 dark:from-green-900/50 dark:to-emerald-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
+                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
                     Sucesso
                   </Badge>
                 </div>
@@ -350,8 +351,11 @@ export default function AtividadesPage() {
                     const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
                     const PriorityIcon = prioridadeConfig.icon
                     return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-green-200/50 dark:border-green-800/30 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg ${getStatusColor(atividade.status)}`}>
-                        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
+                          : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
+                      }`}>
                         <div className="relative">
                           <div className="flex items-start justify-between mb-3">
                             <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
@@ -407,25 +411,24 @@ export default function AtividadesPage() {
             {/* Atividades Futuras */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] ${
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-border/50 hover:border-border/80 group ${
                 isLiquidGlass
-                  ? 'bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-purple-500/10 dark:from-blue-900/20 dark:via-cyan-900/10 dark:to-purple-900/20 border-blue-200/30 dark:border-blue-700/50'
-                  : 'bg-gradient-to-br from-blue-50/60 via-cyan-50/30 to-purple-50/60 dark:from-gray-800/40 dark:to-gray-900/40 border-blue-200 dark:border-blue-700'
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
               <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-                      <Target className="h-6 w-6 text-white" />
+                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
+                      <Target className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-foreground">Futuras</h2>
                       <p className="text-sm text-muted-foreground">{filteredFuturas.length} atividades</p>
                     </div>
                   </div>
-                  <Badge className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 dark:from-blue-900/50 dark:to-purple-900/50 dark:text-blue-300 border-blue-200 dark:border-blue-800 px-3 py-1">
+                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
                     Planejadas
                   </Badge>
                 </div>
@@ -435,11 +438,14 @@ export default function AtividadesPage() {
                     const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
                     const PriorityIcon = prioridadeConfig.icon
                     return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-2xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-blue-200/50 dark:border-blue-800/30 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300 hover:shadow-lg ${getStatusColor(atividade.status)}`}>
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                        isLiquidGlass
+                          ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
+                          : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
+                      }`}>
                         <div className="relative">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
                               {atividade.titulo}
                             </h3>
                             <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
@@ -460,7 +466,7 @@ export default function AtividadesPage() {
                               </Badge>
                             </div>
                             <div className="text-right">
-                              <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                                 <CalIcon className="h-3 w-3" />
                                 <span className="font-bold">Previsto: {atividade.dataVencimento}</span>
                               </div>
@@ -493,20 +499,19 @@ export default function AtividadesPage() {
           {/* Botão para adicionar nova atividade */}
           <LiquidGlassCard
             intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-            className={`group relative overflow-hidden rounded-3xl border border-dashed transition-all duration-300 hover:scale-[1.02] ${
+            className={`group relative overflow-hidden rounded-3xl border border-dashed transition-all duration-300 hover:scale-[1.02] border-border/50 hover:border-border/80 ${
               isLiquidGlass
-                ? 'bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5 dark:from-purple-900/10 dark:via-pink-900/10 dark:to-blue-900/10 border-purple-200/30 dark:border-purple-700/50'
-                : 'bg-gradient-to-r from-purple-50/30 via-pink-50/30 to-blue-50/30 dark:from-gray-800/20 dark:to-gray-900/20 border-purple-200 dark:border-purple-700'
+                ? 'bg-black/30 dark:bg-gray-800/20'
+                : 'bg-gray-50/60 dark:bg-gray-800/40'
             }`}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-pink-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative p-8 text-center">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-20 h-20 rounded-full bg-green-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Plus className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">Adicionar Nova Atividade</h3>
               <p className="text-muted-foreground mb-6">Crie uma nova tarefa para organizar seus estudos</p>
-              <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300">
+              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300">
                 <Activity className="h-5 w-5 mr-2" />
                 Criar Atividade
               </Button>
