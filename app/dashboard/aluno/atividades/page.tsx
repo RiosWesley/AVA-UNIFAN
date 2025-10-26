@@ -243,7 +243,7 @@ export default function AtividadesPage() {
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="relative p-6">
+              <div className="relative py-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
@@ -330,7 +330,7 @@ export default function AtividadesPage() {
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="relative p-6">
+              <div className="relative py-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
@@ -417,7 +417,7 @@ export default function AtividadesPage() {
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="relative p-6">
+              <div className="relative py-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
@@ -496,27 +496,6 @@ export default function AtividadesPage() {
             </LiquidGlassCard>
           </div>
 
-          {/* Botão para adicionar nova atividade */}
-          <LiquidGlassCard
-            intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-            className={`group relative overflow-hidden rounded-3xl border border-dashed transition-all duration-300 hover:scale-[1.02] border-border/50 hover:border-border/80 ${
-              isLiquidGlass
-                ? 'bg-black/30 dark:bg-gray-800/20'
-                : 'bg-gray-50/60 dark:bg-gray-800/40'
-            }`}
-          >
-            <div className="relative p-8 text-center">
-              <div className="w-20 h-20 rounded-full bg-green-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Plus className="h-10 w-10 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">Adicionar Nova Atividade</h3>
-              <p className="text-muted-foreground mb-6">Crie uma nova tarefa para organizar seus estudos</p>
-              <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300">
-                <Activity className="h-5 w-5 mr-2" />
-                Criar Atividade
-              </Button>
-            </div>
-          </LiquidGlassCard>
         </div>
       </main>
     </div>
