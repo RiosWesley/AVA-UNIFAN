@@ -5,6 +5,7 @@ import { JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({
         >
           <Suspense fallback={null}>{children}</Suspense>
           <Analytics />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

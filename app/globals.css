@@ -118,6 +118,102 @@
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 4px 16px 0 rgba(0, 0, 0, 0.3);
 }
 
+/* Liquid Glass - Enhanced validation visual styles */
+.liquid-glass .imported-note-container {
+  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+  background: rgba(34, 197, 94, 0.08) !important;
+  backdrop-filter: blur(10px) saturate(150%);
+  box-shadow: inset 0 1px 0 0 rgba(34, 197, 94, 0.1), 0 4px 16px 0 rgba(34, 197, 94, 0.1);
+}
+
+.liquid-glass .imported-note-container:hover {
+  border: 1px solid rgba(34, 197, 94, 0.6) !important;
+  background: rgba(34, 197, 94, 0.12) !important;
+  box-shadow: inset 0 1px 0 0 rgba(34, 197, 94, 0.15), 0 8px 24px 0 rgba(34, 197, 94, 0.15);
+}
+
+.liquid-glass .imported-note-input {
+  border: 1px solid rgba(34, 197, 94, 0.5) !important;
+  background: rgba(34, 197, 94, 0.1) !important;
+  backdrop-filter: blur(5px);
+}
+
+.liquid-glass .imported-note-input:focus {
+  border: 1px solid rgba(34, 197, 94, 0.7) !important;
+  background: rgba(34, 197, 94, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
+}
+
+/* Dark Mode - Enhanced validation visual styles */
+.dark .imported-note-container {
+  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+  background: rgba(34, 197, 94, 0.08) !important;
+}
+
+.dark .imported-note-container:hover {
+  border: 1px solid rgba(34, 197, 94, 0.6) !important;
+  background: rgba(34, 197, 94, 0.12) !important;
+}
+
+.dark .imported-note-input {
+  border: 1px solid rgba(34, 197, 94, 0.5) !important;
+  background: rgba(34, 197, 94, 0.1) !important;
+}
+
+.dark .imported-note-input:focus {
+  border: 1px solid rgba(34, 197, 94, 0.7) !important;
+  background: rgba(34, 197, 94, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3) !important;
+}
+
+/* Liquid Glass Toast Styles */
+.liquid-glass [data-sonner-toaster] {
+  backdrop-filter: blur(20px) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.liquid-glass [data-sonner-toast] {
+  backdrop-filter: blur(15px) saturate(180%) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.liquid-glass [data-sonner-toast] [data-close-button] {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.liquid-glass [data-sonner-toast] [data-close-button]:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* Dark Mode Toast Styles */
+.dark [data-sonner-toaster] {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(51, 65, 85, 0.5) !important;
+}
+
+.dark [data-sonner-toast] {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border: 1px solid rgba(51, 65, 85, 0.5) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+
+.dark [data-sonner-toast] [data-close-button] {
+  background: rgba(51, 65, 85, 0.5) !important;
+  border: 1px solid rgba(71, 85, 105, 0.5) !important;
+  color: rgba(241, 245, 249, 0.8) !important;
+}
+
+.dark [data-sonner-toast] [data-close-button]:hover {
+  background: rgba(71, 85, 105, 0.7) !important;
+  color: rgba(241, 245, 249, 1) !important;
+}
+
 .liquid-glass .glass-effect:hover {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.25);

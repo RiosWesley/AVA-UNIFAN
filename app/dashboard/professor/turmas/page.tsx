@@ -44,6 +44,12 @@ interface Turma {
   aulas: Aula[]
 }
 
+interface Aluno {
+  id: string
+  nome: string
+  matricula: string
+}
+
 export default function ProfessorTurmasPage() {
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -63,10 +69,34 @@ export default function ProfessorTurmasPage() {
       atividades: 3,
       avaliacoes: 2,
       listaAlunos: [
-        { id: "1", nome: "Ana Silva", matricula: "2024001" },
-        { id: "2", nome: "Bruno Costa", matricula: "2024002" },
-        { id: "3", nome: "Carla Santos", matricula: "2024003" },
-        // ... outros alunos
+        { id: "1", nome: "Ana Silva", matricula: "231550652" },
+        { id: "2", nome: "Bruno Costa", matricula: "231550653" },
+        { id: "3", nome: "Carla Santos", matricula: "231550654" },
+        { id: "4", nome: "Daniel Oliveira", matricula: "231550655" },
+        { id: "5", nome: "Elisa Pereira", matricula: "231550656" },
+        { id: "6", nome: "Felipe Rodrigues", matricula: "231550657" },
+        { id: "7", nome: "Gabriela Lima", matricula: "231550658" },
+        { id: "8", nome: "Henrique Alves", matricula: "231550659" },
+        { id: "9", nome: "Isabela Cruz", matricula: "231550660" },
+        { id: "10", nome: "João Mendes", matricula: "231550661" },
+        { id: "11", nome: "Karina Dias", matricula: "231550662" },
+        { id: "12", nome: "Lucas Ferreira", matricula: "231550663" },
+        { id: "13", nome: "Mariana Gomes", matricula: "231550664" },
+        { id: "14", nome: "Nathan Cardoso", matricula: "231550665" },
+        { id: "15", nome: "Olivia Barbosa", matricula: "231550666" },
+        { id: "16", nome: "Pedro Castro", matricula: "231550667" },
+        { id: "17", nome: "Quintino Azevedo", matricula: "231550668" },
+        { id: "18", nome: "Rafaela Borges", matricula: "231550669" },
+        { id: "19", nome: "Santiago Campos", matricula: "231550670" },
+        { id: "20", nome: "Tatiana Diniz", matricula: "231550671" },
+        { id: "21", nome: "Ulisses Evaristo", matricula: "231550672" },
+        { id: "22", nome: "Vanessa Freitas", matricula: "231550673" },
+        { id: "23", nome: "Wesley Garcia", matricula: "231550674" },
+        { id: "24", nome: "Ximena Herrera", matricula: "231550675" },
+        { id: "25", nome: "Yasmin Ignacio", matricula: "231550676" },
+        { id: "26", nome: "Zeca Joaquim", matricula: "231550677" },
+        { id: "27", nome: "Amanda Keli", matricula: "231550678" },
+        { id: "28", nome: "Bernardo Lopes", matricula: "231550679" },
       ],
       aulas: [
         {
@@ -106,9 +136,31 @@ export default function ProfessorTurmasPage() {
       atividades: 2,
       avaliacoes: 1,
       listaAlunos: [
-        { id: "4", nome: "Daniel Oliveira", matricula: "2024004" },
-        { id: "5", nome: "Elisa Pereira", matricula: "2024005" },
-        // ... outros alunos
+        { id: "29", nome: "Daniel Oliveira", matricula: "231550680" },
+        { id: "30", nome: "Elisa Pereira", matricula: "231550681" },
+        { id: "31", nome: "Fernando Quintas", matricula: "231550682" },
+        { id: "32", nome: "Gabriela Torres", matricula: "231550683" },
+        { id: "33", nome: "Hugo Uchoa", matricula: "231550684" },
+        { id: "34", nome: "Iris Vasconcelos", matricula: "231550685" },
+        { id: "35", nome: "Júlio Wagner", matricula: "231550686" },
+        { id: "36", nome: "Kátia Xavier", matricula: "231550687" },
+        { id: "37", nome: "Leonardo Yamasaki", matricula: "231550688" },
+        { id: "38", nome: "Mônica Zancanela", matricula: "231550689" },
+        { id: "39", nome: "Nícolas Alves", matricula: "231550690" },
+        { id: "40", nome: "Otávio Borges", matricula: "231550691" },
+        { id: "41", nome: "Patrícia Castro", matricula: "231550692" },
+        { id: "42", nome: "Quésia Dias", matricula: "231550693" },
+        { id: "43", nome: "Roberto Elias", matricula: "231550694" },
+        { id: "44", nome: "Sônia Freitas", matricula: "231550695" },
+        { id: "45", nome: "Tiago Garcia", matricula: "231550696" },
+        { id: "46", nome: "Ursula Herrera", matricula: "231550697" },
+        { id: "47", nome: "Victor Ignacio", matricula: "231550698" },
+        { id: "48", nome: "Wanda Joaquim", matricula: "231550699" },
+        { id: "49", nome: "Xuxa Keli", matricula: "231550700" },
+        { id: "50", nome: "Yuri Lopes", matricula: "231550701" },
+        { id: "51", nome: "Zara Mendes", matricula: "231550702" },
+        { id: "52", nome: "André Nogueira", matricula: "231550703" },
+        { id: "53", nome: "Bruna Oliveira", matricula: "231550704" },
       ],
       aulas: [
         {
@@ -132,9 +184,36 @@ export default function ProfessorTurmasPage() {
       atividades: 4,
       avaliacoes: 3,
       listaAlunos: [
-        { id: "6", nome: "Felipe Rodrigues", matricula: "2024006" },
-        { id: "7", nome: "Gabriela Lima", matricula: "2024007" },
-        // ... outros alunos
+        { id: "54", nome: "Felipe Rodrigues", matricula: "231550705" },
+        { id: "55", nome: "Gabriela Lima", matricula: "231550706" },
+        { id: "56", nome: "Heitor Moreira", matricula: "231550707" },
+        { id: "57", nome: "Ivana Nunes", matricula: "231550708" },
+        { id: "58", nome: "Jorge Oliveira", matricula: "231550709" },
+        { id: "59", nome: "Kelly Pinto", matricula: "231550710" },
+        { id: "60", nome: "Luiz Queiroz", matricula: "231550711" },
+        { id: "61", nome: "Marta Ribeiro", matricula: "231550712" },
+        { id: "62", nome: "Nelson Santos", matricula: "231550713" },
+        { id: "63", nome: "Ornela Tavares", matricula: "231550714" },
+        { id: "64", nome: "Paulo Uchôa", matricula: "231550715" },
+        { id: "65", nome: "Quezia Vargas", matricula: "231550716" },
+        { id: "66", nome: "Rafael Williams", matricula: "231550717" },
+        { id: "67", nome: "Sueli Xavier", matricula: "231550718" },
+        { id: "68", nome: "Túlio Yamasaki", matricula: "231550719" },
+        { id: "69", nome: "Umbelina Zancanela", matricula: "231550720" },
+        { id: "70", nome: "Vinícius Alves", matricula: "231550721" },
+        { id: "71", nome: "Wellington Borges", matricula: "231550722" },
+        { id: "72", nome: "Xênia Castro", matricula: "231550723" },
+        { id: "73", nome: "Yago Dias", matricula: "231550724" },
+        { id: "74", nome: "Zilda Elias", matricula: "231550725" },
+        { id: "75", nome: "Antônio Freitas", matricula: "231550726" },
+        { id: "76", nome: "Beatriz Garcia", matricula: "231550727" },
+        { id: "77", nome: "Caio Herrera", matricula: "231550728" },
+        { id: "78", nome: "Débora Ignacio", matricula: "231550729" },
+        { id: "79", nome: "Eduardo Joaquim", matricula: "231550730" },
+        { id: "80", nome: "Fábia Keli", matricula: "231550731" },
+        { id: "81", nome: "Gustavo Lopes", matricula: "231550732" },
+        { id: "82", nome: "Helena Mendes", matricula: "231550733" },
+        { id: "83", nome: "Ícaro Nogueira", matricula: "231550734" },
       ],
       aulas: [
         {

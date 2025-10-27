@@ -9,10 +9,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2 } from "lucide-react"
+import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X } from "lucide-react"
 import Link from "next/link"
+import * as XLSX from 'xlsx'
+import { saveAs } from 'file-saver'
+import { useRef, useState, useEffect } from 'react'
+import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
 
 export default function TurmaDetalhePage() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [notasImportadas, setNotasImportadas] = useState<Record<string, string>>({})
+  const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
   const turma = {
     nome: "9º Ano A",
     disciplina: "Matemática",
@@ -22,11 +31,11 @@ export default function TurmaDetalhePage() {
   }
 
   const alunos = [
-    { id: 1, nome: "Ana Silva", media: 8.5, frequencia: 95, situacao: "Aprovado" },
-    { id: 2, nome: "Bruno Santos", media: 7.2, frequencia: 88, situacao: "Aprovado" },
-    { id: 3, nome: "Carlos Oliveira", media: 6.8, frequencia: 92, situacao: "Recuperação" },
-    { id: 4, nome: "Diana Costa", media: 9.1, frequencia: 98, situacao: "Aprovado" },
-    { id: 5, nome: "Eduardo Lima", media: 5.5, frequencia: 75, situacao: "Reprovado" },
+    { id: 1, nome: "Ana Silva", matricula: "231550652", media: 8.5, frequencia: 95, situacao: "Aprovado" },
+    { id: 2, nome: "Bruno Santos", matricula: "231550653", media: 7.2, frequencia: 88, situacao: "Aprovado" },
+    { id: 3, nome: "Carlos Oliveira", matricula: "231550654", media: 6.8, frequencia: 92, situacao: "Recuperação" },
+    { id: 4, nome: "Diana Costa", matricula: "231550655", media: 9.1, frequencia: 98, situacao: "Aprovado" },
+    { id: 5, nome: "Eduardo Lima", matricula: "231550656", media: 5.5, frequencia: 75, situacao: "Reprovado" },
   ]
 
   const atividades = [
@@ -64,6 +73,186 @@ export default function TurmaDetalhePage() {
     { id: 2, nome: "Lista de Exercícios 03", tipo: "PDF", data: "08/03/2024" },
     { id: 3, nome: "Vídeo Aula - Sistemas Lineares", tipo: "MP4", data: "05/03/2024" },
   ]
+
+  const generateExcelModel = () => {
+    // Preparar dados para o Excel
+    const excelData = [
+      ['Nº DE MATRÍCULA', 'NOME COMPLETO', 'NOTA'], // Cabeçalhos
+      ...alunos.map(aluno => [aluno.matricula, aluno.nome, '']) // Dados dos alunos
+    ]
+
+    // Criar workbook e worksheet
+    const workbook = XLSX.utils.book_new()
+    const worksheet = XLSX.utils.aoa_to_sheet(excelData)
+
+    // Definir largura das colunas
+    worksheet['!cols'] = [
+      { wch: 15 }, // Largura coluna matrícula
+      { wch: 30 }, // Largura coluna nome
+      { wch: 10 }  // Largura coluna nota
+    ]
+
+    // Adicionar worksheet ao workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Notas')
+
+    // Gerar arquivo Excel
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+    // Nome do arquivo
+    const fileName = `modelo_notas_${turma.nome.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`
+
+    // Download do arquivo
+    saveAs(blob, fileName)
+  }
+
+  const handleImportExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Verificar se é um arquivo Excel
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toastImportError(
+        'Formato inválido',
+        'Por favor, selecione um arquivo Excel (.xlsx ou .xls)'
+      )
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer)
+        const workbook = XLSX.read(data, { type: 'array' })
+
+        // Pegar a primeira worksheet
+        const worksheetName = workbook.SheetNames[0]
+        const worksheet = workbook.Sheets[worksheetName]
+
+        // Converter para array de arrays
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as (string | number)[][]
+
+        // Verificar se tem dados
+        if (jsonData.length < 2) {
+          toastImportError(
+            'Arquivo vazio',
+            'O arquivo Excel está vazio ou não contém dados válidos'
+          )
+          return
+        }
+
+        // Verificar cabeçalhos
+        const headers = jsonData[0] as string[]
+        const expectedHeaders = ['Nº DE MATRÍCULA', 'NOME COMPLETO', 'NOTA']
+
+        const hasValidHeaders = expectedHeaders.every(header =>
+          headers.some(h => h?.toString().toUpperCase().includes(header.replace('Nº DE ', '').replace(' COMPLETO', '')))
+        )
+
+        if (!hasValidHeaders) {
+          toastImportError(
+            'Formato inválido',
+            'O arquivo Excel não possui o formato esperado. Use o modelo exportado.'
+          )
+          return
+        }
+
+        // Processar dados
+        const notasProcessadas: Record<string, string> = {}
+        const errosValidacao: string[] = []
+
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i] as (string | number)[]
+          if (row.length >= 3) {
+            const matricula = row[0]?.toString().trim()
+            const nome = row[1]?.toString().trim()
+            const nota = row[2]?.toString().trim()
+
+            if (matricula && nome) {
+              // Validar nota
+              const notaNumerica = parseFloat(nota || '')
+              if (nota && (isNaN(notaNumerica) || notaNumerica < 0 || notaNumerica > 10)) {
+                errosValidacao.push(`Nota inválida para ${nome}: ${nota}`)
+                continue
+              }
+
+              // Encontrar o aluno correspondente
+              const aluno = alunos.find(a =>
+                a.matricula === matricula ||
+                a.nome.toLowerCase() === nome.toLowerCase()
+              )
+
+              if (aluno) {
+                notasProcessadas[aluno.id] = nota || ''
+              } else {
+                errosValidacao.push(`Aluno não encontrado: ${nome} (${matricula})`)
+              }
+            }
+          }
+        }
+
+        // Atualizar estado com as notas importadas
+        setNotasImportadas(notasProcessadas)
+
+        const count = Object.keys(notasProcessadas).length
+        if (count > 0) {
+          toastImportSuccess(count, errosValidacao)
+        } else {
+          if (errosValidacao.length > 0) {
+            toastImportWarning(
+              'Nenhuma nota válida encontrada',
+              `Foram encontrados ${errosValidacao.length} erro(s):\n${errosValidacao.slice(0, 3).join('\n')}${errosValidacao.length > 3 ? '\n...' : ''}`
+            )
+          } else {
+            toastImportWarning(
+              'Nenhuma nota válida encontrada',
+              'O arquivo Excel não contém dados válidos para importação.'
+            )
+          }
+        }
+
+      } catch (error) {
+        console.error('Erro ao processar arquivo:', error)
+        toastImportError(
+          'Erro no processamento',
+          'Erro ao processar o arquivo Excel. Verifique se o formato está correto.'
+        )
+      }
+    }
+
+    reader.readAsArrayBuffer(file)
+
+    // Limpar o input para permitir re-upload do mesmo arquivo
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const clearImportedNotes = () => {
+    setNotasImportadas({})
+    toastInfo('Notas limpas', 'Todas as notas importadas foram removidas com sucesso.')
+  }
+
+  // Detectar temas (liquid glass e dark mode)
+  useEffect(() => {
+    const checkThemes = () => {
+      if (typeof document !== 'undefined') {
+        setIsLiquidGlass(document.documentElement.classList.contains('liquid-glass'))
+        setIsDarkMode(document.documentElement.classList.contains('dark'))
+      }
+    }
+
+    checkThemes()
+
+    // Observar mudanças no tema
+    const observer = new MutationObserver(checkThemes)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div className="flex h-screen bg-background">
@@ -255,8 +444,35 @@ export default function TurmaDetalhePage() {
             <TabsContent value="notas">
               <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
-                  <CardTitle>Lançamento de Notas</CardTitle>
-                  <CardDescription>Registre as notas dos alunos</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Lançamento de Notas</CardTitle>
+                      <CardDescription>Registre as notas dos alunos</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <LiquidGlassButton
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="outline"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importar Notas
+                      </LiquidGlassButton>
+                      {Object.keys(notasImportadas).length > 0 && (
+                        <LiquidGlassButton
+                          onClick={clearImportedNotes}
+                          variant="outline"
+                          className="text-destructive hover:text-destructive border-destructive/50 hover:border-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Limpar Importado
+                        </LiquidGlassButton>
+                      )}
+                      <LiquidGlassButton onClick={generateExcelModel} variant="outline">
+                        <Download className="h-4 w-4 mr-2" />
+                        Exportar Modelo Excel
+                      </LiquidGlassButton>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -277,11 +493,52 @@ export default function TurmaDetalhePage() {
                     </div>
 
                     <div className="space-y-3">
-                      <h4 className="font-medium">Notas dos Alunos</h4>
-                      {alunos.slice(0, 5).map((aluno) => (
-                        <div key={aluno.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <span className="font-medium">{aluno.nome}</span>
-                          <Input type="number" placeholder="0.0" className="w-20" min="0" max="10" step="0.1" />
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Notas dos Alunos</h4>
+                        {Object.keys(notasImportadas).length > 0 && (
+                          <Badge
+                            variant="default"
+                            className="bg-accent/20 text-accent-foreground hover:bg-accent/30 border border-accent/30"
+                          >
+                            ✅ {Object.keys(notasImportadas).length} notas importadas
+                          </Badge>
+                        )}
+                      </div>
+                      {alunos.map((aluno) => (
+                        <div
+                          key={aluno.id}
+                          className={`flex items-center justify-between p-3 border rounded-lg transition-all duration-200 ${
+                            notasImportadas[aluno.id]
+                              ? isLiquidGlass
+                                ? 'imported-note-container'
+                                : 'border-accent/50 bg-accent/5 hover:border-accent/70'
+                              : 'border-border hover:border-border/80'
+                          }`}
+                        >
+                          <div className="flex-1">
+                            <span className="font-medium">{aluno.nome}</span>
+                            <p className="text-sm text-muted-foreground">Matrícula: {aluno.matricula}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              placeholder="0.0"
+                              className={`w-20 transition-all duration-200 ${
+                                notasImportadas[aluno.id]
+                                  ? isLiquidGlass
+                                    ? 'imported-note-input'
+                                    : 'border-accent/60 bg-accent/10 focus:border-accent focus:ring-accent/20'
+                                  : 'border-border focus:border-ring'
+                              }`}
+                              min="0"
+                              max="10"
+                              step="0.1"
+                              defaultValue={notasImportadas[aluno.id] || ''}
+                            />
+                            {notasImportadas[aluno.id] && (
+                              <CheckCircle className="h-4 w-4 text-accent animate-in fade-in duration-200" />
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -294,6 +551,15 @@ export default function TurmaDetalhePage() {
           </Tabs>
         </div>
       </main>
+
+      {/* Input file oculto para importação do Excel */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        onChange={handleImportExcel}
+        className="hidden"
+      />
     </div>
   )
 }
