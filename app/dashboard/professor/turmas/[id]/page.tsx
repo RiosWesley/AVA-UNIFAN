@@ -15,7 +15,7 @@ import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
-import { ModalEntregasAtividade } from '@/components/modals'
+import { ModalEntregasAtividade, ModalAtividade } from '@/components/modals'
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -24,6 +24,9 @@ export default function TurmaDetalhePage() {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [modalEntregasOpen, setModalEntregasOpen] = useState(false)
   const [atividadeSelecionada, setAtividadeSelecionada] = useState<any>(null)
+  const [modalAtividadeOpen, setModalAtividadeOpen] = useState(false)
+  const [atividadeEditando, setAtividadeEditando] = useState<any>(null)
+  const [modoModalAtividade, setModoModalAtividade] = useState<'criar' | 'editar'>('criar')
 
   const turma = {
     nome: "9º Ano A",
@@ -316,6 +319,25 @@ export default function TurmaDetalhePage() {
     })
   }
 
+  const handleNovaAtividade = () => {
+    setModoModalAtividade('criar')
+    setAtividadeEditando(null)
+    setModalAtividadeOpen(true)
+  }
+
+  const handleEditarAtividade = (atividade: any) => {
+    setModoModalAtividade('editar')
+    setAtividadeEditando(atividade)
+    setModalAtividadeOpen(true)
+  }
+
+  const handleSalvarAtividade = (atividade: any) => {
+    console.log('Atividade salva:', atividade)
+    // Aqui você implementaria a lógica para salvar a atividade no backend
+    // Por enquanto, apenas fecha o modal
+    setModalAtividadeOpen(false)
+  }
+
   // Detectar temas (liquid glass e dark mode)
   useEffect(() => {
     const checkThemes = () => {
@@ -444,7 +466,7 @@ export default function TurmaDetalhePage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Atividades da Turma</h3>
-                  <LiquidGlassButton>
+                  <LiquidGlassButton onClick={handleNovaAtividade}>
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Atividade
                   </LiquidGlassButton>
@@ -464,7 +486,11 @@ export default function TurmaDetalhePage() {
                           <Badge variant={atividade.status === "Concluída" ? "default" : "secondary"}>
                             {atividade.status}
                           </Badge>
-                          <LiquidGlassButton size="sm" variant="outline">
+                          <LiquidGlassButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditarAtividade(atividade)}
+                          >
                             <Edit className="h-4 w-4" />
                           </LiquidGlassButton>
                           <LiquidGlassButton size="sm" variant="outline">
@@ -659,6 +685,15 @@ export default function TurmaDetalhePage() {
           onSalvarNotas={handleSalvarNotas}
         />
       )}
+
+      {/* Modal de Atividade */}
+      <ModalAtividade
+        isOpen={modalAtividadeOpen}
+        onClose={() => setModalAtividadeOpen(false)}
+        atividade={atividadeEditando}
+        onSalvar={handleSalvarAtividade}
+        modo={modoModalAtividade}
+      />
     </div>
   )
 }
