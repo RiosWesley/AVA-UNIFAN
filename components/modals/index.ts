@@ -1,3 +1,6 @@
 export { FrequencyModal } from './frequency-modal'
 export { ModalEntregasAtividade } from './modal-entregas-atividade'
 export { ModalAtividade } from './modal-atividade'
+export { ModalDeletarAtividade } from './modal-deletar-atividade'
+export { ModalMaterial } from './modal-material'
+export { ModalDetalhesAluno } from './modal-detalhes-aluno'

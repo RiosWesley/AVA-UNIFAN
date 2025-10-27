@@ -15,7 +15,7 @@ import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
-import { ModalEntregasAtividade, ModalAtividade } from '@/components/modals'
+import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno } from '@/components/modals'
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -27,6 +27,13 @@ export default function TurmaDetalhePage() {
   const [modalAtividadeOpen, setModalAtividadeOpen] = useState(false)
   const [atividadeEditando, setAtividadeEditando] = useState<any>(null)
   const [modoModalAtividade, setModoModalAtividade] = useState<'criar' | 'editar'>('criar')
+  const [modalDeletarOpen, setModalDeletarOpen] = useState(false)
+  const [atividadeParaDeletar, setAtividadeParaDeletar] = useState<any>(null)
+  const [modalMaterialOpen, setModalMaterialOpen] = useState(false)
+  const [materialEditando, setMaterialEditando] = useState<any>(null)
+  const [modoModalMaterial, setModoModalMaterial] = useState<'criar' | 'editar'>('criar')
+  const [modalDetalhesAlunoOpen, setModalDetalhesAlunoOpen] = useState(false)
+  const [alunoSelecionado, setAlunoSelecionado] = useState<any>(null)
 
   const turma = {
     nome: "9º Ano A",
@@ -338,6 +345,48 @@ export default function TurmaDetalhePage() {
     setModalAtividadeOpen(false)
   }
 
+  const handleExcluirAtividade = (atividade: any) => {
+    setAtividadeParaDeletar(atividade)
+    setModalDeletarOpen(true)
+  }
+
+  const handleConfirmarExclusao = (itemId: number) => {
+    console.log('Item excluído:', itemId)
+    // Aqui você implementaria a lógica para excluir o item do backend
+    // Por enquanto, apenas fecha o modal
+    setModalDeletarOpen(false)
+    setAtividadeParaDeletar(null)
+  }
+
+  const handleNovoMaterial = () => {
+    setModoModalMaterial('criar')
+    setMaterialEditando(null)
+    setModalMaterialOpen(true)
+  }
+
+  const handleEditarMaterial = (material: any) => {
+    setModoModalMaterial('editar')
+    setMaterialEditando(material)
+    setModalMaterialOpen(true)
+  }
+
+  const handleSalvarMaterial = (material: any) => {
+    console.log('Material salvo:', material)
+    // Aqui você implementaria a lógica para salvar o material no backend
+    // Por enquanto, apenas fecha o modal
+    setModalMaterialOpen(false)
+  }
+
+  const handleExcluirMaterial = (material: any) => {
+    setAtividadeParaDeletar(material)
+    setModalDeletarOpen(true)
+  }
+
+  const handleVerDetalhesAluno = (aluno: any) => {
+    setAlunoSelecionado(aluno)
+    setModalDetalhesAlunoOpen(true)
+  }
+
   // Detectar temas (liquid glass e dark mode)
   useEffect(() => {
     const checkThemes = () => {
@@ -451,7 +500,11 @@ export default function TurmaDetalhePage() {
                           >
                             {aluno.situacao}
                           </Badge>
-                          <LiquidGlassButton size="sm" variant="outline">
+                          <LiquidGlassButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVerDetalhesAluno(aluno)}
+                          >
                             Ver Detalhes
                           </LiquidGlassButton>
                         </div>
@@ -493,7 +546,11 @@ export default function TurmaDetalhePage() {
                           >
                             <Edit className="h-4 w-4" />
                           </LiquidGlassButton>
-                          <LiquidGlassButton size="sm" variant="outline">
+                          <LiquidGlassButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleExcluirAtividade(atividade)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </LiquidGlassButton>
                         </div>
@@ -521,7 +578,7 @@ export default function TurmaDetalhePage() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Materiais da Disciplina</h3>
-                  <LiquidGlassButton>
+                  <LiquidGlassButton onClick={handleNovoMaterial}>
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Material
                   </LiquidGlassButton>
@@ -541,10 +598,18 @@ export default function TurmaDetalhePage() {
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          <LiquidGlassButton size="sm" variant="outline">
+                          <LiquidGlassButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditarMaterial(material)}
+                          >
                             <Edit className="h-4 w-4" />
                           </LiquidGlassButton>
-                          <LiquidGlassButton size="sm" variant="outline">
+                          <LiquidGlassButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleExcluirMaterial(material)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </LiquidGlassButton>
                         </div>
@@ -693,6 +758,31 @@ export default function TurmaDetalhePage() {
         atividade={atividadeEditando}
         onSalvar={handleSalvarAtividade}
         modo={modoModalAtividade}
+      />
+
+      {/* Modal de Material */}
+      <ModalMaterial
+        isOpen={modalMaterialOpen}
+        onClose={() => setModalMaterialOpen(false)}
+        material={materialEditando}
+        onSalvar={handleSalvarMaterial}
+        modo={modoModalMaterial}
+      />
+
+      {/* Modal de Detalhes do Aluno */}
+      <ModalDetalhesAluno
+        isOpen={modalDetalhesAlunoOpen}
+        onClose={() => setModalDetalhesAlunoOpen(false)}
+        aluno={alunoSelecionado}
+      />
+
+      {/* Modal de Deletar Atividade/Material */}
+      <ModalDeletarAtividade
+        isOpen={modalDeletarOpen}
+        onClose={() => setModalDeletarOpen(false)}
+        item={atividadeParaDeletar}
+        tipo={atividadeParaDeletar?.titulo ? 'atividade' : 'material'}
+        onConfirmarDelete={handleConfirmarExclusao}
       />
     </div>
   )
