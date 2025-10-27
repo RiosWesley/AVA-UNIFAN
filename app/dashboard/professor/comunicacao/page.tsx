@@ -110,7 +110,7 @@ export default function ProfessorComunicacaoPage() {
             <TabsContent value="mensagens">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
-                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle>Caixa de Entrada</CardTitle>
                       <CardDescription>3 mensagens não lidas</CardDescription>
@@ -139,7 +139,7 @@ export default function ProfessorComunicacaoPage() {
                 </div>
 
                 <div className="lg:col-span-2">
-                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle>Dúvida sobre exercício</CardTitle>
                       <CardDescription>De: Ana Silva (9º A) • Hoje, 15:20</CardDescription>
@@ -178,7 +178,7 @@ export default function ProfessorComunicacaoPage() {
                 </div>
 
                 {forumTopicos.map((topico) => (
-                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={topico.id}>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={topico.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -218,7 +218,7 @@ export default function ProfessorComunicacaoPage() {
                 </div>
 
                 {avisos.map((aviso) => (
-                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={aviso.id}>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={aviso.id}>
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">

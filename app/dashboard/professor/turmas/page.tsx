@@ -21,6 +21,7 @@ interface Aula {
   status: 'agendada' | 'lancada' | 'retificada'
   alunosPresentes?: string[]
   dataLancamento?: Date
+  aulaIndex?: number // Para ordenar temporalmente as aulas do mesmo dia
 }
 
 interface Aluno {
@@ -53,8 +54,8 @@ interface Aluno {
 export default function ProfessorTurmasPage() {
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedAula, setSelectedAula] = useState<Aula | null>(null)
-  const [frequenciaData, setFrequenciaData] = useState<Record<string, boolean>>({})
+  const [selectedAulas, setSelectedAulas] = useState<Aula[]>([])
+  const [frequenciaData, setFrequenciaData] = useState<Record<string, Record<string, boolean>>>({})
 
   const turmas: Turma[] = [
     {
@@ -105,22 +106,41 @@ export default function ProfessorTurmasPage() {
           horario: "08:00 - 09:40",
           sala: "A-101",
           status: 'agendada',
+          aulaIndex: 0,
         },
         {
           id: "2",
+          data: new Date(), // Mesmo dia
+          horario: "10:00 - 11:40",
+          sala: "A-101",
+          status: 'agendada',
+          aulaIndex: 1,
+        },
+        {
+          id: "3",
+          data: new Date(), // Mesmo dia
+          horario: "14:00 - 15:40",
+          sala: "A-101",
+          status: 'agendada',
+          aulaIndex: 2,
+        },
+        {
+          id: "4",
           data: new Date(Date.now() + 24 * 60 * 60 * 1000), // amanhã
           horario: "08:00 - 09:40",
           sala: "A-101",
           status: 'agendada',
+          aulaIndex: 0,
         },
         {
-          id: "3",
+          id: "5",
           data: new Date(Date.now() - 24 * 60 * 60 * 1000), // ontem
           horario: "08:00 - 09:40",
           sala: "A-101",
           status: 'lancada',
           alunosPresentes: ["1", "2", "3"],
-          dataLancamento: new Date(Date.now() - 24 * 60 * 60 * 1000)
+          dataLancamento: new Date(Date.now() - 24 * 60 * 60 * 1000),
+          aulaIndex: 0,
         },
       ]
     },
@@ -232,26 +252,62 @@ export default function ProfessorTurmasPage() {
     return date.toDateString() === today.toDateString()
   }
 
+  // Função para agrupar aulas do mesmo dia
+  const getAulasDoMesmoDia = (turma: Turma, aula: Aula): Aula[] => {
+    return turma.aulas
+      .filter(a => a.data.toDateString() === aula.data.toDateString())
+      .sort((a, b) => (a.aulaIndex ?? 0) - (b.aulaIndex ?? 0))
+  }
+
+  // Função para agrupar aulas por data
+  const groupAulasByDate = (aulas: Aula[]) => {
+    const grouped = aulas.reduce((acc, aula) => {
+      const dateKey = aula.data.toDateString()
+      if (!acc[dateKey]) {
+        acc[dateKey] = []
+      }
+      acc[dateKey].push(aula)
+      return acc
+    }, {} as Record<string, Aula[]>)
+
+    // Ordenar aulas dentro de cada data por aulaIndex
+    Object.keys(grouped).forEach(dateKey => {
+      grouped[dateKey].sort((a, b) => (a.aulaIndex ?? 0) - (b.aulaIndex ?? 0))
+    })
+
+    return grouped
+  }
+
   const handleLancarFrequencia = (turma: Turma, aula: Aula) => {
+    const aulasDoDia = getAulasDoMesmoDia(turma, aula)
     setSelectedTurma(turma)
-    setSelectedAula(aula)
-    // Inicializar todos os alunos como ausentes
-    const initialData: Record<string, boolean> = {}
+    setSelectedAulas(aulasDoDia)
+
+    // Inicializar todos os alunos como ausentes em todas as aulas
+    const initialData: Record<string, Record<string, boolean>> = {}
     turma.listaAlunos.forEach(aluno => {
-      initialData[aluno.id] = false
+      initialData[aluno.id] = {}
+      aulasDoDia.forEach(aula => {
+        initialData[aluno.id][aula.id] = false
+      })
     })
     setFrequenciaData(initialData)
     setIsModalOpen(true)
   }
 
   const handleRetificarFrequencia = (turma: Turma, aula: Aula) => {
+    const aulasDoDia = getAulasDoMesmoDia(turma, aula)
     setSelectedTurma(turma)
-    setSelectedAula(aula)
+    setSelectedAulas(aulasDoDia)
+
     // Carregar dados existentes ou marcar todos como ausentes
-    const initialData: Record<string, boolean> = {}
+    const initialData: Record<string, Record<string, boolean>> = {}
     turma.listaAlunos.forEach(aluno => {
-      const isPresente = aula.alunosPresentes?.includes(aluno.id) || false
-      initialData[aluno.id] = isPresente
+      initialData[aluno.id] = {}
+      aulasDoDia.forEach(aula => {
+        const isPresente = aula.alunosPresentes?.includes(aluno.id) || false
+        initialData[aluno.id][aula.id] = isPresente
+      })
     })
     setFrequenciaData(initialData)
     setIsModalOpen(true)
@@ -263,11 +319,24 @@ export default function ProfessorTurmasPage() {
     setIsModalOpen(false)
   }
 
+  const handleFrequenciaChange = (alunoId: string, aulaId: string, presente: boolean) => {
+    setFrequenciaData(prev => ({
+      ...prev,
+      [alunoId]: {
+        ...prev[alunoId],
+        [aulaId]: presente
+      }
+    }))
+  }
+
   const handleMarkAll = (presente: boolean) => {
-    if (selectedTurma) {
-      const newData: Record<string, boolean> = {}
+    if (selectedTurma && selectedAulas.length > 0) {
+      const newData: Record<string, Record<string, boolean>> = {}
       selectedTurma.listaAlunos.forEach(aluno => {
-        newData[aluno.id] = presente
+        newData[aluno.id] = {}
+        selectedAulas.forEach(aula => {
+          newData[aluno.id][aula.id] = presente
+        })
       })
       setFrequenciaData(newData)
     }
@@ -416,54 +485,71 @@ export default function ProfessorTurmasPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {turma.aulas.map((aula) => (
-                          <div key={aula.id} className="border border-border/50 rounded-lg p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">{aula.horario}</span>
+                        {Object.entries(groupAulasByDate(turma.aulas)).map(([dateKey, aulasDoDia]) => {
+                          const temAulaHoje = aulasDoDia.some(aula => isToday(aula.data))
+                          const todasLancadas = aulasDoDia.every(aula => aula.status === 'lancada')
+                          const temLancadas = aulasDoDia.some(aula => aula.status === 'lancada' || aula.status === 'retificada')
+                          
+                          return (
+                            <div key={dateKey} className="border border-border/50 rounded-lg p-4 space-y-3 bg-muted/20">
+                              <div className="flex items-center justify-between">
+                                <div className="text-lg font-semibold text-foreground">
+                                  {aulasDoDia[0].data.toLocaleDateString('pt-BR', {
+                                    weekday: 'long',
+                                    day: '2-digit',
+                                    month: 'long'
+                                  })}
+                                </div>
+                                <Badge
+                                  variant={todasLancadas ? 'default' : 'outline'}
+                                  className={todasLancadas ? 'bg-green-100 text-green-800' : ''}
+                                >
+                                  {todasLancadas ? 'Lançada' : 'Agendada'}
+                                </Badge>
                               </div>
-                              <Badge
-                                variant={aula.status === 'lancada' ? 'default' : 'outline'}
-                                className={aula.status === 'lancada' ? 'bg-green-100 text-green-800' : ''}
-                              >
-                                {aula.status === 'lancada' ? 'Lançada' : 'Agendada'}
-                              </Badge>
-                            </div>
+                              
+                              <div className="space-y-1">
+                                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                  Horários:
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {aulasDoDia.map((aula, index) => (
+                                    <div key={aula.id} className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3 text-muted-foreground" />
+                                      <span className="text-sm text-muted-foreground">{aula.horario}</span>
+                                      {index < aulasDoDia.length - 1 && (
+                                        <span className="text-xs text-muted-foreground">•</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
 
-                            <div className="text-sm text-muted-foreground">
-                              {aula.data.toLocaleDateString('pt-BR', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}
-                            </div>
+                              <div className="flex gap-2">
+                                {temAulaHoje && !todasLancadas && (
+                                  <LiquidGlassButton
+                                    className="flex-1"
+                                    size="sm"
+                                    onClick={() => handleLancarFrequencia(turma, aulasDoDia[0])}
+                                  >
+                                    Lançar Frequência
+                                  </LiquidGlassButton>
+                                )}
 
-                            <div className="flex gap-2">
-                              {isToday(aula.data) && aula.status === 'agendada' && (
-                                <LiquidGlassButton
-                                  className="flex-1"
-                                  size="sm"
-                                  onClick={() => handleLancarFrequencia(turma, aula)}
-                                >
-                                  Lançar Frequência
-                                </LiquidGlassButton>
-                              )}
-
-                              {(aula.status === 'lancada' || aula.status === 'retificada') && (
-                                <LiquidGlassButton
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex-1"
-                                  onClick={() => handleRetificarFrequencia(turma, aula)}
-                                >
-                                  Retificar
-                                </LiquidGlassButton>
-                              )}
+                                {temLancadas && (
+                                  <LiquidGlassButton
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => handleRetificarFrequencia(turma, aulasDoDia[0])}
+                                  >
+                                    Retificar
+                                  </LiquidGlassButton>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </CardContent>
                   </LiquidGlassCard>
@@ -477,14 +563,9 @@ export default function ProfessorTurmasPage() {
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             turma={selectedTurma}
-            aula={selectedAula}
+            aulas={selectedAulas}
             frequenciaData={frequenciaData}
-            onFrequenciaChange={(alunoId, presente) =>
-              setFrequenciaData(prev => ({
-                ...prev,
-                [alunoId]: presente
-              }))
-            }
+            onFrequenciaChange={handleFrequenciaChange}
             onMarkAll={handleMarkAll}
             onSave={handleSaveFrequencia}
           />

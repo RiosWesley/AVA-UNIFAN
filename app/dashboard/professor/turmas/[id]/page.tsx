@@ -319,7 +319,7 @@ export default function TurmaDetalhePage() {
             </TabsList>
 
             <TabsContent value="alunos">
-              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <CardTitle>Lista de Alunos</CardTitle>
                   <CardDescription>Desempenho individual dos alunos</CardDescription>
@@ -442,10 +442,10 @@ export default function TurmaDetalhePage() {
             </TabsContent>
 
             <TabsContent value="notas">
-              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="mb-2">
                       <CardTitle>Lançamento de Notas</CardTitle>
                       <CardDescription>Registre as notas dos alunos</CardDescription>
                     </div>
@@ -478,17 +478,17 @@ export default function TurmaDetalhePage() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="avaliacao">Tipo de Avaliação</Label>
+                        <Label htmlFor="avaliacao" className="mb-2">Tipo de Avaliação</Label>
                         <Input id="avaliacao" placeholder="Ex: Prova Bimestral" />
                       </div>
                       <div>
-                        <Label htmlFor="peso">Peso</Label>
+                        <Label htmlFor="peso" className="mb-2">Peso</Label>
                         <Input id="peso" type="number" placeholder="Ex: 4.0" />
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="descricao">Descrição</Label>
+                      <Label htmlFor="descricao" className="mb-2">Descrição</Label>
                       <Textarea id="descricao" placeholder="Descrição da avaliação..." />
                     </div>
 
