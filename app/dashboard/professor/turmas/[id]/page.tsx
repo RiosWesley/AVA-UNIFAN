@@ -15,12 +15,15 @@ import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
+import { ModalEntregasAtividade } from '@/components/modals'
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [notasImportadas, setNotasImportadas] = useState<Record<string, string>>({})
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [modalEntregasOpen, setModalEntregasOpen] = useState(false)
+  const [atividadeSelecionada, setAtividadeSelecionada] = useState<any>(null)
 
   const turma = {
     nome: "9º Ano A",
@@ -47,6 +50,8 @@ export default function TurmaDetalhePage() {
       entregues: 25,
       total: 28,
       status: "Ativa",
+      peso: 3.0,
+      descricao: "Exercícios sobre funções quadráticas e lineares"
     },
     {
       id: 2,
@@ -56,6 +61,8 @@ export default function TurmaDetalhePage() {
       entregues: 28,
       total: 28,
       status: "Concluída",
+      peso: 4.0,
+      descricao: "Avaliação bimestral sobre todo o conteúdo"
     },
     {
       id: 3,
@@ -65,7 +72,69 @@ export default function TurmaDetalhePage() {
       entregues: 12,
       total: 28,
       status: "Ativa",
+      peso: 2.0,
+      descricao: "Trabalho em grupo sobre aplicações práticas"
     },
+  ]
+
+  // Dados mock para entregas dos alunos
+  const entregasAlunos = [
+    {
+      id: 1,
+      nome: "Ana Silva",
+      matricula: "231550652",
+      entregou: true,
+      dataEntrega: "18/03/2024",
+      arquivo: {
+        nome: "lista_funcoes_ana_silva.pdf",
+        tamanho: "2.3 MB",
+        tipo: "PDF",
+        url: "#"
+      },
+      nota: 8.5
+    },
+    {
+      id: 2,
+      nome: "Bruno Santos",
+      matricula: "231550653",
+      entregou: true,
+      dataEntrega: "19/03/2024",
+      arquivo: {
+        nome: "lista_funcoes_bruno_santos.pdf",
+        tamanho: "1.8 MB",
+        tipo: "PDF",
+        url: "#"
+      },
+      nota: 7.2
+    },
+    {
+      id: 3,
+      nome: "Carlos Oliveira",
+      matricula: "231550654",
+      entregou: false,
+      nota: 0
+    },
+    {
+      id: 4,
+      nome: "Diana Costa",
+      matricula: "231550655",
+      entregou: true,
+      dataEntrega: "17/03/2024",
+      arquivo: {
+        nome: "lista_funcoes_diana_costa.pdf",
+        tamanho: "2.1 MB",
+        tipo: "PDF",
+        url: "#"
+      },
+      nota: 9.1
+    },
+    {
+      id: 5,
+      nome: "Eduardo Lima",
+      matricula: "231550656",
+      entregou: false,
+      nota: 0
+    }
   ]
 
   const materiais = [
@@ -233,6 +302,20 @@ export default function TurmaDetalhePage() {
     toastInfo('Notas limpas', 'Todas as notas importadas foram removidas com sucesso.')
   }
 
+  const handleVerEntregas = (atividade: any) => {
+    setAtividadeSelecionada(atividade)
+    setModalEntregasOpen(true)
+  }
+
+  const handleSalvarNotas = (notas: Record<number, number>) => {
+    console.log('Notas salvas:', notas)
+    // Aqui você implementaria a lógica para salvar as notas no backend
+    toast({
+      title: "Notas salvas",
+      description: "As notas foram salvas com sucesso!",
+    })
+  }
+
   // Detectar temas (liquid glass e dark mode)
   useEffect(() => {
     const checkThemes = () => {
@@ -395,7 +478,12 @@ export default function TurmaDetalhePage() {
                         <p className="text-sm text-muted-foreground">
                           Entregues: {atividade.entregues}/{atividade.total}
                         </p>
-                        <LiquidGlassButton size="sm">Ver Entregas</LiquidGlassButton>
+                        <LiquidGlassButton 
+                          size="sm" 
+                          onClick={() => handleVerEntregas(atividade)}
+                        >
+                          Ver Entregas
+                        </LiquidGlassButton>
                       </div>
                     </CardContent>
                   </LiquidGlassCard>
@@ -560,6 +648,17 @@ export default function TurmaDetalhePage() {
         onChange={handleImportExcel}
         className="hidden"
       />
+
+      {/* Modal de Entregas */}
+      {atividadeSelecionada && (
+        <ModalEntregasAtividade
+          isOpen={modalEntregasOpen}
+          onClose={() => setModalEntregasOpen(false)}
+          atividade={atividadeSelecionada}
+          alunos={entregasAlunos}
+          onSalvarNotas={handleSalvarNotas}
+        />
+      )}
     </div>
   )
 }

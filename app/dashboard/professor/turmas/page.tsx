@@ -11,7 +11,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
-import { FrequencyModal } from "@/components/frequency"
+import { FrequencyModal } from "@/components/modals"
 
 interface Aula {
   id: string
