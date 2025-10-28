@@ -4,69 +4,69 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { MessageSquare, Megaphone, Search, Plus, Clock, Pin } from "lucide-react"
+import { MessageSquare, Megaphone } from "lucide-react"
+import { useMemo, useState } from "react"
 
 export default function AlunoComunicacaoPage() {
-  const forumTopicos = [
-    {
-      id: 1,
-      titulo: "Dúvidas sobre Funções Quadráticas",
-      autor: "Ana Silva",
-      disciplina: "Matemática",
-      respostas: 12,
-      ultimaResposta: "2 horas atrás",
-      fixado: true,
-    },
-    {
-      id: 2,
-      titulo: "Projeto de História - Dicas de Pesquisa",
-      autor: "Bruno Santos",
-      disciplina: "História",
-      respostas: 8,
-      ultimaResposta: "5 horas atrás",
-      fixado: false,
-    },
-    {
-      id: 3,
-      titulo: "Experimento de Física - Resultados",
-      autor: "Carlos Oliveira",
-      disciplina: "Física",
-      respostas: 15,
-      ultimaResposta: "1 dia atrás",
-      fixado: false,
-    },
+  type ChatMessage = { id: number; autor: "prof" | "aluno"; texto: string; quando: string }
+  const professoresSemestre = [
+    { id: "mat-101", professor: "Prof. Carlos Silva", disciplina: "Matemática I" },
+    { id: "his-102", professor: "Profª. Mariana Souza", disciplina: "História Contemporânea" },
+    { id: "fis-103", professor: "Prof. João Oliveira", disciplina: "Física Geral" },
+    { id: "por-104", professor: "Profª. Ana Lima", disciplina: "Língua Portuguesa" },
   ]
 
-  const mensagens = [
-    {
-      id: 1,
-      remetente: "Prof. Carlos Silva",
-      assunto: "Sobre a prova de amanhã",
-      preview: "Lembre-se de trazer calculadora científica...",
-      data: "Hoje, 14:30",
-      lida: false,
-    },
-    {
-      id: 2,
-      remetente: "Ana Silva",
-      assunto: "Trabalho em grupo",
-      preview: "Podemos nos encontrar na biblioteca...",
-      data: "Ontem, 16:45",
-      lida: true,
-    },
-    {
-      id: 3,
-      remetente: "Coordenação",
-      assunto: "Reunião de pais",
-      preview: "Informamos que a reunião será no dia...",
-      data: "2 dias atrás",
-      lida: true,
-    },
-  ]
+  const [conversaSelecionadaId, setConversaSelecionadaId] = useState<string | null>(null)
+  const [messageText, setMessageText] = useState("")
+  const [conversas, setConversas] = useState<Record<string, ChatMessage[]>>({})
+
+  const conversaSelecionada = useMemo(
+    () => professoresSemestre.find((p) => p.id === conversaSelecionadaId) || null,
+    [conversaSelecionadaId]
+  )
+
+  const mensagensDaConversa = useMemo(() => {
+    if (!conversaSelecionadaId) return [] as ChatMessage[]
+    return (conversas[conversaSelecionadaId] ?? []) as ChatMessage[]
+  }, [conversaSelecionadaId, conversas])
+
+  function ensureConversaInicial(conversaId: string) {
+    setConversas((prev) => {
+      if (prev[conversaId]) return prev
+      const professor = professoresSemestre.find((p) => p.id === conversaId)
+      const inicial: ChatMessage[] = professor
+        ? [
+            { id: 1, autor: "prof", texto: `Olá! Sou ${professor.professor}. Precisando de algo?`, quando: "Agora" },
+            { id: 2, autor: "aluno", texto: "Olá professor(a), tenho uma dúvida sobre a matéria.", quando: "Agora" },
+            { id: 3, autor: "prof", texto: "Claro! Pode me explicar qual parte?", quando: "Agora" },
+          ]
+        : ([] as ChatMessage[])
+      const updated: Record<string, ChatMessage[]> = { ...prev, [conversaId as string]: inicial }
+      return updated
+    })
+  }
+
+  function abrirConversa(conversaId: string) {
+    setConversaSelecionadaId(conversaId)
+    ensureConversaInicial(conversaId)
+  }
+
+  function enviarMensagem() {
+    if (!conversaSelecionadaId) return
+    const texto = messageText.trim()
+    if (!texto) return
+    setConversas((prev) => {
+      const atual: ChatMessage[] = prev[conversaSelecionadaId] || []
+      const proximoId = (atual[atual.length - 1]?.id || 0) + 1
+      const nova = [...atual, { id: proximoId, autor: "aluno", texto, quando: "Agora" }]
+      const updated: Record<string, ChatMessage[]> = { ...prev, [conversaSelecionadaId as string]: nova as ChatMessage[] }
+      return updated
+    })
+    setMessageText("")
+  }
 
   const comunicados = [
     {
@@ -104,78 +104,15 @@ export default function AlunoComunicacaoPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Comunicação</h1>
-              <p className="text-muted-foreground">Fóruns, mensagens e comunicados</p>
+              <p className="text-muted-foreground">Mensagens e comunicados</p>
             </div>
-            <LiquidGlassButton>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Mensagem
-            </LiquidGlassButton>
           </div>
 
-          <Tabs defaultValue="forum" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="forum">Fórum</TabsTrigger>
+          <Tabs defaultValue="mensagens" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
               <TabsTrigger value="comunicados">Comunicados</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="forum">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Discussões do Fórum</h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Buscar tópicos..." className="pl-10 w-64" />
-                    </div>
-                    <LiquidGlassButton>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Novo Tópico
-                    </LiquidGlassButton>
-                  </div>
-                </div>
-
-                {forumTopicos.map((topico) => (
-                  <LiquidGlassCard key={topico.id} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            {topico.fixado && <Pin className="h-4 w-4 text-primary" />}
-                            <h4 className="font-semibold text-lg">{topico.titulo}</h4>
-                            <Badge variant="outline">{topico.disciplina}</Badge>
-                          </div>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <div className="flex items-center">
-                              <Avatar className="h-6 w-6 mr-2">
-                                <AvatarFallback>
-                                  {topico.autor
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              {topico.autor}
-                            </div>
-                            <div className="flex items-center">
-                              <MessageSquare className="h-4 w-4 mr-1" />
-                              {topico.respostas} respostas
-                            </div>
-                            <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-1" />
-                              {topico.ultimaResposta}
-                            </div>
-                          </div>
-                        </div>
-                        <LiquidGlassButton variant="outline" size="sm">
-                          Ver Discussão
-                        </LiquidGlassButton>
-                      </div>
-                    </CardContent>
-                  </LiquidGlassCard>
-                ))}
-              </div>
-            </TabsContent>
 
             <TabsContent value="mensagens">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -184,25 +121,23 @@ export default function AlunoComunicacaoPage() {
                     <CardHeader>
                       <CardTitle className="flex items-center">
                         <MessageSquare className="h-5 w-5 mr-2" />
-                        Caixa de Entrada
+                        Professores do semestre
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {mensagens.map((mensagem) => (
+                        {professoresSemestre.map((item) => (
                           <div
-                            key={mensagem.id}
+                            key={item.id}
+                            onClick={() => abrirConversa(item.id)}
                             className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${
-                              !mensagem.lida ? "bg-primary/5 border-primary/20" : ""
+                              conversaSelecionadaId === item.id ? "bg-primary/5 border-primary/20" : ""
                             }`}
                           >
                             <div className="flex items-start justify-between mb-1">
-                              <h5 className="font-medium text-sm">{mensagem.remetente}</h5>
-                              {!mensagem.lida && <div className="w-2 h-2 bg-primary rounded-full" />}
+                              <h5 className="font-medium text-sm">{item.professor}</h5>
                             </div>
-                            <p className="font-medium text-sm mb-1">{mensagem.assunto}</p>
-                            <p className="text-xs text-muted-foreground mb-2">{mensagem.preview}</p>
-                            <p className="text-xs text-muted-foreground">{mensagem.data}</p>
+                            <p className="text-xs text-muted-foreground">{item.disciplina}</p>
                           </div>
                         ))}
                       </div>
@@ -213,27 +148,54 @@ export default function AlunoComunicacaoPage() {
                 <div className="lg:col-span-2">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
-                      <CardTitle>Sobre a prova de amanhã</CardTitle>
-                      <CardDescription>De: Prof. Carlos Silva • Hoje, 14:30</CardDescription>
+                      {conversaSelecionada ? (
+                        <>
+                          <CardTitle>{conversaSelecionada.professor}</CardTitle>
+                          <CardDescription>{conversaSelecionada.disciplina}</CardDescription>
+                        </>
+                      ) : (
+                        <>
+                          <CardTitle>Selecione uma conversa</CardTitle>
+                          <CardDescription>Escolha um professor à esquerda para abrir o chat</CardDescription>
+                        </>
+                      )}
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <p>Olá João,</p>
-                        <p>
-                          Lembre-se de trazer calculadora científica para a prova de matemática de amanhã. A avaliação
-                          abordará os seguintes tópicos:
-                        </p>
-                        <ul className="list-disc list-inside space-y-1 ml-4">
-                          <li>Funções quadráticas</li>
-                          <li>Sistemas lineares</li>
-                          <li>Equações do 2º grau</li>
-                        </ul>
-                        <p>Boa sorte!</p>
-                        <p>Prof. Carlos Silva</p>
-                        <div className="border-t pt-4">
-                          <LiquidGlassButton>Responder</LiquidGlassButton>
+                      {conversaSelecionada ? (
+                        <div className="space-y-4">
+                          <div className="h-80 overflow-y-auto pr-2 space-y-4">
+                            {mensagensDaConversa.map((m) => (
+                              <div key={m.id} className={`flex ${m.autor === "aluno" ? "justify-end" : "justify-start"}`}>
+                                <div
+                                  className={`max-w-[80%] rounded-lg p-3 text-sm ${
+                                    m.autor === "aluno" ? "bg-primary text-primary-foreground" : "bg-muted"
+                                  }`}
+                                >
+                                  <p>{m.texto}</p>
+                                  <p className="mt-1 text-[10px] opacity-70">{m.quando}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-2">
+                            <Input
+                              placeholder="Digite sua mensagem..."
+                              value={messageText}
+                              onChange={(e) => setMessageText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault()
+                                  enviarMensagem()
+                                }
+                              }}
+                            />
+                            <LiquidGlassButton onClick={enviarMensagem}>Enviar</LiquidGlassButton>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Nenhuma conversa aberta.</div>
+                      )}
                     </CardContent>
                   </LiquidGlassCard>
                 </div>
