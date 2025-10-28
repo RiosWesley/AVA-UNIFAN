@@ -42,20 +42,12 @@ export default function AtividadesPage() {
     { id: 6, titulo: 'Quiz de Português', descricao: 'Análise sintática e gramática aplicada', prioridade: 'Baixa', dataConclusao: '01/10/2024', disciplina: 'Português', status: 'concluido', participantes: 1, dificuldade: 'Fácil' },
   ]
 
-  const atividadesFuturas = [
-    { id: 7, titulo: 'Projeto Final de Matemática', descricao: 'Estatística aplicada a dados reais', prioridade: 'Alta', dataVencimento: '15/11/2024', disciplina: 'Matemática', status: 'planejado', participantes: 5, dificuldade: 'Difícil' },
-    { id: 8, titulo: 'Debate de Filosofia', descricao: 'Ética contemporânea e dilemas morais', prioridade: 'Média', dataVencimento: '20/11/2024', disciplina: 'Filosofia', status: 'planejado', participantes: 2, dificuldade: 'Médio' },
-  ]
 
   const filteredPendentes = atividadesPendentes.filter(a =>
     (activeFilter === 'todas' || a.status === activeFilter) &&
     a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
   )
   const filteredConcluidas = atividadesConcluidas.filter(a =>
-    (activeFilter === 'todas' || a.status === activeFilter) &&
-    a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-  const filteredFuturas = atividadesFuturas.filter(a =>
     (activeFilter === 'todas' || a.status === activeFilter) &&
     a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -148,19 +140,12 @@ export default function AtividadesPage() {
                         {atividadesConcluidas.length}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span className="text-sm font-medium">Futuras</span>
-                      <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                        {atividadesFuturas.length}
-                      </Badge>
-                    </div>
                   </div>
                 </div>
                 <div className="hidden md:flex items-center space-x-4">
                   <div className="text-right">
                     <div className="text-2xl font-bold text-foreground">
-                      {atividadesPendentes.length + atividadesConcluidas.length + atividadesFuturas.length}
+                      {atividadesPendentes.length + atividadesConcluidas.length}
                     </div>
                     <div className="text-sm text-muted-foreground">Total de Atividades</div>
                   </div>
@@ -233,7 +218,7 @@ export default function AtividadesPage() {
           </div>
           
           {/* Cards de Atividades */}
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-2">
             {/* Atividades Pendentes */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
@@ -408,92 +393,6 @@ export default function AtividadesPage() {
               </div>
             </LiquidGlassCard>
 
-            {/* Atividades Futuras */}
-            <LiquidGlassCard
-              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-border/50 hover:border-border/80 group ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40'
-              }`}
-            >
-              <div className="relative py-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
-                      <Target className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">Futuras</h2>
-                      <p className="text-sm text-muted-foreground">{filteredFuturas.length} atividades</p>
-                    </div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
-                    Planejadas
-                  </Badge>
-                </div>
-
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {filteredFuturas.map((atividade) => {
-                    const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
-                    const PriorityIcon = prioridadeConfig.icon
-                    return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
-                        isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
-                          : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
-                      }`}>
-                        <div className="relative">
-                          <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                              {atividade.titulo}
-                            </h3>
-                            <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
-                              <PriorityIcon className={`h-4 w-4 ${prioridadeConfig.color}`} />
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                            {atividade.descricao}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1 text-xs">
-                                <BookOpen className="h-3 w-3" />
-                                <span className="font-medium">{atividade.disciplina}</span>
-                              </div>
-                              <Badge className={getDificuldadeColor(atividade.dificuldade)}>
-                                {atividade.dificuldade}
-                              </Badge>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                <CalIcon className="h-3 w-3" />
-                                <span className="font-bold">Previsto: {atividade.dataVencimento}</span>
-                              </div>
-                              {atividade.participantes > 1 && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Users className="h-3 w-3" />
-                                  <span>{atividade.participantes} participantes</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {filteredFuturas.length === 0 && (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mx-auto mb-4">
-                        <Clock className="h-8 w-8 text-orange-500" />
-                      </div>
-                      <p className="text-muted-foreground font-medium">Planeje suas próximas atividades!</p>
-                      <p className="text-sm text-muted-foreground">Elas aparecerão aqui quando agendadas</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </LiquidGlassCard>
           </div>
 
         </div>

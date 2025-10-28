@@ -17,7 +17,6 @@ import {
 import {
   Home,
   BookOpen,
-  FileText,
   GraduationCap,
   MessageSquare,
   CreditCard,
@@ -56,8 +55,6 @@ const menuItems = {
   professor: [
     { icon: Home, label: "Início", href: "/professor" },
     { icon: BookOpen, label: "Turmas", href: "/professor/turmas" },
-    { icon: FileText, label: "Atividades", href: "/professor/atividades" },
-    { icon: GraduationCap, label: "Notas", href: "/professor/notas" },
     { icon: Calendar, label: "Agenda", href: "/professor/agenda" },
     { icon: MessageSquare, label: "Comunicação", href: "/professor/comunicacao" },
     { icon: Settings, label: "Configurações", href: "/professor/configuracoes" },
