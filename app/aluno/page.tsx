@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Award, Target, Activity, ChevronRight, Sparkles, Trophy, BookOpen, MessageSquare } from "lucide-react"
+import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Target, Activity, Sparkles } from "lucide-react"
 
 export default function AlunoDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
@@ -69,11 +69,6 @@ export default function AlunoDashboard() {
     { titulo: "Reunião de Pais", data: "30/03/2024", tipo: "Evento", prioridade: "baixa" },
   ]
 
-  const conquistas = [
-    { titulo: "Excelência Acadêmica", descricao: "Média acima de 9.0", icone: Star },
-    { titulo: "Frequência Perfeita", descricao: "100% de presença", icone: Award },
-    { titulo: "Primeiro Lugar", descricao: "Melhor nota da turma", icone: Trophy },
-  ]
 
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
@@ -351,49 +346,6 @@ export default function AlunoDashboard() {
             </div>
 
             <div className="md:col-span-1 xl:col-span-4 space-y-6">
-              {/* Conquistas */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <div className="p-2 bg-yellow-500/20 rounded-lg mr-3">
-                      <Trophy className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                    </div>
-                    Suas Conquistas
-                  </CardTitle>
-                  <CardDescription className="text-base">Reconhecimentos e prêmios</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {conquistas.map((conquista, index) => {
-                      const IconComponent = conquista.icone
-                      return (
-                        <div key={index} className={`group flex items-center space-x-3 p-3 rounded-xl border transition-all duration-300 ${
-                          isLiquidGlass
-                            ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-yellow-200/30 dark:border-yellow-800/30'
-                            : 'bg-white/60 dark:bg-gray-800/60 border-yellow-200/50 dark:border-yellow-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                        }`}>
-                          <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                            <IconComponent className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{conquista.titulo}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{conquista.descricao}</p>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-yellow-500 transition-colors" />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-
               {/* Comunicados */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
@@ -467,75 +419,6 @@ export default function AlunoDashboard() {
               </LiquidGlassCard>
             </div>
 
-            <div className="md:col-span-1 xl:col-span-4 space-y-6">
-              {/* Ações Rápidas */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <div className="p-2 bg-purple-500/20 rounded-lg mr-3">
-                      <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    Ações Rápidas
-                  </CardTitle>
-                  <CardDescription className="text-base">Atalhos para funcionalidades</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    <LiquidGlassButton
-                      variant="outline"
-                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
-                        isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
-                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                      }`}
-                    >
-                      <BookOpen className="h-5 w-5 mb-1 text-green-600" />
-                      <span className="text-xs font-medium">Disciplinas</span>
-                    </LiquidGlassButton>
-                    <LiquidGlassButton
-                      variant="outline"
-                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
-                        isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
-                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                      }`}
-                    >
-                      <FileText className="h-5 w-5 mb-1 text-green-600" />
-                      <span className="text-xs font-medium">Atividades</span>
-                    </LiquidGlassButton>
-                    <LiquidGlassButton
-                      variant="outline"
-                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
-                        isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
-                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                      }`}
-                    >
-                      <Calendar className="h-5 w-5 mb-1 text-purple-600" />
-                      <span className="text-xs font-medium">Horário</span>
-                    </LiquidGlassButton>
-                    <LiquidGlassButton
-                      variant="outline"
-                      className={`h-16 flex flex-col items-center justify-center transition-all duration-300 ${
-                        isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-white/20 dark:border-gray-700/50'
-                          : 'bg-white/60 dark:bg-gray-800/60 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                      }`}
-                    >
-                      <MessageSquare className="h-5 w-5 mb-1 text-orange-600" />
-                      <span className="text-xs font-medium">Chat</span>
-                    </LiquidGlassButton>
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-            </div>
           </div>
         </div>
       </main>

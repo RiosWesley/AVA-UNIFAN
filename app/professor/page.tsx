@@ -555,59 +555,6 @@ export default function ProfessorDashboard() {
                 </CardContent>
               </LiquidGlassCard>
 
-              {/* Ações Rápidas */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <Target className="h-5 w-5 mr-2 text-orange-600 dark:text-orange-400" />
-                    Ações Rápidas
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Ferramentas de uso frequente</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Nova Avaliação
-                    </LiquidGlassButton>
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Ver Horário
-                    </LiquidGlassButton>
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <Users className="h-4 w-4 mr-2" />
-                      Lista de Presença
-                    </LiquidGlassButton>
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Relatório
-                    </LiquidGlassButton>
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
             </div>
           </div>
         </div>
