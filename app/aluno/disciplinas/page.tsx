@@ -289,7 +289,7 @@ export default function AlunodisciplinasPage() {
                       <Award className="h-3 w-3 mr-1" />
                       {disciplina.destaque}
                     </div>
-                    <Link href={`/dashboard/aluno/disciplinas/${disciplina.id}`}>
+                    <Link href={`/aluno/disciplinas/${disciplina.id}`}>
                       <LiquidGlassButton className="w-full group-hover:bg-opacity-90 transition-all duration-300">
                         <Play className="h-4 w-4 mr-2" />
                         Acessar Disciplina

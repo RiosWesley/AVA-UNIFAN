@@ -83,7 +83,7 @@ export default function DisciplinaDetalhePage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center mb-6">
-            <Link href="/dashboard/aluno/disciplinas">
+            <Link href="/aluno/disciplinas">
               <Button variant="ghost" size="sm" className="mr-4">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar

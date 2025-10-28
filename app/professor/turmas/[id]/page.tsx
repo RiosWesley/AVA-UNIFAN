@@ -415,7 +415,7 @@ export default function TurmaDetalhePage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center mb-6">
-            <Link href="/dashboard/professor/turmas">
+            <Link href="/professor/turmas">
               <LiquidGlassButton variant="ghost" size="sm" className="mr-4">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar

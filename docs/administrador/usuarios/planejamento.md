@@ -3,7 +3,7 @@
 Objetivo: Implementar a página de gestão de usuários para o administrador, com funcionalidades de cadastro (mock), listagem, busca e filtro por papel (role), seguindo a estética atual do projeto.
 
 ### Escopo
-- Página: `app/dashboard/administrador/usuarios/page.tsx`
+- Página: `app/administrador/usuarios/page.tsx`
 - UI: componentes existentes (`Card`, `Tabs`, `Input`, `Select`, `Button`, `Badge`, etc.) e `Sidebar`
 - Funcionalidades:
   - Listagem de usuários (estado local)
@@ -13,7 +13,7 @@ Objetivo: Implementar a página de gestão de usuários para o administrador, co
 
 ### Tarefas (Checklist)
 - [x] Criar planejamento em `docs/administrador/usuarios/planejamento.md`
-- [x] Implementar página `app/dashboard/administrador/usuarios/page.tsx` com layout padrão
+- [x] Implementar página `app/administrador/usuarios/page.tsx` com layout padrão
 - [x] Adicionar listagem de usuários com filtros por role e busca
 - [x] Adicionar formulário de cadastro de novo usuário (mock, estado local)
 - [x] Atualizar checklist em docs após implementação

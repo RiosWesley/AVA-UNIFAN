@@ -449,7 +449,7 @@ export default function ProfessorTurmasPage() {
                         </div>
 
                         <div className="flex gap-2">
-                          <Link href={`/dashboard/professor/turmas/${turma.id}`} className="flex-1">
+                          <Link href={`/professor/turmas/${turma.id}`} className="flex-1">
                             <LiquidGlassButton className="w-full" size="sm">
                               Gerenciar Turma
                             </LiquidGlassButton>

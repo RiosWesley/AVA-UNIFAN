@@ -38,7 +38,7 @@ export default function AuthPage() {
     e.preventDefault()
     // Mock login logic - redirect based on role
     const mockRole = "aluno" // This would come from authentication
-    window.location.href = `/dashboard/${mockRole}`
+    window.location.href = `/${mockRole}`
   }
 
   return (
@@ -98,25 +98,25 @@ export default function AuthPage() {
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">Acesso rápido para demonstração:</p>
           <div className="grid grid-cols-2 gap-2 mt-4">
-            <Link href="/dashboard/aluno">
+            <Link href="/aluno">
               <Button variant="outline" size="sm" className="w-full bg-transparent">
                 <Users className="h-4 w-4 mr-2" />
                 Aluno
               </Button>
             </Link>
-            <Link href="/dashboard/professor">
+            <Link href="/professor">
               <Button variant="outline" size="sm" className="w-full bg-transparent">
                 <BookOpen className="h-4 w-4 mr-2" />
                 Professor
               </Button>
             </Link>
-            <Link href="/dashboard/coordenador">
+            <Link href="/coordenador">
               <Button variant="outline" size="sm" className="w-full bg-transparent">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Coordenador
               </Button>
             </Link>
-            <Link href="/dashboard/administrador">
+            <Link href="/administrador">
               <Button variant="outline" size="sm" className="w-full bg-transparent">
                 <Settings className="h-4 w-4 mr-2" />
                 Admin
