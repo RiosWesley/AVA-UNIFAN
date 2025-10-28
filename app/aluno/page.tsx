@@ -9,6 +9,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Target, Activity, Sparkles } from "lucide-react"
+import Carousel from "@/components/ui/carousel"
 
 export default function AlunoDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
@@ -69,7 +70,13 @@ export default function AlunoDashboard() {
     { titulo: "Reunião de Pais", data: "30/03/2024", tipo: "Evento", prioridade: "baixa" },
   ]
 
+  const carouselImages = [
+    { src: "/placeholder.jpg", alt: "Aviso 1" },
+    { src: "/placeholder-user.jpg", alt: "Aviso 2" },
+    { src: "/placeholder-logo.png", alt: "Aviso 3" },
+  ]
 
+  
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
@@ -118,6 +125,15 @@ export default function AlunoDashboard() {
               <Bell className="h-5 w-5 mr-2 text-green-600" />
               <span className="font-semibold">3 Notificações</span>
             </LiquidGlassButton>
+          </div>
+
+          {/* Mural de Avisos (Carrossel) */}
+          <div className="mb-8">
+            <Carousel
+              images={carouselImages}
+              heightClass="h-120 md:h-125 lg:h-140"
+              className={isLiquidGlass ? "bg-black/20" : "bg-white/50 dark:bg-gray-800/50"}
+            />
           </div>
 
           {/* Cards de estatísticas aprimorados */}

@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BookOpen, Calendar, FileText, Users, TrendingUp, CheckCircle, Star, Award, Clock, GraduationCap, Activity, Target, Sparkles, Bell, ChevronRight, Play } from "lucide-react"
+import Carousel from "@/components/ui/carousel"
 
 export default function ProfessorDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
@@ -127,6 +128,12 @@ export default function ProfessorDashboard() {
     }
   ]
 
+  const carouselImages = [
+    { src: "/placeholder.jpg", alt: "Aviso 1" },
+    { src: "/placeholder-user.jpg", alt: "Aviso 2" },
+    { src: "/placeholder-logo.png", alt: "Aviso 3" },
+  ]
+
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="professor" />
@@ -185,6 +192,15 @@ export default function ProfessorDashboard() {
                 Registrar Frequência
               </LiquidGlassButton>
             </div>
+          </div>
+
+          {/* Mural de Avisos (Carrossel) */}
+          <div className="mb-8">
+            <Carousel
+              images={carouselImages}
+              heightClass="h-120 md:h-125 lg:h-140"
+              className={isLiquidGlass ? "bg-black/20" : "bg-white/50 dark:bg-gray-800/50"}
+            />
           </div>
 
           {/* Cards de estatísticas aprimorados */}
@@ -410,10 +426,9 @@ export default function ProfessorDashboard() {
                     {atividades.map((atividade, index) => (
                       <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg ${
-                            atividade.tipo === "Prova" ? "bg-red-500/20" :
-                            atividade.tipo === "Exercício" ? "bg-green-500/20" : "bg-green-500/20"
-                          }`}>
+                          <div className={`${"w-10 h-10 rounded-lg flex items-center justify-center shadow-lg "}
+                            ${atividade.tipo === "Prova" ? "bg-red-500/20" :
+                            atividade.tipo === "Exercício" ? "bg-green-500/20" : "bg-green-500/20"}`}> 
                             <FileText className={`h-5 w-5 ${
                               atividade.tipo === "Prova" ? "text-red-600 dark:text-red-400" :
                               atividade.tipo === "Exercício" ? "text-green-600 dark:text-green-400" : "text-green-600 dark:text-green-400"
