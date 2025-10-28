@@ -8,8 +8,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, Clock, AlertCircle, MessageSquare, MessageCircle } from "lucide-react"
 import Link from "next/link"
+import { useState } from 'react'
+import { ModalDiscussaoForum } from '@/components/modals'
 
 export default function DisciplinaDetalhePage() {
   const disciplina = {
@@ -62,6 +64,67 @@ export default function DisciplinaDetalhePage() {
     },
   ]
 
+  const [forums, setForums] = useState<any[]>([
+    {
+      id: 1,
+      titulo: "Dúvidas sobre Funções Quadráticas",
+      descricao: "Espaço para dúvidas e discussões sobre funções quadráticas.",
+      autor: "Prof. Carlos Silva",
+      dataCriacao: "15/03/2024",
+      comentarios: [
+        { id: 1, autor: "Ana Silva", texto: "Como encontro o vértice?", data: "16/03/2024 14:30" },
+        { id: 2, autor: "João Pedro", texto: "x = -b/2a resolve a abscissa do vértice.", data: "16/03/2024 15:10" },
+      ]
+    },
+    {
+      id: 2,
+      titulo: "Trabalho em Grupo - Aplicações",
+      descricao: "Troca de ideias para o trabalho em grupo.",
+      autor: "Prof. Carlos Silva",
+      dataCriacao: "18/03/2024",
+      comentarios: [
+        { id: 1, autor: "Marina", texto: "Podemos usar um exemplo de otimização?", data: "18/03/2024 16:20" },
+      ]
+    }
+  ])
+  const [modalDiscussaoOpen, setModalDiscussaoOpen] = useState(false)
+  const [forumSelecionado, setForumSelecionado] = useState<any>(null)
+
+  const handleVerDiscussao = (forum: any) => {
+    setForumSelecionado(forum)
+    setModalDiscussaoOpen(true)
+  }
+
+  const handleResponderDiscussao = (texto: string, parentId?: number) => {
+    if (!forumSelecionado) return
+    setForums(prev => prev.map(f => {
+      if (f.id !== forumSelecionado.id) return f
+      const novoId = Math.max(0, ...f.comentarios.map((c: any) => c.id)) + 1
+      const mencionado = parentId ? (f.comentarios.find((c: any) => c.id === parentId)?.autor || '') : ''
+      const novo = {
+        id: novoId,
+        autor: 'Você',
+        texto: mencionado ? `@${mencionado} ${texto}` : texto,
+        data: new Date().toLocaleString('pt-BR'),
+        ...(parentId ? { parentId } : {})
+      }
+      return { ...f, comentarios: [...f.comentarios, novo] }
+    }))
+    setForumSelecionado((curr: any) => curr ? {
+      ...curr,
+      comentarios: [
+        ...curr.comentarios,
+        {
+          id: Math.max(0, ...curr.comentarios.map((c: any) => c.id)) + 1,
+          autor: 'Você',
+          texto: parentId ? `@${curr.comentarios.find((c: any) => c.id === parentId)?.autor || ''} ${texto}` : texto,
+          data: new Date().toLocaleString('pt-BR'),
+          ...(parentId ? { parentId } : {})
+        }
+      ]
+    } : curr)
+  }
+
 
   return (
     <div className="flex h-screen bg-background">
@@ -85,10 +148,11 @@ export default function DisciplinaDetalhePage() {
           </div>
 
           <Tabs defaultValue="avisos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="avisos">Avisos</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
+              <TabsTrigger value="forum">Fórum</TabsTrigger>
             </TabsList>
 
             <TabsContent value="avisos">
@@ -188,9 +252,53 @@ export default function DisciplinaDetalhePage() {
               </div>
             </TabsContent>
 
+            <TabsContent value="forum">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Fórum da Disciplina</h3>
+                {forums.map((forum) => (
+                  <Card key={forum.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{forum.titulo}</CardTitle>
+                          <CardDescription>
+                            Criado por {forum.autor} em {forum.dataCriacao}
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="secondary">{forum.comentarios.length} comentários</Badge>
+                          <Button size="sm" variant="outline" onClick={() => handleVerDiscussao(forum)}>
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">{forum.descricao}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          Última atualização: {forum.comentarios[forum.comentarios.length - 1]?.data || forum.dataCriacao}
+                        </span>
+                        <Button size="sm" variant="outline" onClick={() => handleVerDiscussao(forum)}>
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Ver Discussão
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
           </Tabs>
         </div>
       </main>
+      <ModalDiscussaoForum
+        isOpen={modalDiscussaoOpen}
+        onClose={() => setModalDiscussaoOpen(false)}
+        forum={forumSelecionado}
+        onResponder={handleResponderDiscussao}
+      />
     </div>
   )
 }

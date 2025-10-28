@@ -9,13 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X } from "lucide-react"
+import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
-import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno } from '@/components/modals'
+import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum } from '@/components/modals'
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -34,6 +34,13 @@ export default function TurmaDetalhePage() {
   const [modoModalMaterial, setModoModalMaterial] = useState<'criar' | 'editar'>('criar')
   const [modalDetalhesAlunoOpen, setModalDetalhesAlunoOpen] = useState(false)
   const [alunoSelecionado, setAlunoSelecionado] = useState<any>(null)
+  
+  // Estados para fórum
+  const [modalForumOpen, setModalForumOpen] = useState(false)
+  const [forumEditando, setForumEditando] = useState<any>(null)
+  const [modoModalForum, setModoModalForum] = useState<'criar' | 'editar'>('criar')
+  const [modalDiscussaoOpen, setModalDiscussaoOpen] = useState(false)
+  const [forumSelecionado, setForumSelecionado] = useState<any>(null)
 
   const turma = {
     nome: "9º Ano A",
@@ -152,6 +159,57 @@ export default function TurmaDetalhePage() {
     { id: 2, nome: "Lista de Exercícios 03", tipo: "PDF", data: "08/03/2024" },
     { id: 3, nome: "Vídeo Aula - Sistemas Lineares", tipo: "MP4", data: "05/03/2024" },
   ]
+
+  const [forums, setForums] = useState<any[]>([
+    {
+      id: 1,
+      titulo: "Dúvidas sobre Funções Quadráticas",
+      descricao: "Vamos discutir as dúvidas sobre funções quadráticas. Alguém tem alguma dificuldade específica?",
+      autor: "Prof. Silva",
+      dataCriacao: "15/03/2024",
+      comentarios: [
+        {
+          id: 1,
+          autor: "Ana Silva",
+          texto: "Estou com dificuldade em encontrar o vértice da função f(x) = x² - 4x + 3",
+          data: "16/03/2024 14:30"
+        },
+        {
+          id: 2,
+          autor: "Prof. Silva",
+          texto: "Olá Ana! Para encontrar o vértice, você pode usar a fórmula x = -b/2a. Neste caso, a = 1 e b = -4, então x = 2. Substituindo na função original, encontramos f(2) = -1. O vértice é (2, -1).",
+          data: "16/03/2024 15:45"
+        },
+        {
+          id: 3,
+          autor: "Bruno Santos",
+          texto: "E se a função for f(x) = 2x² + 8x + 6? Como fica o cálculo?",
+          data: "17/03/2024 09:15"
+        }
+      ]
+    },
+    {
+      id: 2,
+      titulo: "Trabalho em Grupo - Aplicações Práticas",
+      descricao: "Discussão sobre o trabalho em grupo que será entregue na próxima semana. Ideias e sugestões são bem-vindas!",
+      autor: "Prof. Silva",
+      dataCriacao: "18/03/2024",
+      comentarios: [
+        {
+          id: 1,
+          autor: "Carlos Oliveira",
+          texto: "Que tal aplicarmos as funções quadráticas em problemas de otimização?",
+          data: "18/03/2024 16:20"
+        },
+        {
+          id: 2,
+          autor: "Diana Costa",
+          texto: "Acho interessante usar exemplos do cotidiano, como calcular a área máxima de um jardim com cerca fixa.",
+          data: "19/03/2024 10:30"
+        }
+      ]
+    }
+  ])
 
   const generateExcelModel = () => {
     // Preparar dados para o Excel
@@ -387,6 +445,66 @@ export default function TurmaDetalhePage() {
     setModalDetalhesAlunoOpen(true)
   }
 
+  // Funções para fórum
+  const handleNovoForum = () => {
+    setModoModalForum('criar')
+    setForumEditando(null)
+    setModalForumOpen(true)
+  }
+
+  const handleEditarForum = (forum: any) => {
+    setModoModalForum('editar')
+    setForumEditando(forum)
+    setModalForumOpen(true)
+  }
+
+  const handleSalvarForum = (forum: any) => {
+    console.log('Fórum salvo:', forum)
+    setForums((prev) => {
+      if (modoModalForum === 'editar' && forumEditando) {
+        return prev.map(f => f.id === forumEditando.id ? { ...f, ...forum } : f)
+      }
+      const novo = { id: Math.max(0, ...prev.map(f => f.id)) + 1, autor: 'Prof. Silva', dataCriacao: new Date().toLocaleDateString('pt-BR'), comentarios: [], ...forum }
+      return [novo, ...prev]
+    })
+    setModalForumOpen(false)
+  }
+
+  const handleResponderDiscussao = (texto: string, parentId?: number) => {
+    if (!forumSelecionado) return
+    setForums((prev) => {
+      return prev.map(f => {
+        if (f.id !== forumSelecionado.id) return f
+        const novoComentario = {
+          id: Math.max(0, ...f.comentarios.map((c: any) => c.id)) + 1,
+          autor: 'Prof. Silva',
+          texto: parentId ? `@${f.comentarios.find((c: any) => c.id === parentId)?.autor || 'aluno'} ${texto}` : texto,
+          data: new Date().toLocaleString('pt-BR'),
+          ...(parentId ? { parentId } : {})
+        }
+        return { ...f, comentarios: [...f.comentarios, novoComentario] }
+      })
+    })
+    setForumSelecionado((curr: any) => {
+      if (!curr) return curr
+      const novoId = Math.max(0, ...curr.comentarios.map((c: any) => c.id)) + 1
+      const mencionado = parentId ? (curr.comentarios.find((c: any) => c.id === parentId)?.autor || 'aluno') : null
+      const novoComentario = {
+        id: novoId,
+        autor: 'Prof. Silva',
+        texto: mencionado ? `@${mencionado} ${texto}` : texto,
+        data: new Date().toLocaleString('pt-BR'),
+        ...(parentId ? { parentId } : {})
+      }
+      return { ...curr, comentarios: [...curr.comentarios, novoComentario] }
+    })
+  }
+
+  const handleVerDiscussao = (forum: any) => {
+    setForumSelecionado(forum)
+    setModalDiscussaoOpen(true)
+  }
+
   // Detectar temas (liquid glass e dark mode)
   useEffect(() => {
     const checkThemes = () => {
@@ -465,10 +583,11 @@ export default function TurmaDetalhePage() {
           </div>
 
           <Tabs defaultValue="alunos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="alunos">Alunos</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
+              <TabsTrigger value="forum">Fórum</TabsTrigger>
               <TabsTrigger value="notas">Lançar Notas</TabsTrigger>
             </TabsList>
 
@@ -613,6 +732,70 @@ export default function TurmaDetalhePage() {
                             <Trash2 className="h-4 w-4" />
                           </LiquidGlassButton>
                         </div>
+                      </div>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="forum">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Fórum da Turma</h3>
+                  <LiquidGlassButton onClick={handleNovoForum}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo Fórum
+                  </LiquidGlassButton>
+                </div>
+
+                {forums.map((forum) => (
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={forum.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{forum.titulo}</CardTitle>
+                          <CardDescription>
+                            Criado por {forum.autor} em {forum.dataCriacao}
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="secondary">
+                            {forum.comentarios.length} comentários
+                          </Badge>
+                          <LiquidGlassButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditarForum(forum)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </LiquidGlassButton>
+                          <LiquidGlassButton
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVerDiscussao(forum)}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </LiquidGlassButton>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {forum.descricao}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          Última atualização: {forum.comentarios[forum.comentarios.length - 1]?.data || forum.dataCriacao}
+                        </span>
+                        <LiquidGlassButton 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleVerDiscussao(forum)}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          Ver Discussão
+                        </LiquidGlassButton>
                       </div>
                     </CardContent>
                   </LiquidGlassCard>
@@ -783,6 +966,23 @@ export default function TurmaDetalhePage() {
         item={atividadeParaDeletar}
         tipo={atividadeParaDeletar?.titulo ? 'atividade' : 'material'}
         onConfirmarDelete={handleConfirmarExclusao}
+      />
+      
+      {/* Modal de Fórum - Será implementado em um componente separado */}
+      <ModalForum
+        isOpen={modalForumOpen}
+        onClose={() => setModalForumOpen(false)}
+        forum={forumEditando}
+        onSalvar={handleSalvarForum}
+        modo={modoModalForum}
+      />
+
+      {/* Modal de Discussão - Será implementado em um componente separado */}
+      <ModalDiscussaoForum
+        isOpen={modalDiscussaoOpen}
+        onClose={() => setModalDiscussaoOpen(false)}
+        forum={forumSelecionado}
+        onResponder={handleResponderDiscussao}
       />
     </div>
   )
