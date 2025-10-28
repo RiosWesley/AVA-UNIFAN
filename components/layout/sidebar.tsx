@@ -47,6 +47,7 @@ const menuItems = {
     { icon: Target, label: "Atividades", href: "/aluno/atividades", badge: "2" },
     { icon: Award, label: "Boletim", href: "/aluno/boletim" },
     { icon: Trophy, label: "Desempenho", href: "/aluno/desempenho" },
+    { icon: Activity, label: "Frequência", href: "/aluno/frequencia" },
     { icon: MessageSquare, label: "Comunicação", href: "/aluno/comunicacao", badge: "1" },
     { icon: CreditCard, label: "Financeiro", href: "/aluno/financeiro" },
     { icon: Calendar, label: "Agenda", href: "/aluno/agenda" },
