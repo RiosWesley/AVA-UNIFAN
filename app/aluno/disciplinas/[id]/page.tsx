@@ -62,19 +62,6 @@ export default function DisciplinaDetalhePage() {
     },
   ]
 
-  const notas = [
-    { avaliacao: "Prova Bimestral", nota: 8.5, peso: 4.0, data: "15/03/2024" },
-    { avaliacao: "Trabalho Individual", nota: 9.2, peso: 2.0, data: "10/03/2024" },
-    { avaliacao: "Lista de Exercícios", nota: 7.8, peso: 1.0, data: "05/03/2024" },
-  ]
-
-  const frequencia = [
-    { data: "18/03/2024", status: "Presente", aula: "Funções Exponenciais" },
-    { data: "15/03/2024", status: "Presente", aula: "Prova Bimestral" },
-    { data: "13/03/2024", status: "Falta", aula: "Revisão Geral" },
-    { data: "11/03/2024", status: "Presente", aula: "Logaritmos" },
-    { data: "08/03/2024", status: "Presente", aula: "Funções Quadráticas" },
-  ]
 
   return (
     <div className="flex h-screen bg-background">
@@ -98,12 +85,10 @@ export default function DisciplinaDetalhePage() {
           </div>
 
           <Tabs defaultValue="avisos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="avisos">Avisos</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
-              <TabsTrigger value="notas">Notas</TabsTrigger>
-              <TabsTrigger value="frequencia">Frequência</TabsTrigger>
             </TabsList>
 
             <TabsContent value="avisos">
@@ -203,76 +188,6 @@ export default function DisciplinaDetalhePage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="notas">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Boletim da Disciplina</CardTitle>
-                  <CardDescription>Suas notas e média atual</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {notas.map((nota, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{nota.avaliacao}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Peso: {nota.peso} • {nota.data}
-                          </p>
-                        </div>
-                        <Badge variant={nota.nota >= 8 ? "default" : nota.nota >= 6 ? "secondary" : "destructive"}>
-                          {nota.nota}
-                        </Badge>
-                      </div>
-                    ))}
-                    <div className="border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-bold">Média Atual</h4>
-                        <Badge variant="default" className="text-lg px-3 py-1">
-                          8.6
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="frequencia">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Registro de Frequência</CardTitle>
-                  <CardDescription>Seu histórico de presença nas aulas</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {frequencia.map((registro, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{registro.aula}</h4>
-                          <p className="text-sm text-muted-foreground">{registro.data}</p>
-                        </div>
-                        <Badge variant={registro.status === "Presente" ? "default" : "destructive"}>
-                          {registro.status === "Presente" ? (
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                          ) : (
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                          )}
-                          {registro.status}
-                        </Badge>
-                      </div>
-                    ))}
-                    <div className="border-t pt-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-bold">Frequência Geral</h4>
-                        <Badge variant="default" className="text-lg px-3 py-1">
-                          80% (4/5 presenças)
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </div>
       </main>
