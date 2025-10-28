@@ -8,10 +8,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, Clock, AlertCircle, MessageSquare, MessageCircle } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, Clock, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock } from "lucide-react"
 import Link from "next/link"
-import { useState } from 'react'
-import { ModalDiscussaoForum } from '@/components/modals'
+import { useMemo, useState } from 'react'
+import { ModalDiscussaoForum, ModalVideoAula, ModalVideoChamada } from '@/components/modals'
 
 export default function DisciplinaDetalhePage() {
   const disciplina = {
@@ -90,6 +90,44 @@ export default function DisciplinaDetalhePage() {
   const [modalDiscussaoOpen, setModalDiscussaoOpen] = useState(false)
   const [forumSelecionado, setForumSelecionado] = useState<any>(null)
 
+  // Vídeo-aulas
+  const [videoAulas, setVideoAulas] = useState<Array<{ id: number; titulo: string; duracao: string; visto: boolean; url: string }>>([
+    { id: 1, titulo: 'Introdução às Funções', duracao: '12:30', visto: true, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
+    { id: 2, titulo: 'Funções Quadráticas - Parte 1', duracao: '18:05', visto: false, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
+    { id: 3, titulo: 'Vértice e Forma Canônica', duracao: '15:42', visto: false, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
+    { id: 4, titulo: 'Aplicações Práticas', duracao: '20:10', visto: false, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
+  ])
+  const [videoAulaSelecionadaId, setVideoAulaSelecionadaId] = useState<number | null>(null)
+  const [modalVideoAulaAberto, setModalVideoAulaAberto] = useState(false)
+  const videoAulaSelecionada = useMemo(() => videoAulas.find(v => v.id === videoAulaSelecionadaId) || null, [videoAulas, videoAulaSelecionadaId])
+
+  const abrirVideoAula = (id: number) => {
+    setVideoAulaSelecionadaId(id)
+    setModalVideoAulaAberto(true)
+    setVideoAulas(prev => prev.map(v => v.id === id ? { ...v, visto: true } : v))
+  }
+
+  const selecionarDaTrilha = (id: number) => {
+    setVideoAulaSelecionadaId(id)
+    setVideoAulas(prev => prev.map(v => v.id === id ? { ...v, visto: true } : v))
+  }
+
+  // Vídeo-chamadas
+  type VideoChamada = { id: number; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
+  const [videoChamadas, setVideoChamadas] = useState<VideoChamada[]>([
+    { id: 1, titulo: 'Plantão de Dúvidas - Funções', dataHora: '2025-10-30T19:00:00', status: 'agendada', link: '#' },
+    { id: 2, titulo: 'Revisão para Prova', dataHora: '2025-10-25T19:00:00', status: 'encerrada', link: '#' },
+    { id: 3, titulo: 'Aula ao vivo - Sistemas Lineares', dataHora: '2025-10-28T20:00:00', status: 'disponivel', link: '#' },
+  ])
+  const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
+  const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
+
+  const entrarNaVideoChamada = (reuniao: VideoChamada) => {
+    if (reuniao.status !== 'disponivel') return
+    setVideoChamadaSelecionada(reuniao)
+    setModalVideoChamadaAberto(true)
+  }
+
   const handleVerDiscussao = (forum: any) => {
     setForumSelecionado(forum)
     setModalDiscussaoOpen(true)
@@ -148,11 +186,13 @@ export default function DisciplinaDetalhePage() {
           </div>
 
           <Tabs defaultValue="avisos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="avisos">Avisos</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
               <TabsTrigger value="forum">Fórum</TabsTrigger>
+              <TabsTrigger value="videoaulas">Vídeo-aulas</TabsTrigger>
+              <TabsTrigger value="videochamadas">Vídeo-chamadas</TabsTrigger>
             </TabsList>
 
             <TabsContent value="avisos">
@@ -290,9 +330,93 @@ export default function DisciplinaDetalhePage() {
               </div>
             </TabsContent>
 
+            <TabsContent value="videoaulas">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center"><Video className="h-5 w-5 mr-2"/>Vídeo-aulas</h3>
+                {videoAulas.map((aula) => (
+                  <Card key={aula.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center text-muted-foreground text-sm">
+                            {aula.visto ? (
+                              <>
+                                <Eye className="h-4 w-4 mr-1 text-green-500" />
+                                <span className="text-green-600">Visto</span>
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="h-4 w-4 mr-1 text-amber-500" />
+                                <span className="text-amber-600">Pendente</span>
+                              </>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{aula.titulo}</h4>
+                            <p className="text-xs text-muted-foreground">Duração: {aula.duracao}</p>
+                          </div>
+                        </div>
+                        <Button size="sm" onClick={() => abrirVideoAula(aula.id)}>
+                          <Play className="h-4 w-4 mr-2" /> Assistir
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="videochamadas">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center"><CalendarClock className="h-5 w-5 mr-2"/>Vídeo-chamadas</h3>
+                {videoChamadas.map((reuniao) => {
+                  const data = new Date(reuniao.dataHora)
+                  const agora = new Date()
+                  const podeEntrar = reuniao.status === 'disponivel'
+                  const statusLabel = reuniao.status === 'agendada' ? 'Agendada' : reuniao.status === 'disponivel' ? 'Disponível' : 'Encerrada'
+                  const statusVariant = reuniao.status === 'disponivel' ? 'default' : reuniao.status === 'agendada' ? 'secondary' : 'destructive'
+                  return (
+                    <Card key={reuniao.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium">{reuniao.titulo}</h4>
+                            <p className="text-xs text-muted-foreground">{data.toLocaleString('pt-BR')}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+                            <Button size="sm" variant={podeEntrar ? 'default' : 'outline'} disabled={!podeEntrar} onClick={() => entrarNaVideoChamada(reuniao)}>
+                              <Video className="h-4 w-4 mr-2"/> Entrar
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </TabsContent>
+
           </Tabs>
         </div>
       </main>
+      <ModalVideoAula
+        isOpen={modalVideoAulaAberto}
+        onClose={setModalVideoAulaAberto}
+        aulas={videoAulas}
+        selectedId={videoAulaSelecionadaId}
+        onSelect={(id) => {
+          setVideoAulaSelecionadaId(id)
+          setVideoAulas(prev => prev.map(v => v.id === id ? { ...v, visto: true } : v))
+        }}
+      />
+
+      <ModalVideoChamada
+        isOpen={modalVideoChamadaAberto}
+        onClose={setModalVideoChamadaAberto}
+        titulo={videoChamadaSelecionada?.titulo}
+        dataHora={videoChamadaSelecionada?.dataHora}
+      />
       <ModalDiscussaoForum
         isOpen={modalDiscussaoOpen}
         onClose={() => setModalDiscussaoOpen(false)}
