@@ -34,6 +34,7 @@ import {
   Activity,
   BookMarked,
   Star,
+  Clock,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -59,6 +60,7 @@ const menuItems = {
     { icon: Home, label: "Início", href: "/professor" },
     { icon: BookOpen, label: "Turmas", href: "/professor/turmas" },
     { icon: Calendar, label: "Agenda", href: "/professor/agenda" },
+    { icon: Clock, label: "Disponibilização de Horários", href: "/professor/disponibilizacao-horarios" },
     { icon: MessageSquare, label: "Comunicação", href: "/professor/comunicacao" },
     { icon: Settings, label: "Configurações", href: "/professor/configuracoes" },
   ],
