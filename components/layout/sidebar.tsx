@@ -44,6 +44,7 @@ const menuItems = {
   aluno: [
     { icon: Home, label: "Início", href: "/aluno", badge: "3" },
     { icon: BookMarked, label: "Disciplinas", href: "/aluno/disciplinas", badge: "5" },
+    { icon: BookOpen, label: "Grade Curricular", href: "/aluno/grade-curricular" },
     { icon: Target, label: "Atividades", href: "/aluno/atividades", badge: "2" },
     { icon: Award, label: "Boletim", href: "/aluno/boletim" },
     { icon: Trophy, label: "Desempenho", href: "/aluno/desempenho" },
