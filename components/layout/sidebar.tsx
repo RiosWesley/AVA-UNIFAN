@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -102,7 +100,6 @@ export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname()
   const items = menuItems[userRole]
 
-  // Persist user role for background scoping
   if (typeof window !== "undefined") {
     try {
       const stored = window.localStorage.getItem("ava:userRole")
@@ -112,7 +109,6 @@ export function Sidebar({ userRole }: SidebarProps) {
     } catch {}
   }
 
-  // Ensure localStorage is in sync (for cases where it might be modified externally)
   useEffect(() => {
     const saved = localStorage.getItem("ava:sidebar:collapsed")
     if (saved !== null) {
@@ -121,7 +117,7 @@ export function Sidebar({ userRole }: SidebarProps) {
         setIsCollapsed(savedState)
       }
     }
-  }, []) // Only run once on mount
+  }, []) 
 
   const toggleCollapsed = () => {
     const newState = !isCollapsed
@@ -199,8 +195,8 @@ export function Sidebar({ userRole }: SidebarProps) {
         )}
       </div>
 
-      <ScrollArea className="flex-1 py-6" showScrollbars={false}>
-        <nav className="space-y-1">
+      <ScrollArea className="flex-1 ">
+        <nav className="px-2 max-h-80">
           {items.map((item, index) => {
             const Icon = item.icon
             const isActive = pathname === item.href
