@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,7 +28,9 @@ import {
   Moon,
   Plus,
   Trash2,
-  Edit3
+  Edit3,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -53,8 +56,33 @@ interface DisponibilizacaoHorarios {
   dataEnvio?: Date
 }
 
+type PreferenciaNivel = 'alta' | 'media' | 'baixa'
+
+interface Disciplina {
+  id: string
+  nome: string
+}
+
+interface Curso {
+  id: string
+  nome: string
+  disciplinas: Disciplina[]
+}
+
+interface PreferenciaDisciplina {
+  disciplinaId: string
+  podeLecionar: boolean
+  preferencia?: PreferenciaNivel
+}
+
+interface PreferenciasPorCurso {
+  cursoId: string
+  preferencias: PreferenciaDisciplina[]
+}
+
 export default function DisponibilizacaoHorariosPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [semestreSelecionado, setSemestreSelecionado] = useState("2024.1")
   const [status, setStatus] = useState<'rascunho' | 'enviada' | 'aprovada'>('rascunho')
   const [observacoes, setObservacoes] = useState("")
@@ -67,6 +95,37 @@ export default function DisponibilizacaoHorariosPage() {
     { nome: "Sábado" }
   ])
   const [historico, setHistorico] = useState<DisponibilizacaoHorarios[]>([])
+  const [cursos] = useState<Curso[]>([
+    {
+      id: 'ads',
+      nome: 'Análise e Desenvolvimento de Sistemas',
+      disciplinas: [
+        { id: 'alg1', nome: 'Algoritmos I' },
+        { id: 'poo', nome: 'Programação Orientada a Objetos' },
+        { id: 'bd1', nome: 'Banco de Dados I' },
+      ]
+    },
+    {
+      id: 'eng',
+      nome: 'Engenharia de Software',
+      disciplinas: [
+        { id: 'req', nome: 'Requisitos de Software' },
+        { id: 'test', nome: 'Teste de Software' },
+        { id: 'arq', nome: 'Arquitetura de Software' },
+      ]
+    },
+    {
+      id: 'si',
+      nome: 'Sistemas de Informação',
+      disciplinas: [
+        { id: 'redes', nome: 'Redes de Computadores' },
+        { id: 'seg', nome: 'Segurança da Informação' },
+        { id: 'ux', nome: 'Experiência do Usuário' },
+      ]
+    }
+  ])
+  const [preferenciasPorCurso, setPreferenciasPorCurso] = useState<PreferenciasPorCurso[]>([])
+  const [accordionsAbertos, setAccordionsAbertos] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const checkTheme = () => {
@@ -247,6 +306,19 @@ export default function DisponibilizacaoHorariosPage() {
         return
       }
 
+      // Validação do Passo 2: ao menos uma disciplina selecionada
+      const totalSelecionadas = preferenciasPorCurso.reduce((acc, curso) => (
+        acc + curso.preferencias.filter(p => p.podeLecionar).length
+      ), 0)
+
+      if (totalSelecionadas === 0) {
+        toast.error("Selecione ao menos uma disciplina no Passo 2", {
+          description: "Expanda um curso e marque as disciplinas que pode lecionar"
+        })
+        setCurrentStep(2)
+        return
+      }
+
       // Simular envio para coordenação
       const disponibilizacao: DisponibilizacaoHorarios = {
         id: Date.now().toString(),
@@ -297,6 +369,88 @@ export default function DisponibilizacaoHorariosPage() {
       case "rascunho": return Save
       default: return AlertCircle
     }
+  }
+
+  const avancarParaPasso2 = () => {
+    const temHorarios = horarios.some(dia => 
+      Object.values(dia).some(horario => 
+        typeof horario === 'object' && horario && horario.inicio && horario.fim
+      )
+    )
+
+    if (!temHorarios) {
+      toast.error("Adicione pelo menos um horário válido para avançar")
+      return
+    }
+    setCurrentStep(2)
+  }
+
+  const alternarAccordionCurso = (cursoId: string) => {
+    setAccordionsAbertos(prev => ({ ...prev, [cursoId]: !prev[cursoId] }))
+  }
+
+  const getPreferenciasCurso = (cursoId: string): PreferenciasPorCurso => {
+    const existente = preferenciasPorCurso.find(c => c.cursoId === cursoId)
+    if (existente) return existente
+    const novo: PreferenciasPorCurso = { cursoId, preferencias: [] }
+    setPreferenciasPorCurso(prev => [...prev, novo])
+    return novo
+  }
+
+  const togglePodeLecionar = (cursoId: string, disciplinaId: string, pode: boolean) => {
+    setPreferenciasPorCurso(prev => {
+      const copia = [...prev]
+      let cursoPrefs = copia.find(c => c.cursoId === cursoId)
+      if (!cursoPrefs) {
+        cursoPrefs = { cursoId, preferencias: [] }
+        copia.push(cursoPrefs)
+      }
+      const pref = cursoPrefs.preferencias.find(p => p.disciplinaId === disciplinaId)
+      if (pref) {
+        pref.podeLecionar = pode
+        if (!pode) delete pref.preferencia
+      } else {
+        cursoPrefs.preferencias.push({ disciplinaId, podeLecionar: pode })
+      }
+      return copia
+    })
+  }
+
+  const setNivelPreferencia = (cursoId: string, disciplinaId: string, nivel?: PreferenciaNivel) => {
+    setPreferenciasPorCurso(prev => {
+      const copia = [...prev]
+      let cursoPrefs = copia.find(c => c.cursoId === cursoId)
+      if (!cursoPrefs) {
+        cursoPrefs = { cursoId, preferencias: [] }
+        copia.push(cursoPrefs)
+      }
+      let pref = cursoPrefs.preferencias.find(p => p.disciplinaId === disciplinaId)
+      if (!pref) {
+        pref = { disciplinaId, podeLecionar: true }
+        cursoPrefs.preferencias.push(pref)
+      }
+      if (nivel) pref.preferencia = nivel
+      else delete pref.preferencia
+      return copia
+    })
+  }
+
+  const selecionarTodas = (curso: Curso) => {
+    setPreferenciasPorCurso(prev => {
+      const outras = prev.filter(c => c.cursoId !== curso.id)
+      const todas: PreferenciasPorCurso = {
+        cursoId: curso.id,
+        preferencias: curso.disciplinas.map(d => ({ disciplinaId: d.id, podeLecionar: true, preferencia: 'alta' }))
+      }
+      return [...outras, todas]
+    })
+  }
+
+  const limparSelecao = (cursoId: string) => {
+    setPreferenciasPorCurso(prev => {
+      const outras = prev.filter(c => c.cursoId !== cursoId)
+      return [...outras, { cursoId, preferencias: [] }]
+    })
   }
 
   return (
@@ -381,7 +535,7 @@ export default function DisponibilizacaoHorariosPage() {
           </div>
 
           <Tabs defaultValue="disponibilizar" className="space-y-6">
-            <TabsList className={`grid w-full grid-cols-2 backdrop-blur-sm ${
+          <TabsList className={`grid w-full grid-cols-2 backdrop-blur-sm ${
               isLiquidGlass
                 ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                 : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -397,7 +551,15 @@ export default function DisponibilizacaoHorariosPage() {
             </TabsList>
 
             <TabsContent value="disponibilizar" className="space-y-6">
-              {/* Formulário de Horários */}
+              {/* Indicador simples de passos */}
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`px-3 py-1 rounded-full border ${currentStep === 1 ? 'bg-green-600 text-white border-green-600' : 'bg-transparent'} `}>Passo 1</div>
+                <span className="text-gray-400">→</span>
+                <div className={`px-3 py-1 rounded-full border ${currentStep === 2 ? 'bg-green-600 text-white border-green-600' : 'bg-transparent'}`}>Passo 2</div>
+              </div>
+
+              {/* Passo 1: Formulário de Horários */}
+              {currentStep === 1 && (
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`${
@@ -521,7 +683,7 @@ export default function DisponibilizacaoHorariosPage() {
                     />
                   </div>
 
-                  {/* Botões de Ação */}
+                  {/* Botões de Ação do Passo 1 */}
                   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <LiquidGlassButton
                       variant="outline"
@@ -532,15 +694,118 @@ export default function DisponibilizacaoHorariosPage() {
                       Salvar Rascunho
                     </LiquidGlassButton>
                     <LiquidGlassButton
-                      onClick={enviarParaCoordenacao}
+                      onClick={avancarParaPasso2}
                       className="flex-1"
                     >
+                      <ChevronRight className="h-4 w-4 mr-2" />
+                      Continuar para Passo 2
+                    </LiquidGlassButton>
+                  </div>
+                </CardContent>
+              </LiquidGlassCard>
+              )}
+
+              {/* Passo 2: Seleção de Disciplinas e Preferências */}
+              {currentStep === 2 && (
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className={`${
+                  isLiquidGlass
+                    ? 'bg-black/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                }`}
+              >
+                <CardHeader>
+                  <CardTitle className="text-2xl text-gray-900 dark:text-gray-100">
+                    Disciplinas e Preferências por Curso
+                  </CardTitle>
+                  <CardDescription>
+                    Selecione as disciplinas que você pode lecionar e defina suas preferências
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {cursos.map(curso => {
+                    const aberto = !!accordionsAbertos[curso.id]
+                    const prefs = preferenciasPorCurso.find(c => c.cursoId === curso.id)
+                    const selecionadas = prefs ? prefs.preferencias.filter(p => p.podeLecionar).length : 0
+                    return (
+                      <div key={curso.id} className={`rounded-xl border ${
+                        isLiquidGlass
+                          ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
+                          : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
+                      }`}>
+                        <button
+                          type="button"
+                          onClick={() => alternarAccordionCurso(curso.id)}
+                          className="w-full flex items-center justify-between px-4 py-3"
+                          aria-expanded={aberto}
+                        >
+                          <div className="flex items-center gap-3">
+                            {aberto ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <span className="font-medium text-gray-900 dark:text-gray-100">{curso.nome}</span>
+                            <Badge variant="outline">{selecionadas}/{curso.disciplinas.length} selecionadas</Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); selecionarTodas(curso) }}>Selecionar todas</Button>
+                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); limparSelecao(curso.id) }}>Limpar</Button>
+                          </div>
+                        </button>
+                        {aberto && (
+                          <div className="px-4 pb-4 space-y-3">
+                            {curso.disciplinas.map(d => {
+                              const cursoPrefs = getPreferenciasCurso(curso.id)
+                              const pref = cursoPrefs.preferencias.find(p => p.disciplinaId === d.id)
+                              const pode = !!pref?.podeLecionar
+                              const nivel = pref?.preferencia
+                              return (
+                                <div key={d.id} className="flex items-center justify-between rounded-lg px-3 py-2 border">
+                                  <div className="flex items-center gap-3">
+                                    <Switch checked={pode} onCheckedChange={(v) => togglePodeLecionar(curso.id, d.id, v)} />
+                                    <span className="text-sm text-gray-900 dark:text-gray-100">{d.nome}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Select value={nivel || ''} onValueChange={(v) => setNivelPreferencia(curso.id, d.id, v as PreferenciaNivel)}>
+                                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                                        isLiquidGlass
+                                          ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                                          : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                                      }`}>
+                                        <SelectValue placeholder="Preferência" />
+                                      </SelectTrigger>
+                                      <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                                        <SelectItem value="alta">Alta</SelectItem>
+                                        <SelectItem value="media">Média</SelectItem>
+                                        <SelectItem value="baixa">Baixa</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {/* Botões de Ação do Passo 2 */}
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(1)}>
+                      <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
+                      Voltar ao Passo 1
+                    </Button>
+                    <LiquidGlassButton variant="outline" onClick={salvarRascunho} className="flex-1">
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar Rascunho
+                    </LiquidGlassButton>
+                    <LiquidGlassButton onClick={enviarParaCoordenacao} className="flex-1">
                       <Send className="h-4 w-4 mr-2" />
                       Enviar para Coordenação
                     </LiquidGlassButton>
                   </div>
                 </CardContent>
               </LiquidGlassCard>
+              )}
             </TabsContent>
 
             <TabsContent value="historico" className="space-y-6">
