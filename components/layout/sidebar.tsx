@@ -142,8 +142,7 @@ export function Sidebar({ userRole }: SidebarProps) {
           "relative transition-all duration-300",
           isCollapsed && "mx-auto"
         )}>
-          <div className="absolute inset-0 bg-green-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-          <div className="relative bg-green-600 p-2 rounded-lg">
+          <div className=" bg-green-600 p-2 rounded-lg">
             <GraduationCap className="h-6 w-6 text-white" />
           </div>
         </div>
@@ -206,7 +205,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground relative group transition-all duration-300",
-                  "border border-transparent hover:border-sidebar-border/50",
+                  "border border-transparent hover:border-sidebar-border/50 my-0.5",
                   isActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow-lg border-green-500/20",
                   isCollapsed && "px-2 justify-center",
                   !isCollapsed && "h-12 px-6"
@@ -226,9 +225,6 @@ export function Sidebar({ userRole }: SidebarProps) {
                       hoveredItem === item.href && "text-green-500"
                     )}
                   />
-                  {isActive && (
-                    <div className="absolute -inset-1 bg-green-500/20 rounded-full blur-sm animate-pulse"></div>
-                  )}
                 </div>
                 {!isCollapsed && (
                   <>
