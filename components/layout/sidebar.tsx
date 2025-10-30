@@ -3,7 +3,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LiquidGlassSidebar } from "@/components/liquid-glass"
 import {
@@ -33,6 +32,8 @@ import {
   BookMarked,
   Star,
   Clock,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -42,12 +43,18 @@ interface SidebarProps {
 const menuItems = {
   aluno: [
     { icon: Home, label: "Início", href: "/aluno", badge: "3" },
-    { icon: BookMarked, label: "Disciplinas", href: "/aluno/disciplinas", badge: "5" },
+    {
+      icon: GraduationCap,
+      label: "Central do Aluno",
+      children: [
+        { icon: BookMarked, label: "Disciplinas", href: "/aluno/disciplinas", badge: "5" },
+        { icon: Target, label: "Atividades", href: "/aluno/atividades", badge: "2" },
+        { icon: Award, label: "Boletim", href: "/aluno/boletim" },
+        { icon: Trophy, label: "Desempenho", href: "/aluno/desempenho" },
+        { icon: Activity, label: "Frequência", href: "/aluno/frequencia" },
+      ]
+    },
     { icon: BookOpen, label: "Grade Curricular", href: "/aluno/grade-curricular" },
-    { icon: Target, label: "Atividades", href: "/aluno/atividades", badge: "2" },
-    { icon: Award, label: "Boletim", href: "/aluno/boletim" },
-    { icon: Trophy, label: "Desempenho", href: "/aluno/desempenho" },
-    { icon: Activity, label: "Frequência", href: "/aluno/frequencia" },
     { icon: BarChart3, label: "Relatórios", href: "/aluno/relatorios" },
     { icon: MessageSquare, label: "Comunicação", href: "/aluno/comunicacao", badge: "1" },
     { icon: CreditCard, label: "Financeiro", href: "/aluno/financeiro" },
@@ -94,9 +101,20 @@ function getInitialCollapsedState(): boolean {
   }
 }
 
+function getInitialOpenGroups(userRole: SidebarProps["userRole"]): Record<string, boolean> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const saved = localStorage.getItem(`ava:sidebar:openGroups:${userRole}`)
+    return saved ? JSON.parse(saved) : {}
+  } catch {
+    return {}
+  }
+}
+
 export function Sidebar({ userRole }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsedState)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => getInitialOpenGroups(userRole))
   const pathname = usePathname()
   const items = menuItems[userRole]
 
@@ -119,6 +137,25 @@ export function Sidebar({ userRole }: SidebarProps) {
     }
   }, []) 
 
+  // Persistência do estado de grupos abertos por papel de usuário
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`ava:sidebar:openGroups:${userRole}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') {
+          setOpenGroups(parsed)
+        }
+      }
+    } catch {}
+  }, [userRole])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`ava:sidebar:openGroups:${userRole}`, JSON.stringify(openGroups))
+    } catch {}
+  }, [openGroups, userRole])
+
   const toggleCollapsed = () => {
     const newState = !isCollapsed
     setIsCollapsed(newState)
@@ -129,7 +166,7 @@ export function Sidebar({ userRole }: SidebarProps) {
     <TooltipProvider>
       <LiquidGlassSidebar
         className={cn(
-          "relative flex flex-col h-full transition-all duration-500 ease-in-out backdrop-blur-xl",
+          "relative flex flex-col h-full transition-all duration-500 ease-in-out backdrop-blur-xl overflow-hidden",
           isCollapsed ? "w-16" : "w-72",
           "shadow-2xl border-r border-sidebar-border/50"
         )}
@@ -194,11 +231,15 @@ export function Sidebar({ userRole }: SidebarProps) {
         )}
       </div>
 
-      <ScrollArea className="flex-1 ">
-        <nav className="px-2 max-h-80">
+      <div className="flex-1 overflow-y-auto">
+        <nav className="px-2">
           {items.map((item, index) => {
             const Icon = item.icon
-            const isActive = pathname === item.href
+            const isGroup = 'children' in item && Array.isArray((item as any).children)
+            const groupChildren = isGroup ? (item as any).children : undefined
+            const isActive = isGroup
+              ? groupChildren.some((c: any) => c.href === pathname)
+              : pathname === (item as any).href
 
             const buttonContent = (
               <Button
@@ -208,10 +249,16 @@ export function Sidebar({ userRole }: SidebarProps) {
                   "border border-transparent hover:border-sidebar-border/50 my-0.5",
                   isActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow-lg border-green-500/20",
                   isCollapsed && "px-2 justify-center",
-                  !isCollapsed && "h-12 px-6"
+                  !isCollapsed && "h-12 px-6",
+                  isGroup && openGroups[item.label] && "bg-green-500/10 border-green-500/20"
                 )}
-                onMouseEnter={() => setHoveredItem(item.href)}
+                onMouseEnter={() => setHoveredItem((item as any).href)}
                 onMouseLeave={() => setHoveredItem(null)}
+                onClick={() => {
+                  if (isGroup && !isCollapsed) {
+                    setOpenGroups(prev => ({ ...prev, [item.label]: !prev[item.label] }))
+                  }
+                }}
                 style={{
                   animationDelay: `${index * 50}ms`
                 }}
@@ -222,27 +269,36 @@ export function Sidebar({ userRole }: SidebarProps) {
                       "h-5 w-5 transition-all duration-300",
                       isActive && "text-green-600 dark:text-green-400",
                       !isCollapsed && "mr-3",
-                      hoveredItem === item.href && "text-green-500"
+                      hoveredItem === (item as any).href && "text-green-500"
                     )}
                   />
                 </div>
                 {!isCollapsed && (
                   <>
                     <span className="font-medium flex-1 text-left">{item.label}</span>
-                    {'badge' in item && item.badge && (
+                    {isGroup ? (
+                      <div className="flex items-center">
+                        <div className={cn(
+                          "transition-all duration-300 ease-in-out",
+                          openGroups[item.label] ? "rotate-90" : "rotate-0"
+                        )}>
+                          <ChevronRight className="h-4 w-4 opacity-70" />
+                        </div>
+                      </div>
+                    ) : ('badge' in item && (item as any).badge && (
                       <div className={cn(
                         "flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold transition-all duration-300",
                         isActive
                           ? "bg-green-500 text-white shadow-lg"
                           : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
-                        hoveredItem === item.href && "text-green-500"
+                        hoveredItem === (item as any).href && "text-green-500"
                       )}>
-                        {item.badge}
+                        {(item as any).badge}
                       </div>
-                    )}
+                    ))}
                   </>
                 )}
-                {!isCollapsed && hoveredItem === item.href && (
+                {!isCollapsed && hoveredItem === (item as any).href && (
                   <div className="absolute right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
@@ -252,18 +308,18 @@ export function Sidebar({ userRole }: SidebarProps) {
 
             if (isCollapsed) {
               return (
-                <Tooltip key={item.href}>
+                <Tooltip key={item.label}>
                   <TooltipTrigger asChild>
-                    <Link href={item.href}>
+                    <div>
                       {buttonContent}
-                    </Link>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="ml-2">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{item.label}</span>
-                      {'badge' in item && item.badge && (
+                      {'badge' in item && (item as any).badge && (
                         <span className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 px-1.5 py-0.5 rounded-full text-xs font-semibold">
-                          {item.badge}
+                          {(item as any).badge}
                         </span>
                       )}
                     </div>
@@ -272,14 +328,67 @@ export function Sidebar({ userRole }: SidebarProps) {
               )
             }
 
+            if (isGroup) {
+              return (
+                <div key={item.label}>
+                  <div>
+                    {buttonContent}
+                  </div>
+                  <div 
+                    className={cn(
+                      "overflow-hidden transition-all duration-300 ease-in-out",
+                      openGroups[item.label] 
+                        ? "max-h-96 opacity-100" 
+                        : "max-h-0 opacity-0"
+                    )}
+                  >
+                    <div className="pl-10 pr-2 mt-1 space-y-1">
+                      {groupChildren.map((child: any, childIndex: number) => {
+                        const ChildIcon = child.icon
+                        const childActive = pathname === child.href
+                        return (
+                          <Link key={child.href} href={child.href}>
+                            <Button
+                              variant={childActive ? "secondary" : "ghost"}
+                              className={cn(
+                                "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300",
+                                "border border-transparent hover:border-sidebar-border/50 h-10 px-6",
+                                childActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow border-green-500/20"
+                              )}
+                              style={{
+                                animationDelay: openGroups[item.label] ? `${childIndex * 50}ms` : '0ms',
+                                transform: openGroups[item.label] ? 'translateY(0)' : 'translateY(-10px)',
+                                opacity: openGroups[item.label] ? 1 : 0,
+                                transition: 'all 0.3s ease-in-out'
+                              }}
+                            >
+                              <div className="flex items-center justify-center w-6 h-6 mr-3">
+                                <ChildIcon className="h-4 w-4" />
+                              </div>
+                              <span className="text-sm flex-1 text-left">{child.label}</span>
+                              {'badge' in child && child.badge && (
+                                <div className="flex items-center justify-center min-w-[18px] h-5 px-1 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                                  {child.badge}
+                                </div>
+                              )}
+                            </Button>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={(item as any).href} href={(item as any).href}>
                 {buttonContent}
               </Link>
             )
           })}
         </nav>
-      </ScrollArea>
+      </div>
 
       <div className="p-4 border-t border-sidebar-border/30 space-y-4 backdrop-blur-sm">
         {!isCollapsed && (
