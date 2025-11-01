@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
@@ -8,11 +9,59 @@ import { Search, Activity, CheckCircle, Clock, Target, AlertCircle, FileText, Ca
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/hooks/use-toast'
 
 export default function AtividadesPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilter, setActiveFilter] = useState('todas')
+
+  // Query client for mutations
+  const queryClient = useQueryClient()
+
+  // Mutation to complete activity
+  const completeActivityMutation = useMutation({
+    mutationFn: async (activityId: number) => {
+      // TODO: Replace with actual API call
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      // Update local state
+      const atividade = atividadesPendentes.find(a => a.id === activityId)
+      if (atividade) {
+        const atividadeConcluida = {
+          ...atividade,
+          status: 'concluido',
+          dataConclusao: new Date().toLocaleDateString('pt-BR')
+        }
+        atividadesConcluidas.push(atividadeConcluida)
+        const index = atividadesPendentes.findIndex(a => a.id === activityId)
+        if (index !== -1) {
+          atividadesPendentes.splice(index, 1)
+        }
+      }
+
+      return activityId
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] })
+      toast({
+        title: "Atividade concluída! 🎉",
+        description: "Parabéns! Você marcou a atividade como concluída.",
+      })
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao concluir atividade",
+        description: "Tente novamente em alguns momentos.",
+        variant: "destructive",
+      })
+    },
+  })
+
+  const handleCompleteActivity = (activityId: number) => {
+    completeActivityMutation.mutate(activityId)
+  }
 
   useEffect(() => {
     const checkTheme = () => {
@@ -266,28 +315,49 @@ export default function AtividadesPage() {
                           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                             {atividade.descricao}
                           </p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1 text-xs">
-                                <BookOpen className="h-3 w-3" />
-                                <span className="font-medium">{atividade.disciplina}</span>
-                              </div>
-                              <Badge className={getDificuldadeColor(atividade.dificuldade)}>
-                                {atividade.dificuldade}
-                              </Badge>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                <CalIcon className="h-3 w-3" />
-                                <span className="font-bold">Vence: {atividade.dataVencimento}</span>
-                              </div>
-                              {atividade.participantes > 1 && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Users className="h-3 w-3" />
-                                  <span>{atividade.participantes} participantes</span>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1 text-xs">
+                                  <BookOpen className="h-3 w-3" />
+                                  <span className="font-medium">{atividade.disciplina}</span>
                                 </div>
-                              )}
+                                <Badge className={getDificuldadeColor(atividade.dificuldade)}>
+                                  {atividade.dificuldade}
+                                </Badge>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                  <CalIcon className="h-3 w-3" />
+                                  <span className="font-bold">Vence: {atividade.dataVencimento}</span>
+                                </div>
+                                {atividade.participantes > 1 && (
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Users className="h-3 w-3" />
+                                    <span>{atividade.participantes} participantes</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+
+                            {/* Button to complete activity */}
+                            <Button
+                              onClick={() => handleCompleteActivity(atividade.id)}
+                              disabled={completeActivityMutation.isPending}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                            >
+                              {completeActivityMutation.isPending ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                  <span>Concluindo...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Marcar como Concluída</span>
+                                </>
+                              )}
+                            </Button>
                           </div>
                         </div>
                       </div>

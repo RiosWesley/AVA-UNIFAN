@@ -12,6 +12,8 @@ import { ArrowLeft, Bell, FileText, Upload, CheckCircle, Clock, AlertCircle, Mes
 import Link from "next/link"
 import { useMemo, useState } from 'react'
 import { ModalDiscussaoForum, ModalVideoAula, ModalVideoChamada } from '@/components/modals'
+import { useMutation } from '@tanstack/react-query'
+import { toast } from '@/hooks/use-toast'
 
 export default function DisciplinaDetalhePage() {
   const disciplina = {
@@ -90,6 +92,94 @@ export default function DisciplinaDetalhePage() {
   const [modalDiscussaoOpen, setModalDiscussaoOpen] = useState(false)
   const [forumSelecionado, setForumSelecionado] = useState<any>(null)
 
+  // Upload activity states
+  const [uploadFiles, setUploadFiles] = useState<Record<number, File | null>>({})
+  const [uploadComments, setUploadComments] = useState<Record<number, string>>({})
+
+  // Upload activity mutation
+  const uploadActivityMutation = useMutation({
+    mutationFn: async ({ activityId, file, comment }: { activityId: number; file: File; comment: string }) => {
+      // TODO: Replace with actual API call
+      // Simulate upload
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      // Update activity status locally
+      const activityIndex = atividades.findIndex(a => a.titulo === atividade.titulo)
+      if (activityIndex !== -1) {
+        atividades[activityIndex] = {
+          ...atividades[activityIndex],
+          status: 'Concluída',
+          nota: null
+        }
+      }
+
+      return { activityId, fileName: file.name }
+    },
+    onSuccess: (data, variables) => {
+      toast({
+        title: "Atividade enviada com sucesso! 🎉",
+        description: `${variables.fileName} foi enviada para a atividade.`,
+      })
+      // Clear upload state
+      setUploadFiles(prev => ({ ...prev, [variables.activityId]: null }))
+      setUploadComments(prev => ({ ...prev, [variables.activityId]: '' }))
+    },
+    onError: (error, variables) => {
+      toast({
+        title: "Erro ao enviar atividade",
+        description: "Verifique o arquivo e tente novamente.",
+        variant: "destructive",
+      })
+    },
+  })
+
+  const handleFileChange = (activityId: number, file: File | null) => {
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png', 'text/plain']
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Tipo de arquivo não suportado",
+          description: "Use PDF, DOC, DOCX, JPG, PNG ou TXT",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024
+      if (file.size > maxSize) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "Máximo de 10MB permitido",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+    setUploadFiles(prev => ({ ...prev, [activityId]: file }))
+  }
+
+  const handleSubmitActivity = (atividade: any) => {
+    const file = uploadFiles[atividade.id]
+    const comment = uploadComments[atividade.id] || ''
+
+    if (!file) {
+      toast({
+        title: "Selecione um arquivo",
+        description: "É necessário anexar um arquivo para enviar a atividade.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    uploadActivityMutation.mutate({
+      activityId: atividade.id,
+      file,
+      comment
+    })
+  }
+
   // Vídeo-aulas
   const [videoAulas, setVideoAulas] = useState<Array<{ id: number; titulo: string; duracao: string; visto: boolean; url: string }>>([
     { id: 1, titulo: 'Introdução às Funções', duracao: '12:30', visto: true, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
@@ -101,14 +191,44 @@ export default function DisciplinaDetalhePage() {
   const [modalVideoAulaAberto, setModalVideoAulaAberto] = useState(false)
   const videoAulaSelecionada = useMemo(() => videoAulas.find(v => v.id === videoAulaSelecionadaId) || null, [videoAulas, videoAulaSelecionadaId])
 
+  // Mutation for marking video as watched
+  const markAsWatchedMutation = useMutation({
+    mutationFn: async (videoId: number) => {
+      // TODO: Replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 300))
+      return videoId
+    },
+    onSuccess: (videoId) => {
+      toast({
+        title: "Vídeo marcado como assistido! ✓",
+        description: "Seu progresso foi atualizado.",
+      })
+    },
+  })
+
   const abrirVideoAula = (id: number) => {
     setVideoAulaSelecionadaId(id)
     setModalVideoAulaAberto(true)
+
+    // Mark as watched with mutation
+    const video = videoAulas.find(v => v.id === id)
+    if (video && !video.visto) {
+      markAsWatchedMutation.mutate(id)
+    }
+
+    // Update local state
     setVideoAulas(prev => prev.map(v => v.id === id ? { ...v, visto: true } : v))
   }
 
   const selecionarDaTrilha = (id: number) => {
     setVideoAulaSelecionadaId(id)
+
+    // Mark as watched with mutation
+    const video = videoAulas.find(v => v.id === id)
+    if (video && !video.visto) {
+      markAsWatchedMutation.mutate(id)
+    }
+
     setVideoAulas(prev => prev.map(v => v.id === id ? { ...v, visto: true } : v))
   }
 
@@ -273,16 +393,47 @@ export default function DisciplinaDetalhePage() {
                       {atividade.status === "Pendente" && (
                         <div className="space-y-4 border-t pt-4">
                           <div>
-                            <Label htmlFor="arquivo">Enviar Arquivo</Label>
-                            <Input id="arquivo" type="file" className="mt-1" />
+                            <Label htmlFor={`arquivo-${atividade.id}`}>Enviar Arquivo</Label>
+                            <Input
+                              id={`arquivo-${atividade.id}`}
+                              type="file"
+                              className="mt-1"
+                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                              onChange={(e) => handleFileChange(atividade.id, e.target.files?.[0] || null)}
+                            />
+                            {uploadFiles[atividade.id] && (
+                              <p className="text-sm text-green-600 mt-1 flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4" />
+                                {uploadFiles[atividade.id]?.name} ({(uploadFiles[atividade.id]?.size! / 1024).toFixed(1)} KB)
+                              </p>
+                            )}
                           </div>
                           <div>
-                            <Label htmlFor="comentario">Comentário (opcional)</Label>
-                            <Textarea id="comentario" placeholder="Adicione um comentário..." className="mt-1" />
+                            <Label htmlFor={`comentario-${atividade.id}`}>Comentário (opcional)</Label>
+                            <Textarea
+                              id={`comentario-${atividade.id}`}
+                              placeholder="Adicione um comentário..."
+                              className="mt-1"
+                              value={uploadComments[atividade.id] || ''}
+                              onChange={(e) => setUploadComments(prev => ({ ...prev, [atividade.id]: e.target.value }))}
+                            />
                           </div>
-                          <Button>
-                            <Upload className="h-4 w-4 mr-2" />
-                            Enviar Atividade
+                          <Button
+                            onClick={() => handleSubmitActivity(atividade)}
+                            disabled={uploadActivityMutation.isPending}
+                            className="w-full"
+                          >
+                            {uploadActivityMutation.isPending ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Enviar Atividade
+                              </>
+                            )}
                           </Button>
                         </div>
                       )}
@@ -332,7 +483,21 @@ export default function DisciplinaDetalhePage() {
 
             <TabsContent value="videoaulas">
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center"><Video className="h-5 w-5 mr-2"/>Vídeo-aulas</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center"><Video className="h-5 w-5 mr-2"/>Vídeo-aulas</h3>
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                    {videoAulas.filter(v => v.visto).length} de {videoAulas.length} assistidos
+                  </Badge>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                  <div
+                    className="bg-green-600 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${(videoAulas.filter(v => v.visto).length / videoAulas.length) * 100}%` }}
+                  ></div>
+                </div>
+
                 {videoAulas.map((aula) => (
                   <Card key={aula.id}>
                     <CardContent className="p-4">

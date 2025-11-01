@@ -5,6 +5,7 @@ import { JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { QueryProvider } from "@/components/providers/query-provider"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
@@ -42,9 +43,11 @@ export default function RootLayout({
           themes={["light", "dark", "liquid-glass"]}
           storageKey="ava-theme"
         >
-          <Suspense fallback={null}>{children}</Suspense>
-          <Analytics />
-          <Toaster />
+          <QueryProvider>
+            <Suspense fallback={null}>{children}</Suspense>
+            <Analytics />
+            <Toaster />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

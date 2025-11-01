@@ -10,9 +10,26 @@ import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Target, Activity, Sparkles } from "lucide-react"
 import Carousel from "@/components/ui/carousel"
+import { useDashboardData } from "@/hooks/use-dashboard"
 
 export default function AlunoDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+
+  // Mock student ID - TODO: Get from authentication context
+  const studentId = "1"
+
+  // Dashboard data with React Query
+  const {
+    student,
+    upcomingSchedules,
+    recentGrades,
+    news,
+    attendancePercentage,
+    gradeAverage,
+    pendingActivitiesCount,
+    isLoading,
+    error
+  } = useDashboardData(studentId)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -30,45 +47,32 @@ export default function AlunoDashboard() {
     return () => observer.disconnect()
   }, [])
 
-  const proximasAulas = [
-    {
-      disciplina: "Matemática",
-      horario: "08:00 - 09:40",
-      sala: "A-101",
-      professor: "Prof. Carlos Silva",
-      status: "Próxima",
-      tipo: "Teórica"
-    },
-    {
-      disciplina: "Português",
-      horario: "10:00 - 11:40",
-      sala: "B-205",
-      professor: "Prof. Ana Santos",
-      status: "Em breve",
-      tipo: "Prática"
-    },
-    {
-      disciplina: "História",
-      horario: "14:00 - 15:40",
-      sala: "C-301",
-      professor: "Prof. João Costa",
-      status: "Hoje",
-      tipo: "Teórica"
-    },
-  ]
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        </div>
+      </div>
+    )
+  }
 
-  const ultimasNotas = [
-    { disciplina: "Matemática", nota: 8.5, data: "15/03/2024", conceito: "Ótimo" },
-    { disciplina: "Português", nota: 9.2, data: "12/03/2024", conceito: "Excelente" },
-    { disciplina: "Física", nota: 7.8, data: "10/03/2024", conceito: "Bom" },
-    { disciplina: "Química", nota: 8.9, data: "08/03/2024", conceito: "Ótimo" },
-  ]
-
-  const comunicados = [
-    { titulo: "Prova de Matemática", data: "20/03/2024", tipo: "Avaliação", prioridade: "alta" },
-    { titulo: "Entrega do Projeto de História", data: "25/03/2024", tipo: "Atividade", prioridade: "média" },
-    { titulo: "Reunião de Pais", data: "30/03/2024", tipo: "Evento", prioridade: "baixa" },
-  ]
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Erro ao carregar dados</h2>
+            <p className="text-gray-600">Tente novamente em alguns minutos</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const carouselImages = [
     { src: "/placeholder.jpg", alt: "Aviso 1" },
@@ -100,7 +104,7 @@ export default function AlunoDashboard() {
               </div>
               <div>
                 <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
-                  Bem-vindo, João!
+                  Bem-vindo, {student?.name || 'Aluno'}!
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
                   Aqui está um resumo das suas atividades acadêmicas
@@ -153,9 +157,13 @@ export default function AlunoDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">92%</div>
-                <Progress value={92} className="h-2 mb-2" />
-                <p className="text-xs text-gray-600 dark:text-gray-400">Excelente participação!</p>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{attendancePercentage}%</div>
+                <Progress value={attendancePercentage} className="h-2 mb-2" />
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {attendancePercentage >= 90 ? 'Excelente participação!' :
+                   attendancePercentage >= 75 ? 'Boa participação!' :
+                   'Atenção à frequência!'}
+                </p>
               </CardContent>
             </LiquidGlassCard>
 
@@ -174,10 +182,13 @@ export default function AlunoDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">8.6</div>
+                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">{gradeAverage}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +0.3 desde o último mês
+                  {gradeAverage >= 9 ? 'Excelente desempenho!' :
+                   gradeAverage >= 8 ? 'Ótimo desempenho!' :
+                   gradeAverage >= 7 ? 'Bom desempenho!' :
+                   'Pode melhorar!'}
                 </div>
               </CardContent>
             </LiquidGlassCard>
@@ -197,10 +208,12 @@ export default function AlunoDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">3</div>
+                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">{pendingActivitiesCount}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Target className="h-3 w-3 mr-1" />
-                  2 com prazo próximo
+                  {pendingActivitiesCount === 0 ? 'Nenhuma pendente!' :
+                   pendingActivitiesCount === 1 ? '1 atividade pendente' :
+                   `${pendingActivitiesCount} atividades pendentes`}
                 </div>
               </CardContent>
             </LiquidGlassCard>
@@ -253,40 +266,39 @@ export default function AlunoDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {proximasAulas.map((aula, index) => (
-                      <div key={index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 hover:shadow-lg backdrop-blur-lg ${  // Keep backdrop-blur-lg for extra blur
-                        isLiquidGlass
-                          ? 'bg-transparent/50 hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'  // Adjusted for better visibility with less transparency
-                          : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
-                      }`}>
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 rounded-full ${
-                            aula.status === "Hoje" ? "bg-green-500" :
-                            aula.status === "Próxima" ? "bg-green-500" : "bg-orange-500"
-                          } animate-pulse`}></div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">{aula.disciplina}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{aula.professor}</p>
-                            <div className="flex items-center mt-1">
-                              <Badge variant="outline" className="text-xs mr-2">
-                                {aula.tipo}
-                              </Badge>
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                aula.status === "Hoje" ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300" :
-                                aula.status === "Próxima" ? "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300" :
-                                "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
-                              }`}>
-                                {aula.status}
-                              </span>
+                    {upcomingSchedules && upcomingSchedules.length > 0 ? (
+                      upcomingSchedules.map((aula) => (
+                        <div key={aula.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 hover:shadow-lg backdrop-blur-lg ${
+                          isLiquidGlass
+                            ? 'bg-transparent/50 hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
+                            : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
+                        }`}>
+                          <div className="flex items-center space-x-3">
+                            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 dark:text-gray-100">{aula.discipline}</h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">{aula.professor}</p>
+                              <div className="flex items-center mt-1">
+                                <Badge variant="outline" className="text-xs mr-2">
+                                  {aula.type}
+                                </Badge>
+                                <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                                  Próxima
+                                </span>
+                              </div>
                             </div>
                           </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {aula.startTime} - {aula.endTime}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{aula.room}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{aula.horario}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{aula.sala}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Nenhuma aula agendada</p>
+                    )}
                   </div>
                 </CardContent>
               </LiquidGlassCard>
@@ -311,50 +323,56 @@ export default function AlunoDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {ultimasNotas.map((nota, index) => (
-                      <div key={index} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
-                        isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                          : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                      }`}>
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            nota.nota >= 9 ? "bg-green-500/20" :
-                            nota.nota >= 8 ? "bg-green-500/20" :
-                            nota.nota >= 6 ? "bg-yellow-500/20" : "bg-red-500/20"
-                          }`}>
-                            <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                              {nota.nota}
-                            </span>
+                    {recentGrades && recentGrades.length > 0 ? (
+                      recentGrades.map((nota) => (
+                        <div key={nota.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+                          isLiquidGlass
+                            ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                            : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                        }`}>
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              nota.value >= 9 ? "bg-green-500/20" :
+                              nota.value >= 8 ? "bg-green-500/20" :
+                              nota.value >= 6 ? "bg-yellow-500/20" : "bg-red-500/20"
+                            }`}>
+                              <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                                {nota.value}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">{nota.discipline}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {new Date(nota.date).toLocaleDateString('pt-BR')}
+                              </p>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs mt-1 ${
+                                  nota.value >= 9 ? "border-green-500 text-green-700 dark:text-green-300" :
+                                  nota.value >= 8 ? "border-green-500 text-green-700 dark:text-green-300" :
+                                  nota.value >= 6 ? "border-yellow-500 text-yellow-700 dark:text-yellow-300" :
+                                  "border-red-500 text-red-700 dark:text-red-300"
+                                }`}
+                              >
+                                {nota.concept}
+                              </Badge>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{nota.disciplina}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{nota.data}</p>
-                            <Badge
-                              variant="outline"
-                              className={`text-xs mt-1 ${
-                                nota.nota >= 9 ? "border-green-500 text-green-700 dark:text-green-300" :
-                                nota.nota >= 8 ? "border-green-500 text-green-700 dark:text-green-300" :
-                                nota.nota >= 6 ? "border-yellow-500 text-yellow-700 dark:text-yellow-300" :
-                                "border-red-500 text-red-700 dark:text-red-300"
-                              }`}
-                            >
-                              {nota.conceito}
-                            </Badge>
+                          <div className="text-right">
+                            <div className={`text-sm font-semibold ${
+                              nota.value >= 9 ? "text-green-600 dark:text-green-400" :
+                              nota.value >= 8 ? "text-green-600 dark:text-green-400" :
+                              nota.value >= 6 ? "text-yellow-600 dark:text-yellow-400" :
+                              "text-red-600 dark:text-red-400"
+                            }`}>
+                              {nota.value}/10
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className={`text-sm font-semibold ${
-                            nota.nota >= 9 ? "text-green-600 dark:text-green-400" :
-                            nota.nota >= 8 ? "text-green-600 dark:text-green-400" :
-                            nota.nota >= 6 ? "text-yellow-600 dark:text-yellow-400" :
-                            "text-red-600 dark:text-red-400"
-                          }`}>
-                            {nota.nota}/10
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Nenhuma nota disponível</p>
+                    )}
                   </div>
                 </CardContent>
               </LiquidGlassCard>
@@ -382,54 +400,58 @@ export default function AlunoDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {comunicados.map((comunicado, index) => (
-                      <div key={index} className={`group p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
-                        isLiquidGlass
-                          ? (comunicado.prioridade === "alta"
-                              ? "bg-transparent border-red-200/30 dark:border-red-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10"
-                              : comunicado.prioridade === "média"
-                                ? "bg-transparent border-orange-200/30 dark:border-orange-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10"
-                                : "bg-transparent border-green-200/30 dark:border-green-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10")
-                          : (comunicado.prioridade === "alta"
-                              ? "bg-red-50/60 dark:bg-red-950/30 border-red-200 dark:border-red-800"
-                              : comunicado.prioridade === "média"
-                                ? "bg-orange-50/60 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800"
-                                : "bg-green-50/60 dark:bg-green-950/30 border-green-200 dark:border-green-800")
-                      }`}>
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1">
-                            {comunicado.titulo}
-                          </h4>
-                          <div className="flex items-center space-x-2">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs ${
-                                comunicado.prioridade === "alta"
-                                  ? "border-red-500 text-red-700 dark:text-red-300"
-                                  : comunicado.prioridade === "média"
-                                    ? "border-orange-500 text-orange-700 dark:text-orange-300"
-                                    : "border-green-500 text-green-700 dark:text-green-300"
-                              }`}
-                            >
-                              {comunicado.tipo}
-                            </Badge>
-                            <div className={`w-2 h-2 rounded-full ${
-                              comunicado.prioridade === "alta" ? "bg-red-500" :
-                              comunicado.prioridade === "média" ? "bg-orange-500" : "bg-green-500"
-                            } animate-pulse`}></div>
+                    {news && news.length > 0 ? (
+                      news.map((comunicado) => (
+                        <div key={comunicado.id} className={`group p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                          isLiquidGlass
+                            ? (comunicado.priority === "alta"
+                                ? "bg-transparent border-red-200/30 dark:border-red-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10"
+                                : comunicado.priority === "média"
+                                  ? "bg-transparent border-orange-200/30 dark:border-orange-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10"
+                                  : "bg-transparent border-green-200/30 dark:border-green-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10")
+                            : (comunicado.priority === "alta"
+                                ? "bg-red-50/60 dark:bg-red-950/30 border-red-200 dark:border-red-800"
+                                : comunicado.priority === "média"
+                                  ? "bg-orange-50/60 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800"
+                                  : "bg-green-50/60 dark:bg-green-950/30 border-green-200 dark:border-green-800")
+                        }`}>
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1">
+                              {comunicado.title}
+                            </h4>
+                            <div className="flex items-center space-x-2">
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${
+                                  comunicado.priority === "alta"
+                                    ? "border-red-500 text-red-700 dark:text-red-300"
+                                    : comunicado.priority === "média"
+                                      ? "border-orange-500 text-orange-700 dark:text-orange-300"
+                                      : "border-green-500 text-green-700 dark:text-green-300"
+                                }`}
+                              >
+                                {comunicado.type}
+                              </Badge>
+                              <div className={`w-2 h-2 rounded-full ${
+                                comunicado.priority === "alta" ? "bg-red-500" :
+                                comunicado.priority === "média" ? "bg-orange-500" : "bg-green-500"
+                              } animate-pulse`}></div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {new Date(comunicado.date).toLocaleDateString('pt-BR')}
+                            </p>
+                            <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
+                              Ver mais
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {comunicado.data}
-                          </p>
-                          <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
-                            Ver mais
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Nenhum comunicado</p>
+                    )}
                   </div>
                 </CardContent>
               </LiquidGlassCard>
