@@ -9,13 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle } from "lucide-react"
+import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle, Video, CalendarClock } from "lucide-react"
 import Link from "next/link"
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
-import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum } from '@/components/modals'
+import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -41,6 +41,16 @@ export default function TurmaDetalhePage() {
   const [modoModalForum, setModoModalForum] = useState<'criar' | 'editar'>('criar')
   const [modalDiscussaoOpen, setModalDiscussaoOpen] = useState(false)
   const [forumSelecionado, setForumSelecionado] = useState<any>(null)
+
+  // Estados para videochamadas
+  type VideoChamada = { id: number; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
+  const [videoChamadas, setVideoChamadas] = useState<VideoChamada[]>([
+    { id: 1, titulo: 'Aula ao Vivo - Funções Quadráticas', dataHora: '2025-10-30T19:00:00', status: 'agendada', link: '#' },
+    { id: 2, titulo: 'Plantão de Dúvidas', dataHora: '2025-10-25T19:00:00', status: 'encerrada', link: '#' },
+    { id: 3, titulo: 'Revisão para Prova', dataHora: '2025-10-28T20:00:00', status: 'disponivel', link: '#' },
+  ])
+  const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
+  const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
 
   const turma = {
     nome: "9º Ano A",
@@ -583,11 +593,12 @@ export default function TurmaDetalhePage() {
           </div>
 
           <Tabs defaultValue="alunos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="alunos">Alunos</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
               <TabsTrigger value="forum">Fórum</TabsTrigger>
+              <TabsTrigger value="aula-online">Aula Online</TabsTrigger>
               <TabsTrigger value="notas">Lançar Notas</TabsTrigger>
             </TabsList>
 
@@ -803,6 +814,61 @@ export default function TurmaDetalhePage() {
               </div>
             </TabsContent>
 
+            <TabsContent value="aula-online">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold flex items-center">
+                    <Video className="h-5 w-5 mr-2" />
+                    Aula Online
+                  </h3>
+                  <LiquidGlassButton onClick={() => {
+                    // TODO: Implementar criação de nova videochamada
+                    toastInfo('Funcionalidade em desenvolvimento', 'Em breve você poderá criar novas videochamadas')
+                  }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Videochamada
+                  </LiquidGlassButton>
+                </div>
+
+                {videoChamadas.map((reuniao) => {
+                  const data = new Date(reuniao.dataHora)
+                  const podeEntrar = reuniao.status === 'disponivel'
+                  const statusLabel = reuniao.status === 'agendada' ? 'Agendada' : reuniao.status === 'disponivel' ? 'Disponível' : 'Encerrada'
+                  const statusVariant = reuniao.status === 'disponivel' ? 'default' : reuniao.status === 'agendada' ? 'secondary' : 'destructive'
+                  return (
+                    <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={reuniao.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium">{reuniao.titulo}</h4>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                              <CalendarClock className="h-3 w-3" />
+                              {data.toLocaleString('pt-BR')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+                            <LiquidGlassButton 
+                              size="sm" 
+                              variant={podeEntrar ? 'default' : 'outline'} 
+                              disabled={!podeEntrar} 
+                              onClick={() => {
+                                setVideoChamadaSelecionada(reuniao)
+                                setModalVideoChamadaAberto(true)
+                              }}
+                            >
+                              <Video className="h-4 w-4 mr-2"/>
+                              Entrar
+                            </LiquidGlassButton>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </LiquidGlassCard>
+                  )
+                })}
+              </div>
+            </TabsContent>
+
             <TabsContent value="notas">
               <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
@@ -983,6 +1049,14 @@ export default function TurmaDetalhePage() {
         onClose={() => setModalDiscussaoOpen(false)}
         forum={forumSelecionado}
         onResponder={handleResponderDiscussao}
+      />
+
+      {/* Modal de Videochamada */}
+      <ModalVideoChamada
+        isOpen={modalVideoChamadaAberto}
+        onClose={setModalVideoChamadaAberto}
+        titulo={videoChamadaSelecionada?.titulo}
+        dataHora={videoChamadaSelecionada?.dataHora}
       />
     </div>
   )
