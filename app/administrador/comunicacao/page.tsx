@@ -1,17 +1,80 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
-import { Button } from "@/components/ui/button"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
-import { MessageSquare, Users, TrendingUp, Eye, Shield, Settings, AlertTriangle } from "lucide-react"
+import { MessageSquare, Users, TrendingUp, Eye, Shield, Settings, AlertTriangle, Download, FileText } from "lucide-react"
+import { ModalConfirmacao } from "@/components/modals"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+
+type AlertaModeracao = {
+  id: number
+  tipo: string
+  descricao: string
+  usuario: string
+  data: string
+  prioridade: "Alta" | "Média" | "Baixa"
+  status: "pendente" | "em_analise" | "resolvido"
+}
+
+type ConfiguracaoSistema = {
+  id: string
+  nome: string
+  status: "Ativo" | "Inativo"
+  descricao: string
+}
 
 export default function AdministradorComunicacaoPage() {
+  const [filtroPrioridade, setFiltroPrioridade] = useState<string>("todos")
+  const [alertasModeracao, setAlertasModeracao] = useState<AlertaModeracao[]>([
+    {
+      id: 1,
+      tipo: "Conteúdo Reportado",
+      descricao: "Mensagem no fórum reportada por linguagem inadequada",
+      usuario: "Bruno Santos (8º B)",
+      data: "Hoje, 14:30",
+      prioridade: "Alta",
+      status: "pendente",
+    },
+    {
+      id: 2,
+      tipo: "Spam Detectado",
+      descricao: "Múltiplas mensagens idênticas detectadas",
+      usuario: "Sistema",
+      data: "Ontem, 16:20",
+      prioridade: "Média",
+      status: "pendente",
+    },
+    {
+      id: 3,
+      tipo: "Comunicado Expirado",
+      descricao: "Comunicado sobre evento já passou da data",
+      usuario: "Sistema",
+      data: "2 dias atrás",
+      prioridade: "Baixa",
+      status: "pendente",
+    },
+  ])
+
+  const [configuracoesSistema, setConfiguracoesSistema] = useState<ConfiguracaoSistema[]>([
+    { id: "moderacao-auto", nome: "Moderação Automática", status: "Ativo", descricao: "Filtro automático de conteúdo" },
+    { id: "notificacoes-push", nome: "Notificações Push", status: "Ativo", descricao: "Notificações em tempo real" },
+    { id: "backup-mensagens", nome: "Backup de Mensagens", status: "Ativo", descricao: "Backup diário das comunicações" },
+    { id: "relatorios-auto", nome: "Relatórios Automáticos", status: "Ativo", descricao: "Relatórios semanais de atividade" },
+  ])
+
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [acaoConfirmacao, setAcaoConfirmacao] = useState<{ tipo: string; alertaId?: number } | null>(null)
+  const [tipoRelatorio, setTipoRelatorio] = useState<string>("")
+  const [periodoRelatorio, setPeriodoRelatorio] = useState<string>("")
+
   const estatisticasGerais = {
     mensagensTotais: 1250,
     comunicadosAtivos: 15,
@@ -32,39 +95,43 @@ export default function AdministradorComunicacaoPage() {
     { categoria: "Urgente", quantidade: 8, cor: "#be123c" },
   ]
 
-  const alertasModeração = [
-    {
-      id: 1,
-      tipo: "Conteúdo Reportado",
-      descricao: "Mensagem no fórum reportada por linguagem inadequada",
-      usuario: "Bruno Santos (8º B)",
-      data: "Hoje, 14:30",
-      prioridade: "Alta",
-    },
-    {
-      id: 2,
-      tipo: "Spam Detectado",
-      descricao: "Múltiplas mensagens idênticas detectadas",
-      usuario: "Sistema",
-      data: "Ontem, 16:20",
-      prioridade: "Média",
-    },
-    {
-      id: 3,
-      tipo: "Comunicado Expirado",
-      descricao: "Comunicado sobre evento já passou da data",
-      usuario: "Sistema",
-      data: "2 dias atrás",
-      prioridade: "Baixa",
-    },
-  ]
+  const alertasFiltrados = useMemo(() => {
+    if (filtroPrioridade === "todos") return alertasModeracao
+    const prioridadeNormalizada = filtroPrioridade.charAt(0).toUpperCase() + filtroPrioridade.slice(1)
+    return alertasModeracao.filter((alerta) => alerta.prioridade === prioridadeNormalizada)
+  }, [alertasModeracao, filtroPrioridade])
 
-  const configuracoesSistema = [
-    { nome: "Moderação Automática", status: "Ativo", descricao: "Filtro automático de conteúdo" },
-    { nome: "Notificações Push", status: "Ativo", descricao: "Notificações em tempo real" },
-    { nome: "Backup de Mensagens", status: "Ativo", descricao: "Backup diário das comunicações" },
-    { nome: "Relatórios Automáticos", status: "Ativo", descricao: "Relatórios semanais de atividade" },
-  ]
+  const handleInvestigar = (alertaId: number) => {
+    setAlertasModeracao((prev) =>
+      prev.map((alerta) => (alerta.id === alertaId ? { ...alerta, status: "em_analise" } : alerta))
+    )
+  }
+
+  const handleResolver = (alertaId: number) => {
+    setAcaoConfirmacao({ tipo: "resolver", alertaId })
+    setConfirmOpen(true)
+  }
+
+  const confirmarResolver = () => {
+    if (acaoConfirmacao?.alertaId) {
+      setAlertasModeracao((prev) => prev.filter((alerta) => alerta.id !== acaoConfirmacao.alertaId))
+    }
+    setConfirmOpen(false)
+    setAcaoConfirmacao(null)
+  }
+
+  const toggleConfiguracao = (configId: string) => {
+    setConfiguracoesSistema((prev) =>
+      prev.map((config) =>
+        config.id === configId ? { ...config, status: config.status === "Ativo" ? "Inativo" : "Ativo" } : config
+      )
+    )
+  }
+
+  const handleGerarRelatorio = () => {
+    if (!tipoRelatorio || !periodoRelatorio) return
+    console.log("Gerando relatório:", { tipoRelatorio, periodoRelatorio })
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -195,58 +262,78 @@ export default function AdministradorComunicacaoPage() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Alertas de Moderação</h3>
                   <div className="flex items-center space-x-2">
-                    <Select>
+                    <Select value={filtroPrioridade} onValueChange={setFiltroPrioridade}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Filtrar por prioridade" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todos</SelectItem>
                         <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="media">Média</SelectItem>
+                        <SelectItem value="média">Média</SelectItem>
                         <SelectItem value="baixa">Baixa</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                {alertasModeração.map((alerta) => (
-                  <Card key={alerta.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <AlertTriangle className="h-5 w-5 text-destructive" />
-                            <h4 className="font-semibold text-lg">{alerta.tipo}</h4>
-                            <Badge
-                              variant={
-                                alerta.prioridade === "Alta"
-                                  ? "destructive"
-                                  : alerta.prioridade === "Média"
-                                    ? "secondary"
-                                    : "outline"
-                              }
-                            >
-                              {alerta.prioridade}
-                            </Badge>
-                          </div>
-                          <p className="text-sm mb-2">{alerta.descricao}</p>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>Usuário: {alerta.usuario}</span>
-                            <span>{alerta.data}</span>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            Investigar
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Resolver
-                          </Button>
-                        </div>
-                      </div>
+                {alertasFiltrados.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      Nenhum alerta encontrado com o filtro selecionado.
                     </CardContent>
                   </Card>
-                ))}
+                ) : (
+                  alertasFiltrados.map((alerta) => (
+                    <Card key={alerta.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <AlertTriangle className="h-5 w-5 text-destructive" />
+                              <h4 className="font-semibold text-lg">{alerta.tipo}</h4>
+                              <Badge
+                                variant={
+                                  alerta.prioridade === "Alta"
+                                    ? "destructive"
+                                    : alerta.prioridade === "Média"
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                              >
+                                {alerta.prioridade}
+                              </Badge>
+                              {alerta.status === "em_analise" && (
+                                <Badge variant="secondary">Em Análise</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm mb-2">{alerta.descricao}</p>
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                              <span>Usuário: {alerta.usuario}</span>
+                              <span>{alerta.data}</span>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <LiquidGlassButton
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleInvestigar(alerta.id)}
+                              disabled={alerta.status === "em_analise"}
+                            >
+                              Investigar
+                            </LiquidGlassButton>
+                            <LiquidGlassButton
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleResolver(alerta.id)}
+                            >
+                              Resolver
+                            </LiquidGlassButton>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
 
@@ -254,8 +341,8 @@ export default function AdministradorComunicacaoPage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Configurações do Sistema</h3>
 
-                {configuracoesSistema.map((config, index) => (
-                  <Card key={index}>
+                {configuracoesSistema.map((config) => (
+                  <Card key={config.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -263,10 +350,13 @@ export default function AdministradorComunicacaoPage() {
                           <p className="text-sm text-muted-foreground">{config.descricao}</p>
                         </div>
                         <div className="flex items-center space-x-4">
-                          <Badge variant={config.status === "Ativo" ? "default" : "secondary"}>{config.status}</Badge>
-                          <Button variant="outline" size="sm">
-                            <Settings className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={config.status === "Ativo"}
+                              onCheckedChange={() => toggleConfiguracao(config.id)}
+                            />
+                            <Label className="text-sm">{config.status}</Label>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -285,8 +375,8 @@ export default function AdministradorComunicacaoPage() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium">Tipo de Relatório</label>
-                        <Select>
+                        <Label className="text-sm font-medium">Tipo de Relatório</Label>
+                        <Select value={tipoRelatorio} onValueChange={setTipoRelatorio}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o tipo" />
                           </SelectTrigger>
@@ -299,8 +389,8 @@ export default function AdministradorComunicacaoPage() {
                         </Select>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Período</label>
-                        <Select>
+                        <Label className="text-sm font-medium">Período</Label>
+                        <Select value={periodoRelatorio} onValueChange={setPeriodoRelatorio}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o período" />
                           </SelectTrigger>
@@ -315,8 +405,21 @@ export default function AdministradorComunicacaoPage() {
                     </div>
 
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline">Visualizar</Button>
-                      <Button>Gerar Relatório</Button>
+                      <LiquidGlassButton
+                        variant="outline"
+                        onClick={handleGerarRelatorio}
+                        disabled={!tipoRelatorio || !periodoRelatorio}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Visualizar
+                      </LiquidGlassButton>
+                      <LiquidGlassButton
+                        onClick={handleGerarRelatorio}
+                        disabled={!tipoRelatorio || !periodoRelatorio}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Gerar Relatório
+                      </LiquidGlassButton>
                     </div>
                   </div>
                 </CardContent>
@@ -325,6 +428,18 @@ export default function AdministradorComunicacaoPage() {
           </Tabs>
         </div>
       </main>
+
+      <ModalConfirmacao
+        isOpen={confirmOpen}
+        title="Resolver alerta"
+        description="Tem certeza que deseja marcar este alerta como resolvido? Esta ação não pode ser desfeita."
+        confirmLabel="Resolver"
+        onConfirm={confirmarResolver}
+        onClose={() => {
+          setConfirmOpen(false)
+          setAcaoConfirmacao(null)
+        }}
+      />
     </div>
   )
 }

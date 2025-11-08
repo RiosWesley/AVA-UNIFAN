@@ -9,7 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, Search, Edit, Trash2, Mail } from "lucide-react"
+import { Users, Plus, Search, Edit, Mail, Eye, Ban } from "lucide-react"
+import { ModalEditarUsuario, type Usuario as UsuarioType } from "@/components/modals/modal-editar-usuario"
+import { ModalDetalhesUsuario, type UsuarioDetalhes } from "@/components/modals/modal-detalhes-usuario"
+import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 
 type Role = "aluno" | "professor" | "coordenador" | "administrador"
 
@@ -35,6 +38,9 @@ export default function UsuariosAdministradorPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>(MOCK_USUARIOS)
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<Role | "todos">("todos")
+  const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null)
+  const [usuarioDetalhes, setUsuarioDetalhes] = useState<UsuarioDetalhes | null>(null)
+  const [usuarioInativando, setUsuarioInativando] = useState<Usuario | null>(null)
 
   const [form, setForm] = useState<{
     nome: string
@@ -107,6 +113,40 @@ export default function UsuariosAdministradorPage() {
       role: "aluno",
       status: "Ativo",
     })
+  }
+
+  function handleEditar(usuario: Usuario) {
+    setUsuarioEditando(usuario)
+  }
+
+  function handleSalvarEdicao(usuarioAtualizado: UsuarioType) {
+    setUsuarios((prev) =>
+      prev.map((u) => (u.id === usuarioAtualizado.id ? usuarioAtualizado : u))
+    )
+    setUsuarioEditando(null)
+  }
+
+  function handleInativar(usuario: Usuario) {
+    setUsuarioInativando(usuario)
+  }
+
+  function confirmarInativacao() {
+    if (!usuarioInativando) return
+    setUsuarios((prev) =>
+      prev.map((u) =>
+        u.id === usuarioInativando.id ? { ...u, status: "Inativo" as const } : u
+      )
+    )
+    setUsuarioInativando(null)
+  }
+
+  function handleDetalhes(usuario: Usuario) {
+    const usuarioDetalhes: UsuarioDetalhes = {
+      ...usuario,
+      dataCadastro: "01/01/2024",
+      ultimoAcesso: "15/03/2024"
+    }
+    setUsuarioDetalhes(usuarioDetalhes)
   }
 
   return (
@@ -184,12 +224,35 @@ export default function UsuariosAdministradorPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge variant={u.status === "Ativo" ? "default" : "secondary"}>{u.status}</Badge>
-                              <Button variant="outline" size="sm" className="bg-transparent">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-transparent"
+                                onClick={() => handleDetalhes(u)}
+                                title="Ver detalhes"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="bg-transparent"
+                                onClick={() => handleEditar(u)}
+                                title="Editar usuário"
+                              >
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button variant="outline" size="sm" className="bg-transparent">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                              {u.status === "Ativo" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-transparent"
+                                  onClick={() => handleInativar(u)}
+                                  title="Inativar usuário"
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </CardContent>
@@ -295,6 +358,29 @@ export default function UsuariosAdministradorPage() {
           </Tabs>
         </div>
       </main>
+
+      <ModalEditarUsuario
+        isOpen={!!usuarioEditando}
+        onClose={() => setUsuarioEditando(null)}
+        usuario={usuarioEditando}
+        onSalvar={handleSalvarEdicao}
+      />
+
+      <ModalDetalhesUsuario
+        isOpen={!!usuarioDetalhes}
+        onClose={() => setUsuarioDetalhes(null)}
+        usuario={usuarioDetalhes}
+      />
+
+      <ModalConfirmacao
+        isOpen={!!usuarioInativando}
+        title="Inativar Usuário"
+        description={`Tem certeza que deseja inativar o usuário "${usuarioInativando?.nome}"? O usuário não poderá mais acessar o sistema.`}
+        confirmLabel="Inativar"
+        cancelLabel="Cancelar"
+        onConfirm={confirmarInativacao}
+        onClose={() => setUsuarioInativando(null)}
+      />
     </div>
   )
 }
