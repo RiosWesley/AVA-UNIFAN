@@ -159,7 +159,7 @@ export default function AtividadesPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-8">
           {/* Header Hero Section */}
-          <div className={`relative overflow-hidden rounded-2xl border backdrop-blur-sm mb-8 p-6 ${
+          <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm mb-8 p-6 ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -210,7 +210,7 @@ export default function AtividadesPage() {
           <div className="flex flex-col lg:flex-row gap-4">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`flex-1 p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
+              className={`flex-1 p-6 rounded-xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -231,7 +231,7 @@ export default function AtividadesPage() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
+              className={`p-6 rounded-xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -271,7 +271,7 @@ export default function AtividadesPage() {
             {/* Atividades Pendentes */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 border-border/50 hover:border-border/80 group ${
+              className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 border-border/50 hover:border-border/80 group ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -280,7 +280,7 @@ export default function AtividadesPage() {
               <div className="relative py-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 transition-colors flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-green-500/20 transition-colors flex items-center justify-center">
                       <Clock className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
@@ -379,7 +379,7 @@ export default function AtividadesPage() {
             {/* Atividades Concluídas */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 border-border/50 hover:border-border/80 group ${
+              className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 border-border/50 hover:border-border/80 group ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -388,7 +388,7 @@ export default function AtividadesPage() {
               <div className="relative py-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-green-500/20  transition-colors flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-green-500/20  transition-colors flex items-center justify-center">
                       <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>

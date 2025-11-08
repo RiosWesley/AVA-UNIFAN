@@ -276,7 +276,7 @@ export default function AgendaPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-8">
           {/* Header Hero Section */}
-          <div className={`relative overflow-hidden rounded-3xl border backdrop-blur-sm ${
+          <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 dark:from-green-900/30 dark:via-emerald-900/30 dark:to-green-900/30 border-green-200/30 dark:border-green-700/50'
               : 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
@@ -330,7 +330,7 @@ export default function AgendaPage() {
             {/* Calendário Interativo */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] lg:col-span-2 ${
+              className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 lg:col-span-2 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
                   : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
@@ -462,7 +462,7 @@ export default function AgendaPage() {
             {/* Eventos do Dia Selecionado */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ${
+              className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
                   : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
@@ -497,7 +497,7 @@ export default function AgendaPage() {
                     const tipoConfig = getTipoConfig(evento.tipo)
                     const TipoIcon = tipoConfig.icon
                     return (
-                      <div key={index} className={`group relative p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                      <div key={index} className={`group relative p-4 rounded-2xl border transition-all duration-300 ${
                         isLiquidGlass
                           ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
                           : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
@@ -596,7 +596,7 @@ export default function AgendaPage() {
           {/* Estatísticas Mensais */}
           <LiquidGlassCard
             intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-            className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01] ${
+            className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 ${
               isLiquidGlass
                 ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
                 : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
@@ -621,7 +621,7 @@ export default function AgendaPage() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                <div className={`group p-4 rounded-xl border transition-all duration-300 ${
                   isLiquidGlass
                     ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
                     : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
@@ -641,7 +641,7 @@ export default function AgendaPage() {
                   </div>
                 </div>
 
-                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                <div className={`group p-4 rounded-xl border transition-all duration-300 ${
                   isLiquidGlass
                     ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
                     : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
@@ -661,7 +661,7 @@ export default function AgendaPage() {
                   </div>
                 </div>
 
-                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                <div className={`group p-4 rounded-xl border transition-all duration-300 ${
                   isLiquidGlass
                     ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
                     : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
@@ -681,7 +681,7 @@ export default function AgendaPage() {
                   </div>
                 </div>
 
-                <div className={`group p-4 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
+                <div className={`group p-4 rounded-2xl border transition-all duration-300  ${
                   isLiquidGlass
                     ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
                     : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'

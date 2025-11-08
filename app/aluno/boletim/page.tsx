@@ -129,14 +129,14 @@ export default function AlunoBoletimPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           {/* Header aprimorado */}
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+          <div className={`flex items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
                   <GraduationCap className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
@@ -186,7 +186,7 @@ export default function AlunoBoletimPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+              className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -209,7 +209,7 @@ export default function AlunoBoletimPage() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+              className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -230,7 +230,7 @@ export default function AlunoBoletimPage() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+              className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -259,7 +259,7 @@ export default function AlunoBoletimPage() {
               <LiquidGlassCard
                 key={index}
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
+                className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -268,7 +268,7 @@ export default function AlunoBoletimPage() {
                 <CardHeader className="pb-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg ${
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-lg ${
                         disciplina.cor === "green" ? "bg-green-600" :
                         disciplina.cor === "green" ? "bg-green-600" :
                         disciplina.cor === "purple" ? "bg-purple-600" :

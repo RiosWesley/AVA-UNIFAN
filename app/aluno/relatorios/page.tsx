@@ -60,7 +60,7 @@ export default function RelatoriosAlunoPage() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 space-y-6">
-          <div className={`flex items-center justify-between p-6 rounded-2xl border backdrop-blur-sm ${
+          <div className={`flex items-center justify-between p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'

@@ -181,7 +181,7 @@ export default function RequerimentosPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-8">
           {/* Header Hero Section */}
-          <div className={`relative overflow-hidden rounded-2xl border backdrop-blur-sm mb-8 p-6 ${
+          <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm mb-8 p-6 ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -255,7 +255,7 @@ export default function RequerimentosPage() {
           <div className="flex flex-col lg:flex-row gap-4">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`flex-1 p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-2xl border-border/50 hover:border-border/80 ${
+              className={`flex-1 p-6 rounded-xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -276,7 +276,7 @@ export default function RequerimentosPage() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-2xl border-border/50 hover:border-border/80 ${
+              className={`p-6 rounded-xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -322,7 +322,7 @@ export default function RequerimentosPage() {
                   <LiquidGlassCard
                     key={requerimento.id}
                     intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                    className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+                    className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                       isLiquidGlass
                         ? 'bg-black/30 dark:bg-gray-800/20'
                         : 'bg-gray-50/60 dark:bg-gray-800/40'
