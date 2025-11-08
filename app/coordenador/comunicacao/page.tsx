@@ -1,18 +1,44 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
+import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
-import { MessageSquare, Megaphone, Eye, Edit, Trash2, TrendingUp } from "lucide-react"
+import { MessageSquare, Megaphone, Eye, Edit, Trash2, TrendingUp, Send, Plus, Bell } from "lucide-react"
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"
+import { useState } from "react"
+import { ModalNovaMensagem, ModalAviso, ModalConfirmacao } from "@/components/modals"
+import type { AvisoData } from "@/components/modals"
+import type { ComboboxOption } from "@/components/ui/combobox"
+import type { DestinatarioOption } from "@/components/modals/modal-nova-mensagem"
 
 export default function CoordenadorComunicacaoPage() {
-  const comunicadosPublicados = [
+  const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
+  const destinatarios: DestinatarioOption[] = [
+    { id: 'direcao', label: 'Direção' },
+    { id: 'professores', label: 'Todos os Professores' },
+    { id: 'prof-maria', label: 'Prof. Maria Santos' },
+    { id: 'secretaria', label: 'Secretaria' },
+    { id: 'alunos', label: 'Todos os Alunos' },
+  ]
+
+  const [isAvisoOpen, setIsAvisoOpen] = useState(false)
+  const [editingAviso, setEditingAviso] = useState<AvisoData | undefined>(undefined)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [avisoParaExcluir, setAvisoParaExcluir] = useState<number | null>(null)
+  const turmaOptions: ComboboxOption[] = [
+    { id: 'todos', label: 'Todos os usuários' },
+    { id: 'alunos', label: 'Todos os alunos' },
+    { id: 'professores', label: 'Professores' },
+    { id: 'pais', label: 'Pais e responsáveis' },
+    { id: 'fundamental', label: 'Ensino Fundamental' },
+    { id: 'medio', label: 'Ensino Médio' },
+  ]
+
+  const [comunicadosPublicados, setComunicadosPublicados] = useState([
     {
       id: 1,
       titulo: "Calendário de Provas - 2º Bimestre",
@@ -40,7 +66,7 @@ export default function CoordenadorComunicacaoPage() {
       publico: "Pais e responsáveis",
       status: "Arquivado",
     },
-  ]
+  ])
 
   const mensagensInstitucionais = [
     {
@@ -73,6 +99,57 @@ export default function CoordenadorComunicacaoPage() {
     mensagensEnviadas: 45,
   }
 
+  const handleSaveAviso = (data: AvisoData) => {
+    if (data.id) {
+      setComunicadosPublicados(prev => prev.map(c => 
+        c.id === data.id 
+          ? { ...c, titulo: data.titulo, publico: data.turma, data: data.data }
+          : c
+      ))
+    } else {
+      const newId = Math.max(0, ...comunicadosPublicados.map(c => c.id)) + 1
+      setComunicadosPublicados(prev => [{
+        id: newId,
+        titulo: data.titulo,
+        categoria: "Informativo",
+        data: data.data,
+        visualizacoes: 0,
+        publico: data.turma,
+        status: "Ativo",
+      }, ...prev])
+    }
+  }
+
+  const openCreateAviso = () => {
+    setEditingAviso(undefined)
+    setIsAvisoOpen(true)
+  }
+
+  const openEditAviso = (comunicadoId: number) => {
+    const found = comunicadosPublicados.find(c => c.id === comunicadoId)
+    if (found) {
+      setEditingAviso({
+        id: found.id,
+        titulo: found.titulo,
+        turma: found.publico,
+        data: found.data,
+      })
+      setIsAvisoOpen(true)
+    }
+  }
+
+  const confirmDelete = (comunicadoId: number) => {
+    setAvisoParaExcluir(comunicadoId)
+    setConfirmOpen(true)
+  }
+
+  const handleDelete = () => {
+    if (avisoParaExcluir != null) {
+      setComunicadosPublicados(prev => prev.filter(c => c.id !== avisoParaExcluir))
+      setAvisoParaExcluir(null)
+    }
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar userRole="coordenador" />
@@ -85,19 +162,15 @@ export default function CoordenadorComunicacaoPage() {
               <p className="text-muted-foreground">Gerencie comunicados e mensagens institucionais</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Mensagens
-              </Button>
-              <Button>
-                <Megaphone className="h-4 w-4 mr-2" />
-                Novo Comunicado
-              </Button>
+              <LiquidGlassButton variant="outline">
+                <Bell className="h-4 w-4 mr-2" />
+                Notificações
+              </LiquidGlassButton>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Comunicados Ativos</CardTitle>
                 <Megaphone className="h-4 w-4 text-muted-foreground" />
@@ -106,9 +179,9 @@ export default function CoordenadorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.comunicadosAtivos}</div>
                 <p className="text-xs text-muted-foreground">+3 este mês</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Visualizações</CardTitle>
                 <Eye className="h-4 w-4 text-muted-foreground" />
@@ -117,9 +190,9 @@ export default function CoordenadorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.visualizacoesTotais}</div>
                 <p className="text-xs text-muted-foreground">+15% vs mês anterior</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Engajamento</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -128,9 +201,9 @@ export default function CoordenadorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.engajamentoMedio}%</div>
                 <p className="text-xs text-muted-foreground">Taxa média de leitura</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
 
-            <Card>
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Mensagens Enviadas</CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -139,90 +212,48 @@ export default function CoordenadorComunicacaoPage() {
                 <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.mensagensEnviadas}</div>
                 <p className="text-xs text-muted-foreground">Este mês</p>
               </CardContent>
-            </Card>
+            </LiquidGlassCard>
           </div>
 
-          <Tabs defaultValue="comunicados" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="comunicados">Comunicados</TabsTrigger>
+          <Tabs defaultValue="mensagens" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-              <TabsTrigger value="criar">Criar Comunicado</TabsTrigger>
+              <TabsTrigger value="avisos">Avisos</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="comunicados">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Comunicados Publicados</h3>
-                  <div className="flex items-center space-x-2">
-                    <Select>
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Filtrar por categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="academico">Acadêmico</SelectItem>
-                        <SelectItem value="evento">Evento</SelectItem>
-                        <SelectItem value="informativo">Informativo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {comunicadosPublicados.map((comunicado) => (
-                  <Card key={comunicado.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="font-semibold text-lg">{comunicado.titulo}</h4>
-                            <Badge variant="outline">{comunicado.categoria}</Badge>
-                            <Badge variant={comunicado.status === "Ativo" ? "default" : "secondary"}>
-                              {comunicado.status}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>Público: {comunicado.publico}</span>
-                            <span>{comunicado.data}</span>
-                            <div className="flex items-center">
-                              <Eye className="h-4 w-4 mr-1" />
-                              {comunicado.visualizacoes} visualizações
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
             <TabsContent value="mensagens">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Mensagens</h3>
+                <Dialog open={isNovaMensagemOpen}>
+                  <DialogTrigger asChild onClick={() => setIsNovaMensagemOpen(true)}>
+                    <LiquidGlassButton>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Mensagem
+                    </LiquidGlassButton>
+                  </DialogTrigger>
+                  <ModalNovaMensagem
+                    isOpen={isNovaMensagemOpen}
+                    onClose={() => setIsNovaMensagemOpen(false)}
+                    destinatarios={destinatarios}
+                    onSend={() => setIsNovaMensagemOpen(false)}
+                  />
+                </Dialog>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
-                  <Card>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
-                      <CardTitle>Mensagens Institucionais</CardTitle>
-                      <CardDescription>Comunicação interna</CardDescription>
+                      <CardTitle>Caixa de Entrada</CardTitle>
+                      <CardDescription>3 mensagens não lidas</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
                         {mensagensInstitucionais.map((mensagem) => (
                           <div
                             key={mensagem.id}
-                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${
-                              !mensagem.lida ? "bg-primary/5 border-primary/20" : ""
-                            }`}
+                              className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${
+                                !mensagem.lida ? "bg-primary/5 border-primary/20" : ""
+                              }`}
                           >
                             <div className="flex items-start justify-between mb-1">
                               <h5 className="font-medium text-sm">{mensagem.remetente}</h5>
@@ -234,11 +265,11 @@ export default function CoordenadorComunicacaoPage() {
                         ))}
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 </div>
 
                 <div className="lg:col-span-2">
-                  <Card>
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle>Planejamento do próximo semestre</CardTitle>
                       <CardDescription>De: Direção • Hoje, 09:30</CardDescription>
@@ -263,95 +294,71 @@ export default function CoordenadorComunicacaoPage() {
                           Direção
                         </p>
                         <div className="border-t pt-4">
-                          <Button>Responder</Button>
+                          <Textarea placeholder="Digite sua resposta..." className="mb-4" />
+                          <LiquidGlassButton>
+                            <Send className="h-4 w-4 mr-2" />
+                            Responder
+                          </LiquidGlassButton>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </LiquidGlassCard>
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="criar">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Criar Novo Comunicado</CardTitle>
-                  <CardDescription>Publique comunicados para a comunidade escolar</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="titulo">Título do Comunicado</Label>
-                        <Input id="titulo" placeholder="Digite o título" />
-                      </div>
-                      <div>
-                        <Label htmlFor="categoria">Categoria</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a categoria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="academico">Acadêmico</SelectItem>
-                            <SelectItem value="evento">Evento</SelectItem>
-                            <SelectItem value="informativo">Informativo</SelectItem>
-                            <SelectItem value="urgente">Urgente</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+            <TabsContent value="avisos">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Meus Avisos</h3>
+                  <LiquidGlassButton onClick={openCreateAviso}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Aviso
+                  </LiquidGlassButton>
+                </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="publico">Público-alvo</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o público" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos os usuários</SelectItem>
-                            <SelectItem value="alunos">Todos os alunos</SelectItem>
-                            <SelectItem value="professores">Professores</SelectItem>
-                            <SelectItem value="pais">Pais e responsáveis</SelectItem>
-                            <SelectItem value="fundamental">Ensino Fundamental</SelectItem>
-                            <SelectItem value="medio">Ensino Médio</SelectItem>
-                          </SelectContent>
-                        </Select>
+                {comunicadosPublicados.map((aviso) => (
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={aviso.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-lg mb-2">{aviso.titulo}</h4>
+                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <Badge variant="outline">{aviso.publico}</Badge>
+                            <span>{aviso.data}</span>
+                            <span>{aviso.visualizacoes} visualizações</span>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <LiquidGlassButton variant="outline" size="sm" onClick={() => openEditAviso(aviso.id)}>
+                            <Edit className="h-4 w-4" />
+                          </LiquidGlassButton>
+                          <LiquidGlassButton variant="outline" size="sm" onClick={() => confirmDelete(aviso.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </LiquidGlassButton>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="prioridade">Prioridade</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Normal" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="baixa">Baixa</SelectItem>
-                            <SelectItem value="normal">Normal</SelectItem>
-                            <SelectItem value="alta">Alta</SelectItem>
-                            <SelectItem value="urgente">Urgente</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="conteudo">Conteúdo do Comunicado</Label>
-                      <Textarea id="conteudo" placeholder="Digite o conteúdo do comunicado..." rows={8} />
-                    </div>
-
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline">Salvar Rascunho</Button>
-                      <Button variant="outline">Visualizar</Button>
-                      <Button>
-                        <Megaphone className="h-4 w-4 mr-2" />
-                        Publicar Comunicado
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ))}
+              </div>
             </TabsContent>
           </Tabs>
+          <ModalAviso
+            isOpen={isAvisoOpen}
+            onClose={() => setIsAvisoOpen(false)}
+            onSave={handleSaveAviso}
+            initialData={editingAviso}
+            turmaOptions={turmaOptions}
+          />
+          <ModalConfirmacao
+            isOpen={confirmOpen}
+            title="Excluir aviso"
+            description="Tem certeza que deseja excluir este aviso? Essa ação não pode ser desfeita."
+            confirmLabel="Excluir"
+            onConfirm={handleDelete}
+            onClose={() => setConfirmOpen(false)}
+          />
         </div>
       </main>
     </div>
