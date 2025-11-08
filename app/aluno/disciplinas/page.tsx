@@ -1,13 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
-import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
-import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BookOpen, User, Play, ChevronRight, Sparkles, GraduationCap } from "lucide-react"
+import { BookOpen, User, ChevronRight, Sparkles, GraduationCap } from "lucide-react"
 import Link from "next/link"
 import { Semestre } from "@/src/types/Classe"
 import { getDisciplinasPorAluno, transformarDadosParaComponente } from "@/src/services/ClassesService"
@@ -130,46 +127,49 @@ export default function AlunodisciplinasPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-3">
             {disciplinasAtuais.map((disciplina, index) => (
-              <LiquidGlassCard
-                key={disciplina.id}
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all rounded-xl duration-300 border border-border/50  ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
+              <Link 
+                key={disciplina.id} 
+                href={`/aluno/disciplinas/${disciplina.id}`}
+                className="block group"
               >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div>
-                        <CardTitle className="text-xl text-gray-900 dark:text-gray-100">{disciplina.nome}</CardTitle>
-                        <CardDescription className="text-gray-600 dark:text-gray-400">{disciplina.codigo}</CardDescription>
-                      </div>
+                <div
+                  className={`transition-all duration-300 rounded-xl border border-border/50 px-6 py-5 hover:shadow-lg ${
+                    isLiquidGlass
+                      ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/40 dark:hover:bg-gray-800/30'
+                      : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-6">
+                    {/* Ícone */}
+                    <div className="w-14 h-14 bg-green-600 rounded-xl flex items-center justify-center group-hover:bg-green-700 transition-colors flex-shrink-0">
+                      <BookOpen className="h-7 w-7 text-white" />
+                    </div>
+
+                    {/* Informações da Disciplina */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors mb-1">
+                        {disciplina.nome}
+                      </h3>
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        {disciplina.codigo}
+                      </p>
+                    </div>
+
+                    {/* Professor */}
+                    <div className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 min-w-0 flex-shrink-0">
+                      <User className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                      <span className="font-medium truncate max-w-[200px]">{disciplina.professor}</span>
+                    </div>
+
+                    {/* Indicador de ação */}
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
+                      <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <User className="h-4 w-4 mr-2" />
-                    {disciplina.professor}
-                  </div>
-
-                  <div className="space-y-2">
-                  </div>
-                  <div className="pt-2">
-                    <Link href={`/aluno/disciplinas/${disciplina.id}`}>
-                      <LiquidGlassButton className="w-full cursor-pointer group-hover:bg-opacity-90 transition-all duration-300">
-                        <Play className="h-4 w-4 mr-2" />
-                        Acessar Disciplina
-                        <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                      </LiquidGlassButton>
-                    </Link>
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
