@@ -72,14 +72,14 @@ export default function AlunodisciplinasPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           {/* Header aprimorado */}
-          <div className={`flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm gap-4 ${
+          <div className={`flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm gap-4 ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center hover:shadow-md">
                   <BookOpen className="h-8 w-8 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
@@ -135,7 +135,7 @@ export default function AlunodisciplinasPage() {
               <LiquidGlassCard
                 key={disciplina.id}
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+                className={`group transition-all rounded-xl duration-300 border border-border/50  ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -161,7 +161,7 @@ export default function AlunodisciplinasPage() {
                   </div>
                   <div className="pt-2">
                     <Link href={`/aluno/disciplinas/${disciplina.id}`}>
-                      <LiquidGlassButton className="w-full group-hover:bg-opacity-90 transition-all duration-300">
+                      <LiquidGlassButton className="w-full cursor-pointer group-hover:bg-opacity-90 transition-all duration-300">
                         <Play className="h-4 w-4 mr-2" />
                         Acessar Disciplina
                         <ChevronRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />

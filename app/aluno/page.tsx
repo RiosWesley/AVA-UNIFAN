@@ -88,7 +88,7 @@ export default function AlunoDashboard() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           {/* Header com gradiente e animações */}
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+          <div className={`flex items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -136,7 +136,7 @@ export default function AlunoDashboard() {
             <Carousel
               images={carouselImages}
               heightClass="h-120 md:h-125 lg:h-140"
-              className={isLiquidGlass ? "bg-black/20" : "bg-white/50 dark:bg-gray-800/50"}
+              className={isLiquidGlass ? "bg-black/20" : "bg-white/50 dark:bg-gray-800/50 rounded-xl"}
             />
           </div>
 
@@ -144,7 +144,7 @@ export default function AlunoDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+              className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -169,7 +169,7 @@ export default function AlunoDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+              className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -195,7 +195,7 @@ export default function AlunoDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+              className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -220,7 +220,7 @@ export default function AlunoDashboard() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
+              className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -268,7 +268,7 @@ export default function AlunoDashboard() {
                   <div className="space-y-3">
                     {upcomingSchedules && upcomingSchedules.length > 0 ? (
                       upcomingSchedules.map((aula) => (
-                        <div key={aula.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 hover:shadow-lg backdrop-blur-lg ${
+                        <div key={aula.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 backdrop-blur-lg ${
                           isLiquidGlass
                             ? 'bg-transparent/50 hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
                             : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
@@ -402,7 +402,7 @@ export default function AlunoDashboard() {
                   <div className="space-y-3">
                     {news && news.length > 0 ? (
                       news.map((comunicado) => (
-                        <div key={comunicado.id} className={`group p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                        <div key={comunicado.id} className={`group p-4 rounded-xl border transition-all duration-300 ${
                           isLiquidGlass
                             ? (comunicado.priority === "alta"
                                 ? "bg-transparent border-red-200/30 dark:border-red-800/30 hover:bg-white/10 dark:hover:bg-gray-800/10"
@@ -443,7 +443,7 @@ export default function AlunoDashboard() {
                               <Clock className="h-3 w-3 mr-1" />
                               {new Date(comunicado.date).toLocaleDateString('pt-BR')}
                             </p>
-                            <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
+                            <button className="text-xs cursor-pointer text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
                               Ver mais
                             </button>
                           </div>

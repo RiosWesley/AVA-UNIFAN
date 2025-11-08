@@ -210,7 +210,7 @@ export default function AtividadesPage() {
           <div className="flex flex-col lg:flex-row gap-4">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`flex-1 p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-2xl border-border/50 hover:border-border/80 ${
+              className={`flex-1 p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -231,7 +231,7 @@ export default function AtividadesPage() {
 
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 hover:shadow-2xl border-border/50 hover:border-border/80 ${
+              className={`p-6 rounded-2xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -254,7 +254,7 @@ export default function AtividadesPage() {
                       onClick={() => setActiveFilter(filter.key)}
                       className={`rounded-full transition-all duration-200 ${
                         activeFilter === filter.key
-                          ? `${filter.color} shadow-lg scale-105`
+                          ? `${filter.color} scale-105`
                           : 'hover:scale-105'
                       }`}
                     >
@@ -271,7 +271,7 @@ export default function AtividadesPage() {
             {/* Atividades Pendentes */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-border/50 hover:border-border/80 group ${
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 border-border/50 hover:border-border/80 group ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -280,7 +280,7 @@ export default function AtividadesPage() {
               <div className="relative py-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 transition-colors flex items-center justify-center">
                       <Clock className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
@@ -298,14 +298,14 @@ export default function AtividadesPage() {
                     const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
                     const PriorityIcon = prioridadeConfig.icon
                     return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
                         isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
+                          ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40 '
                           : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
                       }`}>
                         <div className="relative">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                            <h3 className="font-bold text-foreground transition-colors">
                               {atividade.titulo}
                             </h3>
                             <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
@@ -379,7 +379,7 @@ export default function AtividadesPage() {
             {/* Atividades Concluídas */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-border/50 hover:border-border/80 group ${
+              className={`relative overflow-hidden rounded-3xl border shadow-lg transition-all duration-300 border-border/50 hover:border-border/80 group ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
@@ -388,7 +388,7 @@ export default function AtividadesPage() {
               <div className="relative py-6">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-green-500/20 group-hover:bg-green-500/30 transition-colors flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl bg-green-500/20  transition-colors flex items-center justify-center">
                       <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
@@ -406,14 +406,14 @@ export default function AtividadesPage() {
                     const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
                     const PriorityIcon = prioridadeConfig.icon
                     return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
+                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
                         isLiquidGlass
                           ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
                           : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
                       }`}>
                         <div className="relative">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                            <h3 className="font-bold text-foreground transition-colors">
                               {atividade.titulo}
                             </h3>
                             <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
