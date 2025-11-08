@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -117,8 +118,15 @@ export function Sidebar({ userRole }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsedState)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => getInitialOpenGroups(userRole))
+  const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme()
   const pathname = usePathname()
   const items = menuItems[userRole]
+  const isLightMode = mounted && theme === 'light'
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   if (typeof window !== "undefined") {
     try {
@@ -203,9 +211,14 @@ export function Sidebar({ userRole }: SidebarProps) {
                 size="sm"
                 onClick={toggleCollapsed}
                 className={cn(
-                  "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300",
+                  "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 cursor-pointer",
                   "active:scale-95 bg-green-500/10"
                 )}
+                style={{
+                  borderColor: 'transparent',
+                  borderWidth: isLightMode ? '0' : undefined,
+                  boxShadow: 'none'
+                }}
               >
                 <Menu className="h-4 w-4" />
               </Button>
@@ -221,7 +234,12 @@ export function Sidebar({ userRole }: SidebarProps) {
                 variant="ghost"
                 size="sm"
                 onClick={toggleCollapsed}
-                className="text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 active:scale-95"
+                className="text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 active:scale-95 cursor-pointer"
+                style={{
+                  borderColor: 'transparent',
+                  borderWidth: isLightMode ? '0' : undefined,
+                  boxShadow: 'none'
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -247,22 +265,33 @@ export function Sidebar({ userRole }: SidebarProps) {
               <Button
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground relative group transition-all duration-300",
-                  "border border-transparent hover:border-sidebar-border/50 my-0.5",
-                  isActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow-lg border-green-500/20",
+                  "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-green-600 relative group transition-all duration-300 cursor-pointer",
+                  // No modo claro, remover borda quando não ativo
+                  isLightMode && !isActive ? "border-0" : "border border-transparent hover:border-sidebar-border/50",
+                  isActive && "bg-green-500/30 text-green-700 dark:text-green-400 shadow-lg border-green-500/20",
                   isCollapsed && "px-2 justify-center",
                   !isCollapsed && "h-12 px-6",
                   isGroup && openGroups[item.label] && "bg-green-500/10 border-green-500/20"
                 )}
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                  // No modo claro: sem borda se não ativo (independente do hover)
+                  borderColor: isLightMode && !isActive 
+                    ? 'transparent' 
+                    : isActive 
+                      ? 'rgba(34, 197, 94, 0.2)' 
+                      : (isGroup && openGroups[item.label] 
+                        ? 'rgba(34, 197, 94, 0.2)' 
+                        : 'transparent'),
+                  borderWidth: isLightMode && !isActive ? '0' : undefined,
+                  boxShadow: isActive ? undefined : 'none'
+                }}
                 onMouseEnter={() => setHoveredItem((item as any).href)}
                 onMouseLeave={() => setHoveredItem(null)}
                 onClick={() => {
                   if (isGroup && !isCollapsed) {
                     setOpenGroups(prev => ({ ...prev, [item.label]: !prev[item.label] }))
                   }
-                }}
-                style={{
-                  animationDelay: `${index * 50}ms`
                 }}
               >
                 <div className="flex items-center justify-center w-8 h-8 relative">
@@ -349,19 +378,25 @@ export function Sidebar({ userRole }: SidebarProps) {
                         const ChildIcon = child.icon
                         const childActive = pathname === child.href
                         return (
-                          <Link key={child.href} href={child.href}>
+                          <Link key={child.href} href={child.href} className="cursor-pointer">
                             <Button
                               variant={childActive ? "secondary" : "ghost"}
                               className={cn(
-                                "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300",
-                                "border border-transparent hover:border-sidebar-border/50 h-10 px-6",
+                                "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 cursor-pointer",
+                                // No modo claro, remover borda quando não ativo
+                                isLightMode && !childActive ? "border-0" : "border border-transparent hover:border-sidebar-border/50",
+                                "h-10 px-6",
                                 childActive && "bg-green-500/20 text-green-600 dark:text-green-400 shadow border-green-500/20"
                               )}
                               style={{
                                 animationDelay: openGroups[item.label] ? `${childIndex * 50}ms` : '0ms',
                                 transform: openGroups[item.label] ? 'translateY(0)' : 'translateY(-10px)',
                                 opacity: openGroups[item.label] ? 1 : 0,
-                                transition: 'all 0.3s ease-in-out'
+                                transition: 'all 0.3s ease-in-out',
+                                // No modo claro: sem borda se não ativo
+                                borderColor: isLightMode && !childActive ? 'transparent' : (childActive ? 'rgba(34, 197, 94, 0.2)' : 'transparent'),
+                                borderWidth: isLightMode && !childActive ? '0' : undefined,
+                                boxShadow: childActive ? undefined : 'none'
                               }}
                             >
                               <div className="flex items-center justify-center w-6 h-6 mr-3">
@@ -384,7 +419,7 @@ export function Sidebar({ userRole }: SidebarProps) {
             }
 
             return (
-              <Link key={(item as any).href} href={(item as any).href}>
+              <Link key={(item as any).href} href={(item as any).href} className="cursor-pointer">
                 {buttonContent}
               </Link>
             )
@@ -402,7 +437,7 @@ export function Sidebar({ userRole }: SidebarProps) {
         )}
 
         <div className={cn(
-          "flex items-center space-x-3 p-3 rounded-xl bg-green-500/5 border border-green-500/10 transition-all duration-300 hover:bg-green-500/10",
+          "flex items-center space-x-3 p-3 rounded-xl bg-green-500/5 border border-green-500/10 transition-all duration-300 hover:bg-green-500/10 cursor-pointer",
           isCollapsed && "justify-center"
         )}>
           {isCollapsed ? (

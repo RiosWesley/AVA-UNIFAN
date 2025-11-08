@@ -21,7 +21,7 @@
   --accent-foreground: #ffffff; /* White text on accent elements */
   --destructive: #be123c; /* Rose-600 for error states */
   --destructive-foreground: #ffffff; /* White text on destructive elements */
-  --border: #e5e7eb; /* Light gray for borders */
+  --border: #d1d5db; /* Medium gray for borders - increased contrast */
   --input: #ffffff; /* White for input fields */
   --ring: rgba(20, 184, 166, 0.5); /* Soft ring for focus states */
   --chart-1: #15803d; /* Primary chart color */
@@ -34,9 +34,9 @@
   --sidebar-foreground: #374151; /* Sidebar text */
   --sidebar-primary: #f0fdf4; /* Sidebar primary background */
   --sidebar-primary-foreground: #15803d; /* Sidebar primary text */
-  --sidebar-accent: #84cc16; /* Sidebar accent color */
-  --sidebar-accent-foreground: #ffffff; /* Sidebar accent text */
-  --sidebar-border: #e5e7eb; /* Sidebar border color */
+  --sidebar-accent: #cafedd; /* Sidebar accent color - green-300 for hover */
+  --sidebar-accent-foreground: #374151; /* Sidebar accent text - green-700 for contrast */
+  --sidebar-border: #d1d5db; /* Sidebar border color - increased contrast */
   --sidebar-ring: rgba(20, 184, 166, 0.5); /* Soft ring for sidebar focus */
 }
 
@@ -104,8 +104,8 @@
   --sidebar-foreground: #ffffff;
   --sidebar-primary: rgba(34, 197, 94, 0.2);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(255, 255, 255, 0.12);
-  --sidebar-accent-foreground: #ffffff;
+  --sidebar-accent: rgba(34, 197, 94, 0.25); /* Sidebar accent color - green-500 with opacity for hover */
+  --sidebar-accent-foreground: #4ade80; /* Sidebar accent text - green-400 for contrast */
   --sidebar-border: rgba(255, 255, 255, 0.15);
   --sidebar-ring: rgba(34, 197, 94, 0.5);
 }
@@ -715,6 +715,179 @@ footer ::-webkit-scrollbar-thumb:hover {
   .text-2xl { font-size: 1.5rem; line-height: 2rem; }
   .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
   .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+}
+
+/* ===== MELHORAR CONTRASTE DOS CARDS NO MODO CLARO ===== */
+
+/* Cards com background translúcido - aumentar opacidade e contraste no modo claro */
+html:not(.dark):not(.liquid-glass) [class*="bg-gray-50/60"],
+html:not(.dark):not(.liquid-glass) [class*="bg-gray-50/50"],
+html:not(.dark):not(.liquid-glass) [class*="bg-white/50"] {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #d1d5db !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Cards com backdrop-blur - melhorar contraste no modo claro (exceto liquid-glass) */
+html:not(.dark):not(.liquid-glass) [class*="backdrop-blur"] {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: #d1d5db !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Cards com bordas - aumentar visibilidade no modo claro */
+html:not(.dark) .border {
+  border-color: #d1d5db !important;
+}
+
+/* Hover states para melhor feedback visual no modo claro */
+html:not(.dark):not(.liquid-glass) [class*="bg-gray-50/60"]:hover,
+html:not(.dark):not(.liquid-glass) [class*="bg-gray-50/50"]:hover,
+html:not(.dark):not(.liquid-glass) [class*="bg-white/50"]:hover {
+  background-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border-color: #9ca3af !important;
+}
+
+/* Cards com border-gray-200 - aumentar contraste no modo claro (exceto sidebar) */
+html:not(.dark) [class*="border-gray-200"]:not(aside [class*="border-gray-200"]):not([data-slot="sidebar"] [class*="border-gray-200"]) {
+  border-color: #d1d5db !important;
+}
+
+/* Cards com border-border/50 - aumentar contraste no modo claro (exceto sidebar) */
+html:not(.dark) [class*="border-border/50"]:not(aside [class*="border-border/50"]):not([data-slot="sidebar"] [class*="border-border/50"]) {
+  border-color: #d1d5db !important;
+}
+
+/* LiquidGlassCard no modo claro (quando não está em liquid-glass mode) */
+html:not(.dark):not(.liquid-glass) [data-lg-card] {
+  border-color: #d1d5db !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Cards com rounded-2xl e rounded-3xl - melhorar sombras no modo claro */
+html:not(.dark):not(.liquid-glass) [class*="rounded-2xl"].border,
+html:not(.dark):not(.liquid-glass) [class*="rounded-3xl"].border {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+html:not(.dark):not(.liquid-glass) [class*="rounded-2xl"].border:hover,
+html:not(.dark):not(.liquid-glass) [class*="rounded-3xl"].border:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ===== EXCLUIR SIDEBAR DAS REGRAS DE CONTRASTE - REGRAS COM MÁXIMA ESPECIFICIDADE ===== */
+
+/* Excluir TODOS os elementos da sidebar das regras de contraste - máxima especificidade */
+html:not(.dark) aside,
+html:not(.dark) aside *,
+html:not(.dark) aside * *,
+html:not(.dark) [data-slot="sidebar"],
+html:not(.dark) [data-slot="sidebar"] *,
+html:not(.dark) [data-slot="sidebar"] * * {
+  background-color: inherit !important;
+  border-color: inherit !important;
+  box-shadow: inherit !important;
+}
+
+/* Excluir especificamente botões da sidebar - forçar border transparent com máxima especificidade */
+html:not(.dark) aside button.border,
+html:not(.dark) aside button[class*="border"],
+html:not(.dark) aside [role="button"].border,
+html:not(.dark) aside [role="button"][class*="border"],
+html:not(.dark) [data-slot="sidebar"] button.border,
+html:not(.dark) [data-slot="sidebar"] button[class*="border"],
+html:not(.dark) [data-slot="sidebar"] [role="button"].border,
+html:not(.dark) [data-slot="sidebar"] [role="button"][class*="border"],
+html:not(.dark) aside nav button.border,
+html:not(.dark) aside nav button[class*="border"],
+html:not(.dark) aside nav [role="button"].border,
+html:not(.dark) aside nav [role="button"][class*="border"],
+html:not(.dark) aside button,
+html:not(.dark) aside [role="button"],
+html:not(.dark) [data-slot="sidebar"] button,
+html:not(.dark) [data-slot="sidebar"] [role="button"],
+html:not(.dark) aside nav button,
+html:not(.dark) aside nav [role="button"] {
+  background-color: inherit !important;
+  border-color: transparent !important;
+  box-shadow: inherit !important;
+}
+
+/* Excluir links da sidebar */
+html:not(.dark) aside a,
+html:not(.dark) aside a.border,
+html:not(.dark) [data-slot="sidebar"] a,
+html:not(.dark) [data-slot="sidebar"] a.border,
+html:not(.dark) aside nav a,
+html:not(.dark) aside nav a.border {
+  background-color: inherit !important;
+  border-color: inherit !important;
+  box-shadow: inherit !important;
+}
+
+/* Excluir elementos com classes específicas dentro da sidebar */
+html:not(.dark) aside [class*="bg-gray-50/60"],
+html:not(.dark) aside [class*="bg-gray-50/50"],
+html:not(.dark) aside [class*="bg-white/50"],
+html:not(.dark) [data-slot="sidebar"] [class*="bg-gray-50/60"],
+html:not(.dark) [data-slot="sidebar"] [class*="bg-gray-50/50"],
+html:not(.dark) [data-slot="sidebar"] [class*="bg-white/50"] {
+  background-color: inherit !important;
+  border-color: inherit !important;
+  box-shadow: inherit !important;
+}
+
+/* Excluir backdrop-blur da sidebar */
+html:not(.dark) aside [class*="backdrop-blur"],
+html:not(.dark) [data-slot="sidebar"] [class*="backdrop-blur"] {
+  background-color: inherit !important;
+  border-color: inherit !important;
+  box-shadow: inherit !important;
+}
+
+/* Excluir bordas da sidebar - todas as variações com máxima especificidade */
+html:not(.dark) aside .border.border,
+html:not(.dark) aside [class*="border"].border,
+html:not(.dark) [data-slot="sidebar"] .border.border,
+html:not(.dark) [data-slot="sidebar"] [class*="border"].border,
+html:not(.dark) aside [class*="border-border"].border,
+html:not(.dark) [data-slot="sidebar"] [class*="border-border"].border,
+html:not(.dark) aside [class*="border-gray-200"].border,
+html:not(.dark) [data-slot="sidebar"] [class*="border-gray-200"].border,
+html:not(.dark) aside [class*="border-transparent"],
+html:not(.dark) [data-slot="sidebar"] [class*="border-transparent"],
+html:not(.dark) aside .border,
+html:not(.dark) [data-slot="sidebar"] .border,
+html:not(.dark) aside [class*="border-border"],
+html:not(.dark) [data-slot="sidebar"] [class*="border-border"],
+html:not(.dark) aside [class*="border-gray-200"],
+html:not(.dark) [data-slot="sidebar"] [class*="border-gray-200"] {
+  border-color: transparent !important;
+}
+
+/* Excluir especificamente border-border/50 da sidebar */
+html:not(.dark) aside [class*="border-border/50"],
+html:not(.dark) aside [class*="border-border/50"].border,
+html:not(.dark) [data-slot="sidebar"] [class*="border-border/50"],
+html:not(.dark) [data-slot="sidebar"] [class*="border-border/50"].border {
+  border-color: transparent !important;
+}
+
+/* REGRA FINAL - Sobrescrever regras de borda para botões e elementos interativos da sidebar */
+html:not(.dark) aside button,
+html:not(.dark) aside button *,
+html:not(.dark) aside [role="button"],
+html:not(.dark) aside [role="button"] *,
+html:not(.dark) [data-slot="sidebar"] button,
+html:not(.dark) [data-slot="sidebar"] button *,
+html:not(.dark) [data-slot="sidebar"] [role="button"],
+html:not(.dark) [data-slot="sidebar"] [role="button"] *,
+html:not(.dark) aside nav button,
+html:not(.dark) aside nav button *,
+html:not(.dark) aside nav [role="button"],
+html:not(.dark) aside nav [role="button"] * {
+  border-color: transparent !important;
 }
 
 /* ===== TOOLTIP PREDOMINANCE ===== */

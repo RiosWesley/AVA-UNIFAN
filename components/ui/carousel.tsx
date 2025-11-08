@@ -94,7 +94,7 @@ export function Carousel({
             className={cn(
               "absolute left-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center",
               "h-10 w-10 rounded-full bg-black/30 hover:bg-black/50 text-white",
-              "backdrop-blur-sm transition-colors"
+              "backdrop-blur-sm transition-colors cursor-pointer"
             )}
             onClick={prev}
             aria-label="Anterior"
@@ -106,7 +106,7 @@ export function Carousel({
             className={cn(
               "absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center",
               "h-10 w-10 rounded-full bg-black/30 hover:bg-black/50 text-white",
-              "backdrop-blur-sm transition-colors"
+              "backdrop-blur-sm transition-colors cursor-pointer"
             )}
             onClick={next}
             aria-label="Próximo"
@@ -124,7 +124,7 @@ export function Carousel({
               key={i}
               onClick={() => goTo(i)}
               className={cn(
-                "h-2.5 rounded-full transition-all",
+                "h-2.5 rounded-full transition-all cursor-pointer",
                 i === current ? "w-6 bg-white" : "w-2.5 bg-white/60 hover:bg-white/80"
               )}
               aria-label={`Ir para slide ${i + 1}`}
