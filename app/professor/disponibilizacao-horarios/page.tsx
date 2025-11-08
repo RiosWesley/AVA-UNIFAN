@@ -5,7 +5,6 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -20,112 +19,55 @@ import {
   Save, 
   Send, 
   CheckCircle, 
-  AlertCircle, 
-  Eye, 
   History,
   Sun,
   Sunset,
-  Moon,
-  Plus,
-  Trash2,
-  Edit3,
-  ChevronDown,
-  ChevronRight
+  Moon
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
-interface HorarioDisponivel {
-  inicio: string
-  fim: string
-}
+type Turno = 'manha' | 'tarde' | 'noite'
 
-interface DiaSemana {
-  nome: string
-  manha?: HorarioDisponivel
-  tarde?: HorarioDisponivel
-  noite?: HorarioDisponivel
+interface DisponibilidadeTurnos {
+  manha: boolean
+  tarde: boolean
+  noite: boolean
 }
 
 interface DisponibilizacaoHorarios {
   id: string
   semestre: string
   status: 'rascunho' | 'enviada' | 'aprovada'
-  horarios: DiaSemana[]
+  turnos: DisponibilidadeTurnos
   observacoes: string
   dataCriacao: Date
   dataEnvio?: Date
 }
 
-type PreferenciaNivel = 'alta' | 'media' | 'baixa'
-
-interface Disciplina {
-  id: string
+const TURNOS: Array<{
+  id: Turno
   nome: string
-}
-
-interface Curso {
-  id: string
-  nome: string
-  disciplinas: Disciplina[]
-}
-
-interface PreferenciaDisciplina {
-  disciplinaId: string
-  podeLecionar: boolean
-  preferencia?: PreferenciaNivel
-}
-
-interface PreferenciasPorCurso {
-  cursoId: string
-  preferencias: PreferenciaDisciplina[]
-}
+  icone: typeof Sun
+  cor: string
+  descricao: string
+}> = [
+  { id: 'manha', nome: 'Manhã', icone: Sun, cor: 'yellow', descricao: '07:00 - 12:00' },
+  { id: 'tarde', nome: 'Tarde', icone: Sunset, cor: 'orange', descricao: '13:00 - 18:00' },
+  { id: 'noite', nome: 'Noite', icone: Moon, cor: 'blue', descricao: '18:30 - 22:00' }
+]
 
 export default function DisponibilizacaoHorariosPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
-  const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [semestreSelecionado, setSemestreSelecionado] = useState("2024.1")
   const [status, setStatus] = useState<'rascunho' | 'enviada' | 'aprovada'>('rascunho')
   const [observacoes, setObservacoes] = useState("")
-  const [horarios, setHorarios] = useState<DiaSemana[]>([
-    { nome: "Segunda-feira" },
-    { nome: "Terça-feira" },
-    { nome: "Quarta-feira" },
-    { nome: "Quinta-feira" },
-    { nome: "Sexta-feira" },
-    { nome: "Sábado" }
-  ])
+  const [turnos, setTurnos] = useState<DisponibilidadeTurnos>({
+    manha: false,
+    tarde: false,
+    noite: false
+  })
   const [historico, setHistorico] = useState<DisponibilizacaoHorarios[]>([])
-  const [cursos] = useState<Curso[]>([
-    {
-      id: 'ads',
-      nome: 'Análise e Desenvolvimento de Sistemas',
-      disciplinas: [
-        { id: 'alg1', nome: 'Algoritmos I' },
-        { id: 'poo', nome: 'Programação Orientada a Objetos' },
-        { id: 'bd1', nome: 'Banco de Dados I' },
-      ]
-    },
-    {
-      id: 'eng',
-      nome: 'Engenharia de Software',
-      disciplinas: [
-        { id: 'req', nome: 'Requisitos de Software' },
-        { id: 'test', nome: 'Teste de Software' },
-        { id: 'arq', nome: 'Arquitetura de Software' },
-      ]
-    },
-    {
-      id: 'si',
-      nome: 'Sistemas de Informação',
-      disciplinas: [
-        { id: 'redes', nome: 'Redes de Computadores' },
-        { id: 'seg', nome: 'Segurança da Informação' },
-        { id: 'ux', nome: 'Experiência do Usuário' },
-      ]
-    }
-  ])
-  const [preferenciasPorCurso, setPreferenciasPorCurso] = useState<PreferenciasPorCurso[]>([])
-  const [accordionsAbertos, setAccordionsAbertos] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     const checkTheme = () => {
@@ -149,115 +91,29 @@ export default function DisponibilizacaoHorariosPage() {
     { id: "2023.1", nome: "2023.1", ativo: false }
   ]
 
-  const turnos = [
-    { id: "manha", nome: "Manhã", icone: Sun, cor: "yellow", horario: "07:00 - 12:00" },
-    { id: "tarde", nome: "Tarde", icone: Sunset, cor: "orange", horario: "13:00 - 18:00" },
-    { id: "noite", nome: "Noite", icone: Moon, cor: "blue", horario: "18:30 - 22:00" }
-  ]
-
-  const validarHorario = (horario: string): boolean => {
-    const regex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
-    return regex.test(horario)
+  const toggleTurno = (turno: Turno) => {
+    setTurnos(prev => ({
+      ...prev,
+      [turno]: !prev[turno]
+    }))
   }
 
-  const validarConflitoHorarios = (dia: DiaSemana, turno: string, novoHorario: HorarioDisponivel): boolean => {
-    const outrosTurnos = Object.entries(dia)
-      .filter(([key]) => key !== turno && key !== 'nome')
-      .map(([, value]) => value)
-      .filter(Boolean) as HorarioDisponivel[]
-
-    for (const horario of outrosTurnos) {
-      if (
-        (novoHorario.inicio >= horario.inicio && novoHorario.inicio < horario.fim) ||
-        (novoHorario.fim > horario.inicio && novoHorario.fim <= horario.fim) ||
-        (novoHorario.inicio <= horario.inicio && novoHorario.fim >= horario.fim)
-      ) {
-        return false
-      }
-    }
-    return true
-  }
-
-  const atualizarHorario = (diaIndex: number, turno: string, campo: 'inicio' | 'fim', valor: string) => {
-    if (!validarHorario(valor)) {
-      toast.error("Formato de horário inválido", {
-        description: "Use o formato HH:MM (ex: 08:30, 14:00)"
-      })
-      return
-    }
-
-    setHorarios(prev => {
-      const novosHorarios = [...prev]
-      const dia = novosHorarios[diaIndex]
-      
-      if (!dia[turno as keyof DiaSemana]) {
-        (dia as any)[turno] = { inicio: '', fim: '' }
-      }
-
-      const novoHorario = {
-        ...(dia[turno as keyof DiaSemana] as HorarioDisponivel || { inicio: '', fim: '' }),
-        [campo]: valor
-      }
-
-      if (novoHorario.inicio && novoHorario.fim) {
-        if (novoHorario.inicio >= novoHorario.fim) {
-          toast.error("Horário inválido", {
-            description: "O horário de início deve ser anterior ao horário de fim"
-          })
-          return prev
-        }
-
-        if (!validarConflitoHorarios(dia, turno, novoHorario)) {
-          toast.error("Conflito de horários", {
-            description: "Este horário conflita com outro turno no mesmo dia"
-          })
-          return prev
-        }
-
-        // Toast de sucesso para horário válido
-        toast.success("Horário adicionado", {
-          description: `${dia.nome} - ${turno}: ${novoHorario.inicio} às ${novoHorario.fim}`
-        })
-      }
-
-      (dia as any)[turno] = novoHorario
-      return novosHorarios
-    })
-  }
-
-  const removerHorario = (diaIndex: number, turno: string) => {
-    setHorarios(prev => {
-      const novosHorarios = [...prev]
-      const dia = novosHorarios[diaIndex]
-      delete (dia as any)[turno]
-      
-      toast.info("Horário removido", {
-        description: `${dia.nome} - ${turno} removido com sucesso`
-      })
-      
-      return novosHorarios
-    })
+  const temAlgumTurnoSelecionado = () => {
+    return turnos.manha || turnos.tarde || turnos.noite
   }
 
   const salvarRascunho = () => {
+    if (!temAlgumTurnoSelecionado()) {
+      toast.warning("Selecione pelo menos um turno antes de salvar")
+      return
+    }
+
     try {
-      // Validação básica antes de salvar
-      const temHorarios = horarios.some(dia => 
-        Object.values(dia).some(horario => 
-          typeof horario === 'object' && horario && horario.inicio && horario.fim
-        )
-      )
-
-      if (!temHorarios) {
-        toast.warning("Adicione pelo menos um horário antes de salvar")
-        return
-      }
-
       const disponibilizacao: DisponibilizacaoHorarios = {
         id: Date.now().toString(),
         semestre: semestreSelecionado,
         status: 'rascunho',
-        horarios,
+        turnos,
         observacoes,
         dataCriacao: new Date()
       }
@@ -265,7 +121,7 @@ export default function DisponibilizacaoHorariosPage() {
       setHistorico(prev => [disponibilizacao, ...prev])
       setStatus('rascunho')
       toast.success("Rascunho salvo com sucesso!", {
-        description: "Seus horários foram salvos localmente"
+        description: "Sua disponibilidade foi salva localmente"
       })
     } catch (error) {
       console.error('Erro ao salvar rascunho:', error)
@@ -276,62 +132,25 @@ export default function DisponibilizacaoHorariosPage() {
   }
 
   const enviarParaCoordenacao = () => {
+    if (!temAlgumTurnoSelecionado()) {
+      toast.error("Selecione pelo menos um turno antes de enviar", {
+        description: "É necessário informar sua disponibilidade"
+      })
+      return
+    }
+
     try {
-      // Validações antes de enviar
-      const temHorarios = horarios.some(dia => 
-        Object.values(dia).some(horario => 
-          typeof horario === 'object' && horario && horario.inicio && horario.fim
-        )
-      )
-
-      if (!temHorarios) {
-        toast.error("Adicione pelo menos um horário antes de enviar", {
-          description: "É necessário informar sua disponibilidade"
-        })
-        return
-      }
-
-      // Validação de horários completos
-      const horariosIncompletos = horarios.some(dia => 
-        Object.values(dia).some(horario => 
-          typeof horario === 'object' && horario && 
-          (horario.inicio && !horario.fim || !horario.inicio && horario.fim)
-        )
-      )
-
-      if (horariosIncompletos) {
-        toast.error("Complete todos os horários antes de enviar", {
-          description: "Todos os horários devem ter início e fim definidos"
-        })
-        return
-      }
-
-      // Validação do Passo 2: ao menos uma disciplina selecionada
-      const totalSelecionadas = preferenciasPorCurso.reduce((acc, curso) => (
-        acc + curso.preferencias.filter(p => p.podeLecionar).length
-      ), 0)
-
-      if (totalSelecionadas === 0) {
-        toast.error("Selecione ao menos uma disciplina no Passo 2", {
-          description: "Expanda um curso e marque as disciplinas que pode lecionar"
-        })
-        setCurrentStep(2)
-        return
-      }
-
-      // Simular envio para coordenação
       const disponibilizacao: DisponibilizacaoHorarios = {
         id: Date.now().toString(),
         semestre: semestreSelecionado,
         status: 'enviada',
-        horarios,
+        turnos,
         observacoes,
         dataCriacao: new Date(),
         dataEnvio: new Date()
       }
 
-      // Simular delay de envio
-      toast.loading("Enviando horários para coordenação...", {
+      toast.loading("Enviando disponibilidade para coordenação...", {
         id: "enviando-horarios"
       })
 
@@ -339,15 +158,15 @@ export default function DisponibilizacaoHorariosPage() {
         setHistorico(prev => [disponibilizacao, ...prev])
         setStatus('enviada')
         toast.dismiss("enviando-horarios")
-        toast.success("Horários enviados com sucesso!", {
-          description: "A coordenação foi notificada sobre sua disponibilidade"
+        toast.success("Disponibilidade enviada com sucesso!", {
+          description: "A coordenação foi notificada sobre seus turnos disponíveis"
         })
-      }, 2000)
+      }, 1500)
 
     } catch (error) {
-      console.error('Erro ao enviar horários:', error)
+      console.error('Erro ao enviar disponibilidade:', error)
       toast.dismiss("enviando-horarios")
-      toast.error("Erro ao enviar horários", {
+      toast.error("Erro ao enviar disponibilidade", {
         description: "Verifique sua conexão e tente novamente"
       })
     }
@@ -367,104 +186,23 @@ export default function DisponibilizacaoHorariosPage() {
       case "aprovada": return CheckCircle
       case "enviada": return Send
       case "rascunho": return Save
-      default: return AlertCircle
+      default: return Clock
     }
-  }
-
-  const avancarParaPasso2 = () => {
-    const temHorarios = horarios.some(dia => 
-      Object.values(dia).some(horario => 
-        typeof horario === 'object' && horario && horario.inicio && horario.fim
-      )
-    )
-
-    if (!temHorarios) {
-      toast.error("Adicione pelo menos um horário válido para avançar")
-      return
-    }
-    setCurrentStep(2)
-  }
-
-  const alternarAccordionCurso = (cursoId: string) => {
-    setAccordionsAbertos(prev => ({ ...prev, [cursoId]: !prev[cursoId] }))
-  }
-
-  const getPreferenciasCurso = (cursoId: string): PreferenciasPorCurso => {
-    const existente = preferenciasPorCurso.find(c => c.cursoId === cursoId)
-    if (existente) return existente
-    const novo: PreferenciasPorCurso = { cursoId, preferencias: [] }
-    setPreferenciasPorCurso(prev => [...prev, novo])
-    return novo
-  }
-
-  const togglePodeLecionar = (cursoId: string, disciplinaId: string, pode: boolean) => {
-    setPreferenciasPorCurso(prev => {
-      const copia = [...prev]
-      let cursoPrefs = copia.find(c => c.cursoId === cursoId)
-      if (!cursoPrefs) {
-        cursoPrefs = { cursoId, preferencias: [] }
-        copia.push(cursoPrefs)
-      }
-      const pref = cursoPrefs.preferencias.find(p => p.disciplinaId === disciplinaId)
-      if (pref) {
-        pref.podeLecionar = pode
-        if (!pode) delete pref.preferencia
-      } else {
-        cursoPrefs.preferencias.push({ disciplinaId, podeLecionar: pode })
-      }
-      return copia
-    })
-  }
-
-  const setNivelPreferencia = (cursoId: string, disciplinaId: string, nivel?: PreferenciaNivel) => {
-    setPreferenciasPorCurso(prev => {
-      const copia = [...prev]
-      let cursoPrefs = copia.find(c => c.cursoId === cursoId)
-      if (!cursoPrefs) {
-        cursoPrefs = { cursoId, preferencias: [] }
-        copia.push(cursoPrefs)
-      }
-      let pref = cursoPrefs.preferencias.find(p => p.disciplinaId === disciplinaId)
-      if (!pref) {
-        pref = { disciplinaId, podeLecionar: true }
-        cursoPrefs.preferencias.push(pref)
-      }
-      if (nivel) pref.preferencia = nivel
-      else delete pref.preferencia
-      return copia
-    })
-  }
-
-  const selecionarTodas = (curso: Curso) => {
-    setPreferenciasPorCurso(prev => {
-      const outras = prev.filter(c => c.cursoId !== curso.id)
-      const todas: PreferenciasPorCurso = {
-        cursoId: curso.id,
-        preferencias: curso.disciplinas.map(d => ({ disciplinaId: d.id, podeLecionar: true, preferencia: 'alta' }))
-      }
-      return [...outras, todas]
-    })
-  }
-
-  const limparSelecao = (cursoId: string) => {
-    setPreferenciasPorCurso(prev => {
-      const outras = prev.filter(c => c.cursoId !== cursoId)
-      return [...outras, { cursoId, preferencias: [] }]
-    })
   }
 
   return (
-    <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+    <div className={cn("flex h-screen", isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background')}>
       <Sidebar userRole="professor" />
 
       <main className="flex-1 overflow-y-auto">
         <div className="p-8">
           {/* Header */}
-          <div className={`flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm gap-4 ${
+          <div className={cn(
+            "flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm gap-4",
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
-          }`}>
+          )}>
             <div className="flex items-center space-x-4">
               <div className="relative">
                 <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -484,7 +222,7 @@ export default function DisponibilizacaoHorariosPage() {
                   </Badge>
                 </div>
                 <p className="text-muted-foreground text-lg mt-1">
-                  Informe sua disponibilidade semestral
+                  Informe os turnos em que você está disponível
                 </p>
                 <div className="flex items-center mt-2 space-x-2">
                   <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
@@ -493,11 +231,11 @@ export default function DisponibilizacaoHorariosPage() {
                   </Badge>
                   <Badge 
                     variant="outline" 
-                    className={`${
-                      status === 'aprovada' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' :
-                      status === 'enviada' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' :
-                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300'
-                    }`}
+                    className={cn(
+                      status === 'aprovada' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+                      status === 'enviada' && 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
+                      status === 'rascunho' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300'
+                    )}
                   >
                     {status === 'aprovada' ? 'Aprovada' : status === 'enviada' ? 'Enviada' : 'Rascunho'}
                   </Badge>
@@ -508,11 +246,12 @@ export default function DisponibilizacaoHorariosPage() {
               <div className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                  <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                  <SelectTrigger className={cn(
+                    "w-40 backdrop-blur-sm",
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                       : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
-                  }`}>
+                  )}>
                     <SelectValue placeholder="Selecionar semestre" />
                   </SelectTrigger>
                   <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
@@ -535,14 +274,15 @@ export default function DisponibilizacaoHorariosPage() {
           </div>
 
           <Tabs defaultValue="disponibilizar" className="space-y-6">
-          <TabsList className={`grid w-full grid-cols-2 backdrop-blur-sm ${
+            <TabsList className={cn(
+              "grid w-full grid-cols-2 backdrop-blur-sm",
               isLiquidGlass
                 ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                 : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
-            }`}>
+            )}>
               <TabsTrigger value="disponibilizar" className="flex items-center space-x-2">
                 <Clock className="h-4 w-4" />
-                <span>Disponibilizar Horários</span>
+                <span>Disponibilizar Turnos</span>
               </TabsTrigger>
               <TabsTrigger value="historico" className="flex items-center space-x-2">
                 <History className="h-4 w-4" />
@@ -551,128 +291,142 @@ export default function DisponibilizacaoHorariosPage() {
             </TabsList>
 
             <TabsContent value="disponibilizar" className="space-y-6">
-              {/* Indicador simples de passos */}
-              <div className="flex items-center gap-2 text-sm">
-                <div className={`px-3 py-1 rounded-full border ${currentStep === 1 ? 'bg-green-600 text-white border-green-600' : 'bg-transparent'} `}>Passo 1</div>
-                <span className="text-gray-400">→</span>
-                <div className={`px-3 py-1 rounded-full border ${currentStep === 2 ? 'bg-green-600 text-white border-green-600' : 'bg-transparent'}`}>Passo 2</div>
-              </div>
-
-              {/* Passo 1: Formulário de Horários */}
-              {currentStep === 1 && (
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`${
+                className={cn(
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
+                )}
               >
                 <CardHeader>
                   <CardTitle className="text-2xl text-gray-900 dark:text-gray-100">
-                    Horários de Disponibilidade
+                    Turnos Disponíveis
                   </CardTitle>
                   <CardDescription>
-                    Informe os horários em que você estará disponível para cada turno e dia da semana
+                    Selecione os turnos em que você está disponível para lecionar
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {horarios.map((dia, diaIndex) => (
-                    <div key={dia.nome} className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-2">
-                        {dia.nome}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {turnos.map((turno) => {
-                          const IconeTurno = turno.icone
-                          const horarioAtual = dia[turno.id as keyof DiaSemana] as HorarioDisponivel | undefined
-                          
-                          return (
-                            <div key={turno.id} className={`p-4 rounded-xl border ${
-                              isLiquidGlass
-                                ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
-                                : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
-                            }`}>
-                              <div className="flex items-center space-x-2 mb-3">
-                                <IconeTurno className={`h-5 w-5 ${
-                                  turno.cor === 'yellow' ? 'text-yellow-600' :
-                                  turno.cor === 'orange' ? 'text-orange-600' :
-                                  'text-blue-600'
-                                }`} />
-                                <span className="font-medium text-gray-900 dark:text-gray-100">
-                                  {turno.nome}
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                  {turno.horario}
-                                </Badge>
-                              </div>
-                              
-                              {horarioAtual ? (
-                                <div className="space-y-2">
-                                  <div className="flex space-x-2">
-                                    <div className="flex-1">
-                                      <Label htmlFor={`${dia.nome}-${turno.id}-inicio`} className="text-xs">
-                                        Início
-                                      </Label>
-                                      <Input
-                                        id={`${dia.nome}-${turno.id}-inicio`}
-                                        type="time"
-                                        value={horarioAtual.inicio}
-                                        onChange={(e) => atualizarHorario(diaIndex, turno.id, 'inicio', e.target.value)}
-                                        className="text-sm"
-                                      />
-                                    </div>
-                                    <div className="flex-1">
-                                      <Label htmlFor={`${dia.nome}-${turno.id}-fim`} className="text-xs">
-                                        Fim
-                                      </Label>
-                                      <Input
-                                        id={`${dia.nome}-${turno.id}-fim`}
-                                        type="time"
-                                        value={horarioAtual.fim}
-                                        onChange={(e) => atualizarHorario(diaIndex, turno.id, 'fim', e.target.value)}
-                                        className="text-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => removerHorario(diaIndex, turno.id)}
-                                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-1" />
-                                    Remover
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                    onClick={() => {
-                                      setHorarios(prev => {
-                                        const novosHorarios = [...prev]
-                                        ;(novosHorarios[diaIndex] as any)[turno.id] = { inicio: '', fim: '' }
-                                        return novosHorarios
-                                      })
-                                    }}
-                                  className="w-full"
-                                >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Adicionar Horário
-                                </Button>
-                              )}
+                  {/* Seleção de Turnos */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {TURNOS.map((turno) => {
+                      const IconeTurno = turno.icone
+                      const ativo = turnos[turno.id]
+                      
+                      return (
+                        <button
+                          key={turno.id}
+                          type="button"
+                          onClick={() => toggleTurno(turno.id)}
+                          className={cn(
+                            "relative p-6 rounded-xl border-2 transition-all duration-200 text-left",
+                            "hover:scale-[1.02] hover:shadow-lg",
+                            ativo
+                              ? cn(
+                                  turno.cor === 'yellow' && 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
+                                  turno.cor === 'orange' && 'border-orange-500 bg-orange-50 dark:bg-orange-900/20',
+                                  turno.cor === 'blue' && 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                )
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600'
+                          )}
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className={cn(
+                              "p-3 rounded-lg",
+                              ativo
+                                ? cn(
+                                    turno.cor === 'yellow' && 'bg-yellow-100 dark:bg-yellow-900/40',
+                                    turno.cor === 'orange' && 'bg-orange-100 dark:bg-orange-900/40',
+                                    turno.cor === 'blue' && 'bg-blue-100 dark:bg-blue-900/40'
+                                  )
+                                : 'bg-gray-100 dark:bg-gray-700'
+                            )}>
+                              <IconeTurno className={cn(
+                                "h-6 w-6",
+                                ativo
+                                  ? cn(
+                                      turno.cor === 'yellow' && 'text-yellow-600 dark:text-yellow-400',
+                                      turno.cor === 'orange' && 'text-orange-600 dark:text-orange-400',
+                                      turno.cor === 'blue' && 'text-blue-600 dark:text-blue-400'
+                                    )
+                                  : 'text-gray-400 dark:text-gray-500'
+                              )} />
                             </div>
-                          )
-                        })}
+                            <Switch
+                              checked={ativo}
+                              onCheckedChange={() => toggleTurno(turno.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-auto"
+                            />
+                          </div>
+                          
+                          <h3 className={cn(
+                            "text-xl font-semibold mb-2",
+                            ativo
+                              ? 'text-gray-900 dark:text-gray-100'
+                              : 'text-gray-500 dark:text-gray-400'
+                          )}>
+                            {turno.nome}
+                          </h3>
+                          
+                          <p className={cn(
+                            "text-sm",
+                            ativo
+                              ? 'text-gray-600 dark:text-gray-300'
+                              : 'text-gray-400 dark:text-gray-500'
+                          )}>
+                            {turno.descricao}
+                          </p>
+
+                          {ativo && (
+                            <div className="absolute top-4 right-4">
+                              <div className={cn(
+                                "w-3 h-3 rounded-full",
+                                turno.cor === 'yellow' && 'bg-yellow-500',
+                                turno.cor === 'orange' && 'bg-orange-500',
+                                turno.cor === 'blue' && 'bg-blue-500'
+                              )} />
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Resumo da Seleção */}
+                  {temAlgumTurnoSelecionado() && (
+                    <div className={cn(
+                      "p-4 rounded-lg border",
+                      isLiquidGlass
+                        ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
+                        : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
+                    )}>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Turnos selecionados:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {TURNOS.filter(t => turnos[t.id]).map(turno => (
+                          <Badge
+                            key={turno.id}
+                            variant="secondary"
+                            className={cn(
+                              turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+                              turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                              turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                            )}
+                          >
+                            {turno.nome}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
 
                   {/* Observações */}
                   <div className="space-y-2">
                     <Label htmlFor="observacoes" className="text-sm font-medium">
-                      Observações Adicionais
+                      Observações Adicionais (opcional)
                     </Label>
                     <Textarea
                       id="observacoes"
@@ -683,7 +437,7 @@ export default function DisponibilizacaoHorariosPage() {
                     />
                   </div>
 
-                  {/* Botões de Ação do Passo 1 */}
+                  {/* Botões de Ação */}
                   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <LiquidGlassButton
                       variant="outline"
@@ -694,128 +448,25 @@ export default function DisponibilizacaoHorariosPage() {
                       Salvar Rascunho
                     </LiquidGlassButton>
                     <LiquidGlassButton
-                      onClick={avancarParaPasso2}
+                      onClick={enviarParaCoordenacao}
                       className="flex-1"
                     >
-                      <ChevronRight className="h-4 w-4 mr-2" />
-                      Continuar para Passo 2
-                    </LiquidGlassButton>
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-              )}
-
-              {/* Passo 2: Seleção de Disciplinas e Preferências */}
-              {currentStep === 2 && (
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="text-2xl text-gray-900 dark:text-gray-100">
-                    Disciplinas e Preferências por Curso
-                  </CardTitle>
-                  <CardDescription>
-                    Selecione as disciplinas que você pode lecionar e defina suas preferências
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {cursos.map(curso => {
-                    const aberto = !!accordionsAbertos[curso.id]
-                    const prefs = preferenciasPorCurso.find(c => c.cursoId === curso.id)
-                    const selecionadas = prefs ? prefs.preferencias.filter(p => p.podeLecionar).length : 0
-                    return (
-                      <div key={curso.id} className={`rounded-xl border ${
-                        isLiquidGlass
-                          ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
-                          : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
-                      }`}>
-                        <button
-                          type="button"
-                          onClick={() => alternarAccordionCurso(curso.id)}
-                          className="w-full flex items-center justify-between px-4 py-3"
-                          aria-expanded={aberto}
-                        >
-                          <div className="flex items-center gap-3">
-                            {aberto ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                            <span className="font-medium text-gray-900 dark:text-gray-100">{curso.nome}</span>
-                            <Badge variant="outline">{selecionadas}/{curso.disciplinas.length} selecionadas</Badge>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); selecionarTodas(curso) }}>Selecionar todas</Button>
-                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); limparSelecao(curso.id) }}>Limpar</Button>
-                          </div>
-                        </button>
-                        {aberto && (
-                          <div className="px-4 pb-4 space-y-3">
-                            {curso.disciplinas.map(d => {
-                              const cursoPrefs = getPreferenciasCurso(curso.id)
-                              const pref = cursoPrefs.preferencias.find(p => p.disciplinaId === d.id)
-                              const pode = !!pref?.podeLecionar
-                              const nivel = pref?.preferencia
-                              return (
-                                <div key={d.id} className="flex items-center justify-between rounded-lg px-3 py-2 border">
-                                  <div className="flex items-center gap-3">
-                                    <Switch checked={pode} onCheckedChange={(v) => togglePodeLecionar(curso.id, d.id, v)} />
-                                    <span className="text-sm text-gray-900 dark:text-gray-100">{d.nome}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Select value={nivel || ''} onValueChange={(v) => setNivelPreferencia(curso.id, d.id, v as PreferenciaNivel)}>
-                                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
-                                        isLiquidGlass
-                                          ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
-                                          : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
-                                      }`}>
-                                        <SelectValue placeholder="Preferência" />
-                                      </SelectTrigger>
-                                      <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
-                                        <SelectItem value="alta">Alta</SelectItem>
-                                        <SelectItem value="media">Média</SelectItem>
-                                        <SelectItem value="baixa">Baixa</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-
-                  {/* Botões de Ação do Passo 2 */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                    <Button variant="outline" className="flex-1" onClick={() => setCurrentStep(1)}>
-                      <ChevronRight className="h-4 w-4 mr-2 rotate-180" />
-                      Voltar ao Passo 1
-                    </Button>
-                    <LiquidGlassButton variant="outline" onClick={salvarRascunho} className="flex-1">
-                      <Save className="h-4 w-4 mr-2" />
-                      Salvar Rascunho
-                    </LiquidGlassButton>
-                    <LiquidGlassButton onClick={enviarParaCoordenacao} className="flex-1">
                       <Send className="h-4 w-4 mr-2" />
                       Enviar para Coordenação
                     </LiquidGlassButton>
                   </div>
                 </CardContent>
               </LiquidGlassCard>
-              )}
             </TabsContent>
 
             <TabsContent value="historico" className="space-y-6">
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`${
+                className={cn(
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20'
                     : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
+                )}
               >
                 <CardHeader>
                   <CardTitle className="text-2xl text-gray-900 dark:text-gray-100">
@@ -835,14 +486,17 @@ export default function DisponibilizacaoHorariosPage() {
                     <div className="space-y-4">
                       {historico.map((item) => {
                         const StatusIcon = getStatusIcon(item.status)
+                        const turnosSelecionados = TURNOS.filter(t => item.turnos[t.id])
+                        
                         return (
                           <div
                             key={item.id}
-                            className={`p-4 rounded-xl border ${
+                            className={cn(
+                              "p-4 rounded-xl border",
                               isLiquidGlass
                                 ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
                                 : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
-                            }`}
+                            )}
                           >
                             <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center space-x-3">
@@ -858,11 +512,11 @@ export default function DisponibilizacaoHorariosPage() {
                               </div>
                               <Badge
                                 variant="outline"
-                                className={`${
-                                  item.status === 'aprovada' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' :
-                                  item.status === 'enviada' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
-                                  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300'
-                                }`}
+                                className={cn(
+                                  item.status === 'aprovada' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+                                  item.status === 'enviada' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+                                  item.status === 'rascunho' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300'
+                                )}
                               >
                                 {item.status === 'aprovada' ? 'Aprovada' : item.status === 'enviada' ? 'Enviada' : 'Rascunho'}
                               </Badge>
@@ -874,34 +528,26 @@ export default function DisponibilizacaoHorariosPage() {
                               </p>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                              {item.horarios.map((dia) => {
-                                const horariosDia = Object.entries(dia)
-                                  .filter(([key]) => key !== 'nome')
-                                  .map(([turno, horario]) => ({ turno, horario }))
-                                  .filter(({ horario }) => horario)
-
-                                return (
-                                  <div key={dia.nome} className="text-sm">
-                                    <span className="font-medium text-gray-900 dark:text-gray-100">
-                                      {dia.nome}:
-                                    </span>
-                                    {horariosDia.length > 0 ? (
-                                      <div className="mt-1 space-y-1">
-                                        {horariosDia.map(({ turno, horario }) => (
-                                          <div key={turno} className="text-gray-600 dark:text-gray-400">
-                                            {turno}: {horario.inicio} - {horario.fim}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <span className="text-gray-400 dark:text-gray-500 ml-1">
-                                        Sem horários
-                                      </span>
+                            <div className="flex flex-wrap gap-2">
+                              {turnosSelecionados.length > 0 ? (
+                                turnosSelecionados.map(turno => (
+                                  <Badge
+                                    key={turno.id}
+                                    variant="secondary"
+                                    className={cn(
+                                      turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+                                      turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                                      turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
                                     )}
-                                  </div>
-                                )
-                              })}
+                                  >
+                                    {turno.nome}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-500 text-sm">
+                                  Nenhum turno selecionado
+                                </span>
+                              )}
                             </div>
                           </div>
                         )
