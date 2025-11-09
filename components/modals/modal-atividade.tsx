@@ -15,6 +15,7 @@ export interface Atividade {
   id?: number
   titulo: string
   tipo: string
+  unidade?: string
   prazo: string
   peso: number
   descricao: string
@@ -46,6 +47,12 @@ const TIPOS_ATIVIDADE = [
   'Outro'
 ]
 
+const UNIDADES = [
+  '1ª Unidade',
+  '2ª Unidade',
+  'Prova Final'
+]
+
 export function ModalAtividade({
   isOpen,
   onClose,
@@ -56,6 +63,7 @@ export function ModalAtividade({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [titulo, setTitulo] = useState('')
   const [tipo, setTipo] = useState('')
+  const [unidade, setUnidade] = useState('')
   const [prazo, setPrazo] = useState('')
   const [peso, setPeso] = useState('')
   const [descricao, setDescricao] = useState('')
@@ -86,6 +94,7 @@ export function ModalAtividade({
     if (modo === 'editar' && atividade) {
       setTitulo(atividade.titulo || '')
       setTipo(atividade.tipo || '')
+      setUnidade(atividade.unidade || '')
       setPrazo(atividade.prazo || '')
       setPeso(atividade.peso?.toString() || '')
       setDescricao(atividade.descricao || '')
@@ -94,6 +103,7 @@ export function ModalAtividade({
       // Limpar campos para criação
       setTitulo('')
       setTipo('')
+      setUnidade('')
       setPrazo('')
       setPeso('')
       setDescricao('')
@@ -111,6 +121,10 @@ export function ModalAtividade({
 
     if (!tipo) {
       novosErros.tipo = 'Tipo é obrigatório'
+    }
+
+    if (!unidade) {
+      novosErros.unidade = 'Unidade é obrigatória'
     }
 
     if (!prazo) {
@@ -245,6 +259,7 @@ export function ModalAtividade({
       ...(atividade?.id && { id: atividade.id }),
       titulo: titulo.trim(),
       tipo,
+      unidade,
       prazo,
       peso: parseFloat(peso),
       descricao: descricao.trim(),
@@ -329,7 +344,7 @@ export function ModalAtividade({
             )}
           </div>
 
-          {/* Tipo e Peso */}
+          {/* Tipo e Unidade */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="tipo" className="text-sm font-medium">
@@ -353,24 +368,46 @@ export function ModalAtividade({
             </div>
 
             <div>
-              <Label htmlFor="peso" className="text-sm font-medium">
-                Peso *
+              <Label htmlFor="unidade" className="text-sm font-medium">
+                Unidade *
               </Label>
-              <Input
-                id="peso"
-                type="number"
-                value={peso}
-                onChange={(e) => setPeso(e.target.value)}
-                placeholder="Ex: 3.0"
-                min="0.1"
-                max="10"
-                step="0.1"
-                className={errors.peso ? 'border-destructive' : ''}
-              />
-              {errors.peso && (
-                <p className="text-sm text-destructive mt-1">{errors.peso}</p>
+              <Select value={unidade} onValueChange={setUnidade}>
+                <SelectTrigger className={errors.unidade ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Selecione a unidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIDADES.map((unidadeItem) => (
+                    <SelectItem key={unidadeItem} value={unidadeItem}>
+                      {unidadeItem}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.unidade && (
+                <p className="text-sm text-destructive mt-1">{errors.unidade}</p>
               )}
             </div>
+          </div>
+
+          {/* Peso */}
+          <div>
+            <Label htmlFor="peso" className="text-sm font-medium">
+              Peso *
+            </Label>
+            <Input
+              id="peso"
+              type="number"
+              value={peso}
+              onChange={(e) => setPeso(e.target.value)}
+              placeholder="Ex: 3.0"
+              min="0.1"
+              max="10"
+              step="0.1"
+              className={errors.peso ? 'border-destructive' : ''}
+            />
+            {errors.peso && (
+              <p className="text-sm text-destructive mt-1">{errors.peso}</p>
+            )}
           </div>
 
           {/* Prazo */}
