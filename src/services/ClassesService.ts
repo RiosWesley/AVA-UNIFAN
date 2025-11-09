@@ -4,9 +4,7 @@ import api from "./api";
 
 export const getDisciplinasPorAluno = async (alunoId: string): Promise<ClassFromAPI[]> => {
   try {
-    console.log("passou pelo get")
     const response = await api.get<ClassFromAPI[]>(`/students/${alunoId}/classes`);
-    console.log("passou do get")
     return response.data;
   } catch (error) {
     console.error("Erro ao buscar disciplinas:", error);
