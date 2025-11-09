@@ -198,7 +198,7 @@ export default function DisponibilizacaoHorariosPage() {
         <div className="p-8">
           {/* Header */}
           <div className={cn(
-            "flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm gap-4",
+            "flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-xl border gap-4",
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -275,16 +275,16 @@ export default function DisponibilizacaoHorariosPage() {
 
           <Tabs defaultValue="disponibilizar" className="space-y-6">
             <TabsList className={cn(
-              "grid w-full grid-cols-2 backdrop-blur-sm",
+              "grid w-full grid-cols-2 gap-1 backdrop-blur-sm",
               isLiquidGlass
                 ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                 : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
             )}>
-              <TabsTrigger value="disponibilizar" className="flex items-center space-x-2">
+              <TabsTrigger value="disponibilizar" className="border-none flex items-center space-x-2">
                 <Clock className="h-4 w-4" />
                 <span>Disponibilizar Turnos</span>
               </TabsTrigger>
-              <TabsTrigger value="historico" className="flex items-center space-x-2">
+              <TabsTrigger value="historico" className="border-none flex items-center space-x-2">
                 <History className="h-4 w-4" />
                 <span>Histórico</span>
               </TabsTrigger>
@@ -320,8 +320,8 @@ export default function DisponibilizacaoHorariosPage() {
                           type="button"
                           onClick={() => toggleTurno(turno.id)}
                           className={cn(
-                            "relative p-6 rounded-xl border-2 transition-all duration-200 text-left",
-                            "hover:scale-[1.02] hover:shadow-lg",
+                            "relative p-6 rounded-xl border-1 transition-all duration-200 text-left",
+                            "hover:shadow-md",
                             ativo
                               ? cn(
                                   turno.cor === 'yellow' && 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',

@@ -178,7 +178,7 @@ export function Sidebar({ userRole }: SidebarProps) {
         className={cn(
           "relative flex flex-col h-full transition-all duration-500 ease-in-out backdrop-blur-xl overflow-hidden",
           isCollapsed ? "w-16" : "w-72",
-          "shadow-2xl border-r border-sidebar-border/50"
+          " border-r border-sidebar-border/50"
         )}
       >
       <div className={cn(
@@ -266,9 +266,8 @@ export function Sidebar({ userRole }: SidebarProps) {
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-green-600 relative group transition-all duration-300 cursor-pointer",
-                  // No modo claro, remover borda quando não ativo
                   isLightMode && !isActive ? "border-0" : "border border-transparent hover:border-sidebar-border/50",
-                  isActive && "bg-green-500/30 text-green-700 dark:text-green-400 shadow-lg border-green-500/20",
+                  isActive && "bg-green-500/30 text-green-700 dark:text-green-400 border-green-500/20",
                   isCollapsed && "px-2 justify-center",
                   !isCollapsed && "h-12 px-6",
                   isGroup && openGroups[item.label] && "bg-green-500/10 border-green-500/20"

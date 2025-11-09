@@ -279,7 +279,7 @@ export default function AgendaPage() {
           <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 dark:from-green-900/30 dark:via-emerald-900/30 dark:to-green-900/30 border-green-200/30 dark:border-green-700/50'
-              : 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
+              : 'bg-gray-50/60 dark:bg-gray-800/40 from-green-50 to-emerald-50 dark:from-gray-800/40 dark:to-gray-900/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.05]" />
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
