@@ -114,6 +114,16 @@ function getInitialOpenGroups(userRole: SidebarProps["userRole"]): Record<string
   }
 }
 
+// Helper function to get initial theme from localStorage
+function getInitialTheme(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return localStorage.getItem("ava-theme")
+  } catch {
+    return null
+  }
+}
+
 export function Sidebar({ userRole }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsedState)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
@@ -122,7 +132,14 @@ export function Sidebar({ userRole }: SidebarProps) {
   const { theme } = useTheme()
   const pathname = usePathname()
   const items = menuItems[userRole]
-  const isLightMode = mounted && theme === 'light'
+  
+  // Sempre lê o tema de forma síncrona do localStorage durante o render
+  // Isso garante que mesmo durante navegações, o tema correto seja usado
+  const currentTheme = typeof window !== 'undefined' 
+    ? (theme || getInitialTheme() || 'light')
+    : 'light'
+  
+  const isLightMode = currentTheme === 'light'
 
   useEffect(() => {
     setMounted(true)
