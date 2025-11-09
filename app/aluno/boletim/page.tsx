@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
+import { PageSpinner } from "@/components/ui/page-spinner"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { GraduationCap, Download, Calendar, Award, Trophy, Medal } from "lucide-react"
@@ -49,16 +50,25 @@ export default function AlunoBoletimPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Carregando boletim...</p>
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
       </div>
     );
   }
   
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center text-red-500">
-        <p>Erro: {error}</p>
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 text-lg font-semibold">Erro ao carregar boletim</p>
+            <p className="text-muted-foreground mt-2">{error}</p>
+          </div>
+        </main>
       </div>
     );
   }

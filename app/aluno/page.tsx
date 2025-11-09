@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { LiquidGlassButton } from "@/components/liquid-glass"
 import { Progress } from "@/components/ui/progress"
 import { Sidebar } from "@/components/layout/sidebar"
+import { PageSpinner } from "@/components/ui/page-spinner"
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Target, Activity, Sparkles } from "lucide-react"
@@ -52,9 +53,9 @@ export default function AlunoDashboard() {
     return (
       <div className="flex h-screen bg-background">
         <Sidebar userRole="aluno" />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-        </div>
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
       </div>
     )
   }
