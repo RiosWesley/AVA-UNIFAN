@@ -10,43 +10,20 @@ import { Button } from "@/components/ui/button"
 import { ModalFaltasAluno } from "@/components/modals"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Activity, Users, AlertTriangle, BookOpen, Percent, BarChart3, GraduationCap } from 'lucide-react'
-
-type EtapasResumo = {
-  etapa1: number
-  etapa2: number
-  etapa3: number
-  etapa4: number
-}
-
-type Disciplina = {
-  id: string
-  nome: string
-  professor: string
-  totalAulas: number
-  faltasPorEtapa: EtapasResumo
-}
-
-type FaltaAula = {
-  id: string
-  data: string
-  horario: string
-  motivo?: string
-  etapa: number
-}
-
-type DisciplinaDetalhe = Disciplina & { faltas: FaltaAula[] }
-
-const SEMESTRES = ["2025.2", "2025.1", "2024.2", "2024.1"]
-
-type SemestreOption = { id: string; nome: string; ativo?: boolean }
+import { AttendanceData, DisciplineAttendance } from "@/src/types/Frequencia"
+import { getStudentFrequencia } from "@/src/services/FrequenciaService"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 export default function FrequenciaPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
-  const [semestre, setSemestre] = useState<string>(SEMESTRES[0])
-  // Estado compatível com o seletor customizado do header
-  const [semestreSelecionado, setSemestreSelecionado] = useState<string>(SEMESTRES[0])
+  
+  const [attendanceData, setAttendanceData] = useState<AttendanceData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("2025-2")
   const [modalOpen, setModalOpen] = useState(false)
-  const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<DisciplinaDetalhe | null>(null)
+  const [disciplinaSelecionada, setDisciplinaSelecionada] = useState<DisciplineAttendance | null>(null)
 
   useEffect(() => {
     const checkTheme = () => setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"))
@@ -55,63 +32,70 @@ export default function FrequenciaPage() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
     return () => observer.disconnect()
   }, [])
+  
+  useEffect(() => {
+    const fetchInitialData = async () => {
+       setIsLoading(true)
+       try {
+           const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
+           const data = await getStudentFrequencia(studentId, semestreSelecionado); 
+           if (data.availableSemesters.length > 0) {
+             setSemestreSelecionado(data.availableSemesters[0]);
+           }
+       } catch (err: any) {
+           setError(err.message);
+           setIsLoading(false);
+       }
+   };
+   fetchInitialData();
+ }, []);
 
-  const disciplinas: DisciplinaDetalhe[] = useMemo(() => {
-    // Mock: dados por semestre (poderia vir de API)
-    const base: DisciplinaDetalhe[] = [
-      {
-        id: "MAT001",
-        nome: "Matemática",
-        professor: "Prof. Carlos Silva",
-        totalAulas: 64,
-        faltasPorEtapa: { etapa1: 2, etapa2: 1, etapa3: 0, etapa4: 1 },
-        faltas: [
-          { id: "1", data: "05/08/2025", horario: "08:00 - 09:40", etapa: 1 },
-          { id: "2", data: "20/08/2025", horario: "08:00 - 09:40", etapa: 1, motivo: "Consulta médica" },
-          { id: "3", data: "12/10/2025", horario: "08:00 - 09:40", etapa: 4 },
-        ]
-      },
-      {
-        id: "POR002",
-        nome: "Português",
-        professor: "Prof. Ana Santos",
-        totalAulas: 64,
-        faltasPorEtapa: { etapa1: 0, etapa2: 2, etapa3: 1, etapa4: 0 },
-        faltas: [
-          { id: "1", data: "18/09/2025", horario: "10:00 - 11:40", etapa: 2 },
-          { id: "2", data: "25/09/2025", horario: "10:00 - 11:40", etapa: 2 },
-          { id: "3", data: "03/11/2025", horario: "10:00 - 11:40", etapa: 3, motivo: "Transporte" },
-        ]
-      },
-      {
-        id: "HIS003",
-        nome: "História",
-        professor: "Prof. João Costa",
-        totalAulas: 64,
-        faltasPorEtapa: { etapa1: 1, etapa2: 0, etapa3: 0, etapa4: 0 },
-        faltas: [
-          { id: "1", data: "10/08/2025", horario: "14:00 - 15:40", etapa: 1 },
-        ]
-      },
-    ]
-    // Em um caso real, poderíamos ajustar dados conforme semestre
-    return base.map(d => ({ ...d }))
-  }, [semestre, semestreSelecionado])
+  useEffect(() => {
+    if (!semestreSelecionado) return;
 
-  // Lista de semestres rica para o seletor customizado
-  const semestres: SemestreOption[] = useMemo(() => (
-    SEMESTRES.map((s, idx) => ({ id: s, nome: s, ativo: idx === 0 }))
-  ), [])
+    const loadFrequenciaData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        //MOCKADO POR ENQUANTO
+        const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
+        const data = await getStudentFrequencia(studentId, semestreSelecionado);
+        setAttendanceData(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadFrequenciaData();
+  }, [semestreSelecionado]);
 
-  const calcularPercentualFaltas = (d: Disciplina): number => {
-    const faltas = d.faltasPorEtapa.etapa1 + d.faltasPorEtapa.etapa2 + d.faltasPorEtapa.etapa3 + d.faltasPorEtapa.etapa4
-    return Math.round((faltas / d.totalAulas) * 100)
-  }
+    const calcularPercentualFaltas = (d: DisciplineAttendance): number => {
+      const faltas = d.absencesByUnit.unit1 + d.absencesByUnit.unit2;
+      return d.totalWorkload > 0 ? Math.round((faltas / d.totalWorkload) * 100) : 0;
+    }
 
-  const abrirModal = (disc: DisciplinaDetalhe) => {
-    setDisciplinaSelecionada(disc)
-    setModalOpen(true)
-  }
+    const abrirModal = (disc: DisciplineAttendance) => {
+      setDisciplinaSelecionada(disc)
+      setModalOpen(true)
+    }
+
+    if (error) return <div className="flex h-screen items-center justify-center text-red-500"><p>Erro: {error}</p></div>;
+
+    const disciplinas = attendanceData?.disciplines || [];
+    const semestres = attendanceData?.availableSemesters.map(s => ({ id: s, nome: s.replace('-', '.'), ativo: s === semestreSelecionado })) || [];
+
+    if (isLoading) {
+        return (
+          <div className="flex h-screen bg-background">
+            <Sidebar userRole="aluno" />
+            <main className="flex-1 overflow-y-auto">
+              <PageSpinner />
+            </main>
+          </div>
+        );
+      }
 
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
@@ -135,7 +119,7 @@ export default function FrequenciaPage() {
             </div>
             <div className="flex items-center space-x-2">
                 <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
-                 <Select value={semestreSelecionado} onValueChange={(value: string) => { setSemestreSelecionado(value); setSemestre(value) }}>
+                 <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
                   <SelectTrigger className={`w-40 backdrop-blur-sm ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
@@ -144,7 +128,7 @@ export default function FrequenciaPage() {
                     <SelectValue placeholder="Selecionar semestre" />
                   </SelectTrigger>
                   <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
-                     {semestres.map((semestre: SemestreOption) => (
+                     {semestres.map((semestre) => (
                        <SelectItem key={semestre.id} value={semestre.id}>
                         <div className="flex items-center space-x-2">
                           <span>{semestre.nome}</span>
@@ -186,7 +170,7 @@ export default function FrequenciaPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-                  {disciplinas.reduce((acc, d) => acc + d.faltasPorEtapa.etapa1 + d.faltasPorEtapa.etapa2 + d.faltasPorEtapa.etapa3 + d.faltasPorEtapa.etapa4, 0)}
+                  {disciplinas.reduce((acc, d) => acc + d.absencesByUnit.unit1 + d.absencesByUnit.unit2, 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">No semestre selecionado</p>
               </CardContent>
@@ -224,7 +208,7 @@ export default function FrequenciaPage() {
                 <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
                 Resumo de Faltas
               </CardTitle>
-              <CardDescription>Uma linha por disciplina e colunas por etapa</CardDescription>
+              <CardDescription>Uma linha por disciplina e colunas por unidade</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -232,10 +216,8 @@ export default function FrequenciaPage() {
                   <thead className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-b border-green-200 dark:border-green-800">
                     <tr className="text-center">
                       <th className="py-3 pr-4 font-semibold text-center">Disciplina</th>
-                      <th className="py-3 px-2 font-semibold text-center">Etapa 1</th>
-                      <th className="py-3 px-2 font-semibold text-center">Etapa 2</th>
-                      <th className="py-3 px-2 font-semibold text-center">Etapa 3</th>
-                      <th className="py-3 px-2 font-semibold text-center">Etapa 4</th>
+                      <th className="py-3 px-2 font-semibold text-center">1ª Unidade</th>
+                      <th className="py-3 px-2 font-semibold text-center">2ª Unidade</th>
                       <th className="py-3 px-2 font-semibold text-center">% Faltas</th>
                       <th className="py-3 pl-2 font-semibold text-center">Ações</th>
                     </tr>
@@ -248,15 +230,13 @@ export default function FrequenciaPage() {
                         <tr key={d.id} className="border-t text-center">
                           <td className="py-3 pr-4 text-center">
                             <div className="font-medium inline-flex items-center gap-2 justify-center">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              {d.nome}
+                              <BookOpen className="h-4 w-4 text-muted-foreground" />
+                              {d.name}
                             </div>
-                            <div className="text-xs text-muted-foreground">{d.professor}</div>
+                            <div className="text-xs text-muted-foreground">{d.teacher}</div>
                           </td>
-                          <td className="py-3 px-2 text-center">{d.faltasPorEtapa.etapa1}</td>
-                          <td className="py-3 px-2 text-center">{d.faltasPorEtapa.etapa2}</td>
-                          <td className="py-3 px-2 text-center">{d.faltasPorEtapa.etapa3}</td>
-                          <td className="py-3 px-2 text-center">{d.faltasPorEtapa.etapa4}</td>
+                          <td className="py-3 px-2 text-center">{d.absencesByUnit.unit1}</td>
+                          <td className="py-3 px-2 text-center">{d.absencesByUnit.unit2}</td>
                           <td className="py-3 px-2 text-center">
                             <Badge variant={percBadgeVariant as any}>{perc}%</Badge>
                           </td>
@@ -281,6 +261,7 @@ export default function FrequenciaPage() {
       />
     </div>
   )
+
 }
 
 
