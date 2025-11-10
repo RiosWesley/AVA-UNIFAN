@@ -5,16 +5,19 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Search, Activity, CheckCircle, Clock, Target, AlertCircle, FileText, Calendar as CalIcon, Flame, Zap, Star, Plus, Filter, TrendingUp, BookOpen, Users } from 'lucide-react'
+import { Search, Activity, CheckCircle, Clock, Target, AlertCircle, FileText, Calendar as CalIcon, Flame, Zap, Star, Plus, Filter, TrendingUp, BookOpen, Users, Upload } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
+import { ModalEnviarAtividade } from '@/components/modals'
 
 export default function AtividadesPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilter, setActiveFilter] = useState('todas')
+  const [modalEnviarAtividadeOpen, setModalEnviarAtividadeOpen] = useState(false)
+  const [atividadeSelecionada, setAtividadeSelecionada] = useState<any>(null)
 
   // Query client for mutations
   const queryClient = useQueryClient()
@@ -27,19 +30,19 @@ export default function AtividadesPage() {
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Update local state
-      const atividade = atividadesPendentes.find(a => a.id === activityId)
-      if (atividade) {
-        const atividadeConcluida = {
-          ...atividade,
-          status: 'concluido',
-          dataConclusao: new Date().toLocaleDateString('pt-BR')
+      setAtividadesPendentes(prev => {
+        const atividade = prev.find(a => a.id === activityId)
+        if (atividade) {
+          const atividadeConcluida = {
+            ...atividade,
+            status: 'concluido',
+            dataConclusao: new Date().toLocaleDateString('pt-BR')
+          }
+          setAtividadesConcluidas(prevConcluidas => [...prevConcluidas, atividadeConcluida])
+          return prev.filter(a => a.id !== activityId)
         }
-        atividadesConcluidas.push(atividadeConcluida)
-        const index = atividadesPendentes.findIndex(a => a.id === activityId)
-        if (index !== -1) {
-          atividadesPendentes.splice(index, 1)
-        }
-      }
+        return prev
+      })
 
       return activityId
     },
@@ -63,6 +66,69 @@ export default function AtividadesPage() {
     completeActivityMutation.mutate(activityId)
   }
 
+  // Mutation to upload activity
+  const uploadActivityMutation = useMutation({
+    mutationFn: async ({ activityId, file, comment }: { activityId: number; file: File; comment: string }) => {
+      // TODO: Replace with actual API call
+      // Simulate upload
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      // Update local state - move activity from pending to completed
+      setAtividadesPendentes(prev => {
+        const atividade = prev.find(a => a.id === activityId)
+        if (atividade) {
+          const atividadeConcluida = {
+            ...atividade,
+            status: 'concluido',
+            dataConclusao: new Date().toLocaleDateString('pt-BR')
+          }
+          setAtividadesConcluidas(prevConcluidas => [...prevConcluidas, atividadeConcluida])
+          return prev.filter(a => a.id !== activityId)
+        }
+        return prev
+      })
+
+      return { activityId, fileName: file.name }
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] })
+      toast({
+        title: "Atividade enviada com sucesso! 🎉",
+        description: `${variables.file.name} foi enviada para a atividade.`,
+      })
+      setModalEnviarAtividadeOpen(false)
+      setAtividadeSelecionada(null)
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao enviar atividade",
+        description: "Verifique o arquivo e tente novamente.",
+        variant: "destructive",
+      })
+    },
+  })
+
+  const handleAbrirModalEnviar = (atividade: any) => {
+    setAtividadeSelecionada(atividade)
+    setModalEnviarAtividadeOpen(true)
+  }
+
+  const handleEnviarAtividade = async (activityId: number, file: File, comment: string) => {
+    await uploadActivityMutation.mutateAsync({ activityId, file, comment })
+  }
+
+  const [atividadesPendentes, setAtividadesPendentes] = useState([
+    { id: 1, titulo: 'Trabalho de Matemática', descricao: 'Análise de funções quadráticas e resolução de problemas aplicados', prioridade: 'Alta', dataVencimento: '15/10/2024', disciplina: 'Matemática', status: 'urgente', participantes: 3, dificuldade: 'Médio' },
+    { id: 2, titulo: 'Resumo de História', descricao: 'Revolução Industrial no Brasil e suas consequências sociais', prioridade: 'Média', dataVencimento: '20/10/2024', disciplina: 'História', status: 'normal', participantes: 1, dificuldade: 'Fácil' },
+    { id: 3, titulo: 'Exercícios de Física', descricao: 'Leis de Newton aplicadas a sistemas mecânicos', prioridade: 'Baixa', dataVencimento: '25/10/2024', disciplina: 'Física', status: 'planejado', participantes: 2, dificuldade: 'Difícil' },
+  ])
+
+  const [atividadesConcluidas, setAtividadesConcluidas] = useState([
+    { id: 4, titulo: 'Prova de História', descricao: 'Período Colonial brasileiro', prioridade: 'Alta', dataConclusao: '10/10/2024', disciplina: 'História', status: 'concluido', participantes: 1, dificuldade: 'Médio' },
+    { id: 5, titulo: 'Apresentação de Biologia', descricao: 'Ecossistemas terrestres e aquáticos', prioridade: 'Média', dataConclusao: '05/10/2024', disciplina: 'Biologia', status: 'concluido', participantes: 4, dificuldade: 'Fácil' },
+    { id: 6, titulo: 'Quiz de Português', descricao: 'Análise sintática e gramática aplicada', prioridade: 'Baixa', dataConclusao: '01/10/2024', disciplina: 'Português', status: 'concluido', participantes: 1, dificuldade: 'Fácil' },
+  ])
+
   useEffect(() => {
     const checkTheme = () => {
       setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"))
@@ -78,18 +144,6 @@ export default function AtividadesPage() {
 
     return () => observer.disconnect()
   }, [])
-
-  const atividadesPendentes = [
-    { id: 1, titulo: 'Trabalho de Matemática', descricao: 'Análise de funções quadráticas e resolução de problemas aplicados', prioridade: 'Alta', dataVencimento: '15/10/2024', disciplina: 'Matemática', status: 'urgente', participantes: 3, dificuldade: 'Médio' },
-    { id: 2, titulo: 'Resumo de História', descricao: 'Revolução Industrial no Brasil e suas consequências sociais', prioridade: 'Média', dataVencimento: '20/10/2024', disciplina: 'História', status: 'normal', participantes: 1, dificuldade: 'Fácil' },
-    { id: 3, titulo: 'Exercícios de Física', descricao: 'Leis de Newton aplicadas a sistemas mecânicos', prioridade: 'Baixa', dataVencimento: '25/10/2024', disciplina: 'Física', status: 'planejado', participantes: 2, dificuldade: 'Difícil' },
-  ]
-
-  const atividadesConcluidas = [
-    { id: 4, titulo: 'Prova de História', descricao: 'Período Colonial brasileiro', prioridade: 'Alta', dataConclusao: '10/10/2024', disciplina: 'História', status: 'concluido', participantes: 1, dificuldade: 'Médio' },
-    { id: 5, titulo: 'Apresentação de Biologia', descricao: 'Ecossistemas terrestres e aquáticos', prioridade: 'Média', dataConclusao: '05/10/2024', disciplina: 'Biologia', status: 'concluido', participantes: 4, dificuldade: 'Fácil' },
-    { id: 6, titulo: 'Quiz de Português', descricao: 'Análise sintática e gramática aplicada', prioridade: 'Baixa', dataConclusao: '01/10/2024', disciplina: 'Português', status: 'concluido', participantes: 1, dificuldade: 'Fácil' },
-  ]
 
 
   const filteredPendentes = atividadesPendentes.filter(a =>
@@ -340,24 +394,34 @@ export default function AtividadesPage() {
                               </div>
                             </div>
 
-                            {/* Button to complete activity */}
-                            <Button
-                              onClick={() => handleCompleteActivity(atividade.id)}
-                              disabled={completeActivityMutation.isPending}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-                            >
-                              {completeActivityMutation.isPending ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                  <span>Concluindo...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="h-4 w-4" />
-                                  <span>Marcar como Concluída</span>
-                                </>
-                              )}
-                            </Button>
+                            {/* Buttons */}
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => handleAbrirModalEnviar(atividade)}
+                                disabled={uploadActivityMutation.isPending}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                              >
+                                <Upload className="h-4 w-4" />
+                                <span>Enviar Atividade</span>
+                              </Button>
+                              <Button
+                                onClick={() => handleCompleteActivity(atividade.id)}
+                                disabled={completeActivityMutation.isPending}
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                              >
+                                {completeActivityMutation.isPending ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <span>Concluindo...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span>Marcar como Concluída</span>
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -467,6 +531,18 @@ export default function AtividadesPage() {
 
         </div>
       </main>
+
+      {/* Modal de Enviar Atividade */}
+      <ModalEnviarAtividade
+        isOpen={modalEnviarAtividadeOpen}
+        onClose={() => {
+          setModalEnviarAtividadeOpen(false)
+          setAtividadeSelecionada(null)
+        }}
+        atividade={atividadeSelecionada}
+        onEnviar={handleEnviarAtividade}
+        isPending={uploadActivityMutation.isPending}
+      />
     </div>
   )
 }

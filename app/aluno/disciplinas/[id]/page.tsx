@@ -42,8 +42,9 @@ export default function DisciplinaDetalhePage() {
     { nome: "Vídeo Aula - Sistemas Lineares", tipo: "MP4", tamanho: "45 MB", data: "05/03/2024" },
   ]
 
-  const atividades = [
+  const [atividades, setAtividades] = useState([
     {
+      id: 1,
       titulo: "Lista de Exercícios - Funções",
       prazo: "20/03/2024",
       status: "Pendente",
@@ -51,6 +52,7 @@ export default function DisciplinaDetalhePage() {
       descricao: "Resolver exercícios 1 a 15 da apostila",
     },
     {
+      id: 2,
       titulo: "Trabalho em Grupo - Aplicações",
       prazo: "25/03/2024",
       status: "Em andamento",
@@ -58,13 +60,14 @@ export default function DisciplinaDetalhePage() {
       descricao: "Apresentar aplicações práticas de funções quadráticas",
     },
     {
+      id: 3,
       titulo: "Prova Bimestral",
       prazo: "15/03/2024",
       status: "Concluída",
       nota: 8.5,
       descricao: "Avaliação sobre todo o conteúdo do bimestre",
     },
-  ]
+  ])
 
   const [forums, setForums] = useState<any[]>([
     {
@@ -104,21 +107,18 @@ export default function DisciplinaDetalhePage() {
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       // Update activity status locally
-      const activityIndex = atividades.findIndex(a => a.titulo === atividade.titulo)
-      if (activityIndex !== -1) {
-        atividades[activityIndex] = {
-          ...atividades[activityIndex],
-          status: 'Concluída',
-          nota: null
-        }
-      }
+      setAtividades(prev => prev.map(a => 
+        a.id === activityId 
+          ? { ...a, status: 'Concluída', nota: null }
+          : a
+      ))
 
       return { activityId, fileName: file.name }
     },
     onSuccess: (data, variables) => {
       toast({
         title: "Atividade enviada com sucesso! 🎉",
-        description: `${variables.fileName} foi enviada para a atividade.`,
+        description: `${data.fileName} foi enviada para a atividade.`,
       })
       // Clear upload state
       setUploadFiles(prev => ({ ...prev, [variables.activityId]: null }))
