@@ -5,32 +5,17 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { X, Calendar as CalendarIcon, Clock } from 'lucide-react'
+import { DisciplineAttendance } from "@/src/types/Frequencia"
 
-type FaltaAula = {
-  id: string
-  data: string
-  horario: string
-  motivo?: string
-  etapa: number
-}
-
-type DisciplinaFaltas = {
-  id: string
-  nome: string
-  professor: string
-  sala?: string
-  totalAulas: number
-  faltas: FaltaAula[]
-}
 
 interface ModalFaltasAlunoProps {
   isOpen: boolean
   onClose: () => void
-  disciplina: DisciplinaFaltas | null
+  disciplina: DisciplineAttendance | null
 }
 
 export function ModalFaltasAluno({ isOpen, onClose, disciplina }: ModalFaltasAlunoProps) {
-  const totalFaltas = disciplina?.faltas.length ?? 0
+  const totalFaltas = disciplina?.absences.length ?? 0
 
   return (
     <Dialog open={isOpen}>
@@ -39,14 +24,13 @@ export function ModalFaltasAluno({ isOpen, onClose, disciplina }: ModalFaltasAlu
           <div className="flex items-start justify-between gap-4">
             <div>
               <DialogTitle>
-                {disciplina ? `Faltas - ${disciplina.nome}` : 'Faltas'}
+                {disciplina ? `Faltas - ${disciplina.name}` : 'Faltas'}
               </DialogTitle>
               <DialogDescription>
                 {disciplina && (
                   <div className="flex flex-wrap items-center gap-2 text-sm">
-                    <span>Professor: {disciplina.professor}</span>
-                    {disciplina.sala && <span>• Sala {disciplina.sala}</span>}
-                    <span>• Aulas no semestre: {disciplina.totalAulas}</span>
+                    <span>Professor: {disciplina.teacher}</span>
+                    <span>• Aulas no semestre: {disciplina.totalWorkload}</span>
                     <span>• Faltas: {totalFaltas}</span>
                   </div>
                 )}
@@ -60,24 +44,24 @@ export function ModalFaltasAluno({ isOpen, onClose, disciplina }: ModalFaltasAlu
 
         <ScrollArea className="max-h-[60vh] pr-2">
           <div className="space-y-3">
-            {disciplina?.faltas.length ? (
-              disciplina.faltas.map((f) => (
-                <div key={f.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50 mr-4">
+            {disciplina?.absences.length ? (
+              disciplina.absences.map((a) => (
+                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50 mr-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 font-medium truncate">
                       <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>{f.data}</span>
+                      <span>{a.date}</span>
                       <span className="text-muted-foreground">•</span>
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{f.horario}</span>
+                      <span>{a.reason}</span>
                     </div>
-                    {f.motivo && (
-                      <div className="text-xs text-muted-foreground truncate">Motivo: {f.motivo}</div>
+                    {a.reason && (
+                      <div className="text-xs text-muted-foreground truncate">Motivo: {a.reason}</div>
                     )}
                   </div>
                   <div className="flex items-center gap-2 ml-3">
                     <Badge variant="destructive">Falta</Badge>
-                    <Badge variant="outline">Etapa {f.etapa}</Badge>
+                    <Badge variant="outline">Unidade {a.unit}</Badge>
                   </div>
                 </div>
               ))
