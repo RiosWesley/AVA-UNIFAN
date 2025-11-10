@@ -9,9 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Users, Settings, BarChart3 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { login } from "@/src/services/auth"
+import { toastError } from "@/components/ui/toast"
 
 export default function AuthPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const checkTheme = () => {
@@ -34,11 +38,26 @@ export default function AuthPage() {
     password: "",
   })
 
-  const handleLogin = (e: React.FormEvent) => {
+  function mapRoleToRoute(roles: string[]): "administrador" | "professor" | "aluno" | "coordenador" {
+    const has = (r: string) => roles.includes(r)
+    if (has("admin")) return "administrador"
+    if (has("teacher")) return "professor"
+    if (has("coordinator")) return "coordenador"
+    return "aluno"
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Mock login logic - redirect based on role
-    const mockRole = "aluno" // This would come from authentication
-    window.location.href = `/${mockRole}`
+    try {
+      const { access_token, user } = await login(loginData.email, loginData.password)
+      localStorage.setItem("ava:token", access_token)
+      localStorage.setItem("ava:userId", user.id)
+      const route = mapRoleToRoute(user.roles || [])
+      localStorage.setItem("ava:userRole", route)
+      router.push(`/${route}`)
+    } catch {
+      toastError("Credenciais inválidas", "Verifique seu e-mail e senha e tente novamente")
+    }
   }
 
   return (

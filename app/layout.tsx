@@ -36,8 +36,22 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('ava-theme');
+                  if (theme === 'dark' || theme === 'liquid-glass') {
+                    document.documentElement.classList.add(theme);
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -45,8 +59,14 @@ export default function RootLayout({
               @keyframes ping{75%,100%{transform:scale(2);opacity:0}}
               @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
               @keyframes bounce{0%,100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(.8,0,1,1)}50%{transform:translateY(0);animation-timing-function:cubic-bezier(0,0,.2,1)}}
+              html, body { background:#ffffff }
+              html.dark, html.liquid-glass { background:#0f172a }
+              #initial-loading{background:#ffffff}
+              #initial-loading p{color:#374151}
               html.dark #initial-loading{background:#0f172a !important}
               html.dark #initial-loading p{color:#f1f5f9 !important}
+              html.liquid-glass #initial-loading{background:#0f172a !important}
+              html.liquid-glass #initial-loading p{color:#f1f5f9 !important}
             `,
           }}
         />
@@ -59,25 +79,39 @@ export default function RootLayout({
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "#ffffff",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            width: "100%",
+            height: "100%",
+            margin: 0,
+            padding: 0,
           }}
         >
-          <div style={{ position: "relative" }}>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+          <div style={{ 
+            position: "relative", 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center",
+            justifyContent: "center",
+            margin: 0,
+            padding: 0,
+          }}>
+            {/* Container dos círculos concêntricos */}
+            <div style={{ 
+              position: "relative", 
+              width: "8rem", 
+              height: "8rem",
+              margin: "0 auto",
+            }}>
+              {/* Círculo maior (externo) */}
               <div
                 style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
                   width: "8rem",
                   height: "8rem",
                   border: "4px solid rgba(34,197,94,.2)",
@@ -85,18 +119,13 @@ export default function RootLayout({
                   animation: "ping 2s infinite",
                 }}
               />
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+              {/* Círculo médio */}
               <div
                 style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
                   width: "6rem",
                   height: "6rem",
                   border: "4px solid rgba(34,197,94,.2)",
@@ -105,17 +134,13 @@ export default function RootLayout({
                   animationDelay: "0.5s",
                 }}
               />
-            </div>
-            <div
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+              {/* Círculo menor com spinner */}
               <div
                 style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
                   width: "5rem",
                   height: "5rem",
                   border: "4px solid rgba(34,197,94,.2)",
@@ -133,10 +158,13 @@ export default function RootLayout({
                   }}
                 />
               </div>
+              {/* Ícone SVG no centro */}
               <div
                 style={{
                   position: "absolute",
-                  inset: 0,
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -159,6 +187,7 @@ export default function RootLayout({
                 </svg>
               </div>
             </div>
+            {/* Texto e pontos abaixo dos círculos */}
             <div
               style={{
                 marginTop: "2rem",
@@ -172,7 +201,6 @@ export default function RootLayout({
                 style={{
                   fontSize: "0.875rem",
                   fontWeight: 500,
-                  color: "#374151",
                   animation: "pulse 2s infinite",
                 }}
               >
@@ -212,20 +240,6 @@ export default function RootLayout({
             </div>
           </div>
         </div>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var path = window.location.pathname;
-                if (path === '/' || path === '') {
-                  var loading = document.getElementById('initial-loading');
-                  if (loading) loading.remove();
-                  return;
-                }
-              })();
-            `,
-          }}
-        />
         <LoadingOverlay />
         <ThemeProvider
           attribute="class"
