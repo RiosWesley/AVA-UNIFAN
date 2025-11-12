@@ -26,3 +26,33 @@ export const completeStudentActivity = async (activityId: string, studentId: str
     throw new Error("Não foi possível concluir a atividade.");
   }
 };
+
+export const uploadStudentActivity = async (
+  activityId: string,
+  studentId: string,
+  file: File,
+  comment: string,
+): Promise<any> => {
+  
+  const formData = new FormData();
+  
+  formData.append('files', file); 
+  
+  // formData.append('comment', comment);
+
+  try {
+    const response = await api.post(
+      `/activities/students/${studentId}/activities/${activityId}/submissions/upload`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao enviar atividade:", error);
+    throw new Error("Não foi possível enviar o arquivo da atividade.");
+  }
+};

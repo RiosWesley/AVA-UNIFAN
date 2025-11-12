@@ -8,21 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Upload, CheckCircle, X } from "lucide-react"
 import { toast } from '@/hooks/use-toast'
-
-interface Atividade {
-  id: number
-  titulo: string
-  descricao: string
-  dataVencimento: string
-  disciplina: string
-}
+import { StudentActivity } from '@/src/Atividade'
 
 interface ModalEnviarAtividadeProps {
   isOpen: boolean
   onClose: () => void
-  atividade: Atividade | null
-  onEnviar: (activityId: number, file: File, comment: string) => Promise<void>
-  isPending?: boolean
+  atividade: StudentActivity | null;
+  onEnviar: (activityId: string, file: File, comment: string) => Promise<void>;
+  isPending?: boolean;
 }
 
 export function ModalEnviarAtividade({ 
@@ -88,7 +81,7 @@ export function ModalEnviarAtividade({
     }
 
     try {
-      await onEnviar(atividade.id, file, comment)
+      await onEnviar(atividade.id, file, comment);
       onClose()
     } catch (error) {
       // Error handling is done in the parent component

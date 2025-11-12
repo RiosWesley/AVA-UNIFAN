@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { ModalEnviarAtividade } from '@/components/modals'
 import { StudentActivity } from "@/src/Atividade"
-import { completeStudentActivity, getStudentActivities } from "@/src/services/atividadeService"
+import { completeStudentActivity, getStudentActivities, uploadStudentActivity } from "@/src/services/atividadeService"
 import { PageSpinner } from "@/components/ui/page-spinner"
 
 export default function AtividadesPage() {
@@ -23,8 +23,8 @@ export default function AtividadesPage() {
   const [error, setError] = useState<string | null>(null);
   
   const [modalEnviarAtividadeOpen, setModalEnviarAtividadeOpen] = useState(false)
-  const [atividadeSelecionada, setAtividadeSelecionada] = useState<StudentActivity | null>(null)
-
+  const [atividadeSelecionada, setAtividadeSelecionada] = useState<StudentActivity | null>(null);
+  
   const queryClient = useQueryClient()
   const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb'; // MOCKADO
 
@@ -69,45 +69,50 @@ export default function AtividadesPage() {
     },
     onError: () => { /* ... */ },
   });
+  
+    const handleCompleteActivity = (activityId: string) => {
+      completeActivityMutation.mutate(activityId);
+    };
 
   const uploadActivityMutation = useMutation({
-    mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment: string }) => {
-      // TODO: Substituir pela chamada real da API de upload
-      // ex: await uploadStudentActivity(activityId, file, comment);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return { activityId, fileName: file.name };
+    mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment:string }) => {
+      return uploadStudentActivity(activityId, studentId, file, comment);
     },
-    onSuccess: ({ activityId }) => {
+    onSuccess: (data, variables) => {
       setAllActivities(prev => prev.map(act => 
-        act.id === activityId 
+        act.id === variables.activityId 
           ? { ...act, status: 'concluido', dataConclusao: new Date().toLocaleDateString('pt-BR') } 
           : act
       ));
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      
+      queryClient.invalidateQueries({ queryKey: ['activities', studentId] });
+
       toast({
-        title: "Atividade enviada com sucesso! 🎉",
-        description: `Seu arquivo foi enviado para a atividade.`,
+        title: "Atividade enviada com sucesso!",
+        description: `${variables.file.name} foi enviada para a atividade.`,
       });
+
       setModalEnviarAtividadeOpen(false);
       setAtividadeSelecionada(null);
     },
-    onError: () => { /* ... */ },
+    onError: () => {
+      toast({
+        title: "Erro ao enviar atividade",
+        description: "Verifique o arquivo e tente novamente.",
+        variant: "destructive",
+      });
+    },
   });
 
-  const handleCompleteActivity = (activityId: string) => {
-    completeActivityMutation.mutate(activityId);
+  const handleEnviarAtividade = async (activityId: string, file: File, comment: string) => {
+    await uploadActivityMutation.mutateAsync({ activityId, file, comment });
   };
-
+  
   const handleAbrirModalEnviar = (atividade: StudentActivity) => {
     setAtividadeSelecionada(atividade);
     setModalEnviarAtividadeOpen(true);
   };
 
-  const handleEnviarAtividade = async (activityId: string, file: File, comment: string) => {
-    await uploadActivityMutation.mutateAsync({ activityId, file, comment });
-  };
-
-  // Lógica de filtragem
   const atividadesPendentes = allActivities.filter(a => a.status === 'pendente');
   const atividadesConcluidas = allActivities.filter(a => a.status === 'concluido' || a.status === 'avaliado');
 
