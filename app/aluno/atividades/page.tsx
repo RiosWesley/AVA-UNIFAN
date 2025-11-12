@@ -5,206 +5,146 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Search, Activity, CheckCircle, Clock, Target, AlertCircle, FileText, Calendar as CalIcon, Flame, Zap, Star, Plus, Filter, TrendingUp, BookOpen, Users, Upload } from 'lucide-react'
+import { Search, CheckCircle, Clock, Target, Calendar as CalIcon, BookOpen, Upload } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { ModalEnviarAtividade } from '@/components/modals'
+import { StudentActivity } from "@/src/Atividade"
+import { completeStudentActivity, getStudentActivities, uploadStudentActivity } from "@/src/services/atividadeService"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 export default function AtividadesPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [activeFilter, setActiveFilter] = useState('todas')
+  const [allActivities, setAllActivities] = useState<StudentActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [modalEnviarAtividadeOpen, setModalEnviarAtividadeOpen] = useState(false)
-  const [atividadeSelecionada, setAtividadeSelecionada] = useState<any>(null)
-
-  // Query client for mutations
+  const [atividadeSelecionada, setAtividadeSelecionada] = useState<StudentActivity | null>(null);
+  
   const queryClient = useQueryClient()
+  const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb'; // MOCKADO
 
-  // Mutation to complete activity
+  useEffect(() => {
+    const checkTheme = () => setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"));
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    
+    const loadActivities = async () => {
+        try {
+            const data = await getStudentActivities(studentId);
+            setAllActivities(data);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    loadActivities();
+
+    return () => observer.disconnect();
+  }, []);
+
   const completeActivityMutation = useMutation({
-    mutationFn: async (activityId: number) => {
-      // TODO: Replace with actual API call
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Update local state
-      setAtividadesPendentes(prev => {
-        const atividade = prev.find(a => a.id === activityId)
-        if (atividade) {
-          const atividadeConcluida = {
-            ...atividade,
-            status: 'concluido',
-            dataConclusao: new Date().toLocaleDateString('pt-BR')
-          }
-          setAtividadesConcluidas(prevConcluidas => [...prevConcluidas, atividadeConcluida])
-          return prev.filter(a => a.id !== activityId)
-        }
-        return prev
-      })
-
-      return activityId
+     mutationFn: (activityId: string) => {
+      return completeStudentActivity(activityId, studentId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['activities'] })
+    onSuccess: (data, activityId) => {
+      setAllActivities(prev => prev.map(act => 
+        act.id === activityId 
+          ? { ...act, status: 'concluido', dataConclusao: new Date().toLocaleDateString('pt-BR') } 
+          : act
+      ));
+      
+      queryClient.invalidateQueries({ queryKey: ['activities', studentId] });
+      
       toast({
-        title: "Atividade concluída! 🎉",
+        title: "Atividade concluída!",
         description: "Parabéns! Você marcou a atividade como concluída.",
-      })
+      });
     },
-    onError: () => {
-      toast({
-        title: "Erro ao concluir atividade",
-        description: "Tente novamente em alguns momentos.",
-        variant: "destructive",
-      })
-    },
-  })
+    onError: () => { /* ... */ },
+  });
+  
+    const handleCompleteActivity = (activityId: string) => {
+      completeActivityMutation.mutate(activityId);
+    };
 
-  const handleCompleteActivity = (activityId: number) => {
-    completeActivityMutation.mutate(activityId)
-  }
-
-  // Mutation to upload activity
   const uploadActivityMutation = useMutation({
-    mutationFn: async ({ activityId, file, comment }: { activityId: number; file: File; comment: string }) => {
-      // TODO: Replace with actual API call
-      // Simulate upload
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Update local state - move activity from pending to completed
-      setAtividadesPendentes(prev => {
-        const atividade = prev.find(a => a.id === activityId)
-        if (atividade) {
-          const atividadeConcluida = {
-            ...atividade,
-            status: 'concluido',
-            dataConclusao: new Date().toLocaleDateString('pt-BR')
-          }
-          setAtividadesConcluidas(prevConcluidas => [...prevConcluidas, atividadeConcluida])
-          return prev.filter(a => a.id !== activityId)
-        }
-        return prev
-      })
-
-      return { activityId, fileName: file.name }
+    mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment:string }) => {
+      return uploadStudentActivity(activityId, studentId, file, comment);
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['activities'] })
+      setAllActivities(prev => prev.map(act => 
+        act.id === variables.activityId 
+          ? { ...act, status: 'concluido', dataConclusao: new Date().toLocaleDateString('pt-BR') } 
+          : act
+      ));
+      
+      queryClient.invalidateQueries({ queryKey: ['activities', studentId] });
+
       toast({
-        title: "Atividade enviada com sucesso! 🎉",
+        title: "Atividade enviada com sucesso!",
         description: `${variables.file.name} foi enviada para a atividade.`,
-      })
-      setModalEnviarAtividadeOpen(false)
-      setAtividadeSelecionada(null)
+      });
+
+      setModalEnviarAtividadeOpen(false);
+      setAtividadeSelecionada(null);
     },
     onError: () => {
       toast({
         title: "Erro ao enviar atividade",
         description: "Verifique o arquivo e tente novamente.",
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
-  const handleAbrirModalEnviar = (atividade: any) => {
-    setAtividadeSelecionada(atividade)
-    setModalEnviarAtividadeOpen(true)
-  }
+  const handleEnviarAtividade = async (activityId: string, file: File, comment: string) => {
+    await uploadActivityMutation.mutateAsync({ activityId, file, comment });
+  };
+  
+  const handleAbrirModalEnviar = (atividade: StudentActivity) => {
+    setAtividadeSelecionada(atividade);
+    setModalEnviarAtividadeOpen(true);
+  };
 
-  const handleEnviarAtividade = async (activityId: number, file: File, comment: string) => {
-    await uploadActivityMutation.mutateAsync({ activityId, file, comment })
-  }
-
-  const [atividadesPendentes, setAtividadesPendentes] = useState([
-    { id: 1, titulo: 'Trabalho de Matemática', descricao: 'Análise de funções quadráticas e resolução de problemas aplicados', prioridade: 'Alta', dataVencimento: '15/10/2024', disciplina: 'Matemática', status: 'urgente', participantes: 3, dificuldade: 'Médio' },
-    { id: 2, titulo: 'Resumo de História', descricao: 'Revolução Industrial no Brasil e suas consequências sociais', prioridade: 'Média', dataVencimento: '20/10/2024', disciplina: 'História', status: 'normal', participantes: 1, dificuldade: 'Fácil' },
-    { id: 3, titulo: 'Exercícios de Física', descricao: 'Leis de Newton aplicadas a sistemas mecânicos', prioridade: 'Baixa', dataVencimento: '25/10/2024', disciplina: 'Física', status: 'planejado', participantes: 2, dificuldade: 'Difícil' },
-  ])
-
-  const [atividadesConcluidas, setAtividadesConcluidas] = useState([
-    { id: 4, titulo: 'Prova de História', descricao: 'Período Colonial brasileiro', prioridade: 'Alta', dataConclusao: '10/10/2024', disciplina: 'História', status: 'concluido', participantes: 1, dificuldade: 'Médio' },
-    { id: 5, titulo: 'Apresentação de Biologia', descricao: 'Ecossistemas terrestres e aquáticos', prioridade: 'Média', dataConclusao: '05/10/2024', disciplina: 'Biologia', status: 'concluido', participantes: 4, dificuldade: 'Fácil' },
-    { id: 6, titulo: 'Quiz de Português', descricao: 'Análise sintática e gramática aplicada', prioridade: 'Baixa', dataConclusao: '01/10/2024', disciplina: 'Português', status: 'concluido', participantes: 1, dificuldade: 'Fácil' },
-  ])
-
-  useEffect(() => {
-    const checkTheme = () => {
-      setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"))
-    }
-
-    checkTheme()
-
-    const observer = new MutationObserver(checkTheme)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"]
-    })
-
-    return () => observer.disconnect()
-  }, [])
-
+  const atividadesPendentes = allActivities.filter(a => a.status === 'pendente');
+  const atividadesConcluidas = allActivities.filter(a => a.status === 'concluido' || a.status === 'avaliado');
 
   const filteredPendentes = atividadesPendentes.filter(a =>
-    (activeFilter === 'todas' || a.status === activeFilter) &&
     a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  );
   const filteredConcluidas = atividadesConcluidas.filter(a =>
-    (activeFilter === 'todas' || a.status === activeFilter) &&
     a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  );
 
-  const getPrioridadeConfig = (prioridade: string) => {
-    switch (prioridade) {
-      case 'Alta':
-        return {
-          bg: 'bg-gradient-to-r from-red-500 to-pink-500',
-          icon: Flame,
-          color: 'text-white',
-          badge: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 border-red-200 dark:border-red-800'
-        }
-      case 'Média':
-        return {
-          bg: 'bg-gradient-to-r from-yellow-500 to-orange-500',
-          icon: Zap,
-          color: 'text-white',
-          badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
-        }
-      case 'Baixa':
-        return {
-          bg: 'bg-gradient-to-r from-green-500 to-emerald-500',
-          icon: Star,
-          color: 'text-white',
-          badge: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800'
-        }
-      default:
-        return {
-          bg: 'bg-gradient-to-r from-gray-500 to-slate-500',
-          icon: Target,
-          color: 'text-white',
-          badge: 'bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300 border-gray-200 dark:border-gray-800'
-        }
-    }
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    );
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'urgente': return 'border-l-red-500'
-      case 'normal': return 'border-l-blue-500'
-      case 'planejado': return 'border-l-purple-500'
-      case 'concluido': return 'border-l-green-500'
-      default: return 'border-l-gray-500'
-    }
-  }
-
-  const getDificuldadeColor = (dificuldade: string) => {
-    switch (dificuldade) {
-      case 'Fácil': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-      case 'Médio': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-      case 'Difícil': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300'
-    }
+  
+  if (error) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 text-lg font-semibold">{error}</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -247,20 +187,17 @@ export default function AtividadesPage() {
                 </div>
                 <div className="hidden md:flex items-center space-x-4">
                   <div className="text-right">
+                    <div className="text-sm text-muted-foreground">Total de Atividades:</div>
                     <div className="text-2xl font-bold text-foreground">
                       {atividadesPendentes.length + atividadesConcluidas.length}
                     </div>
-                    <div className="text-sm text-muted-foreground">Total de Atividades</div>
-                  </div>
-                  <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center shadow-lg">
-                    <Activity className="h-8 w-8 text-white" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Barra de busca e filtros */}
+          {/* Barra de busca */}
           <div className="flex flex-col lg:flex-row gap-4">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
@@ -280,42 +217,6 @@ export default function AtividadesPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 border-none bg-transparent focus-visible:ring-0 text-lg placeholder:text-muted-foreground/60"
                 />
-              </div>
-            </LiquidGlassCard>
-
-            <LiquidGlassCard
-              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`p-6 rounded-xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-muted-foreground" />
-                <div className="flex gap-2">
-                  {[
-                    { key: 'todas', label: 'Todas', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-                    { key: 'urgente', label: 'Urgentes', color: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' },
-                    { key: 'normal', label: 'Normais', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' },
-                    { key: 'planejado', label: 'Planejadas', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' },
-                    { key: 'concluido', label: 'Concluídas', color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' }
-                  ].map((filter) => (
-                    <Button
-                      key={filter.key}
-                      variant={activeFilter === filter.key ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setActiveFilter(filter.key)}
-                      className={`rounded-full transition-all duration-200 ${
-                        activeFilter === filter.key
-                          ? `${filter.color} scale-105`
-                          : 'hover:scale-105'
-                      }`}
-                    >
-                      {filter.label}
-                    </Button>
-                  ))}
-                </div>
               </div>
             </LiquidGlassCard>
           </div>
@@ -342,15 +243,10 @@ export default function AtividadesPage() {
                       <p className="text-sm text-muted-foreground">{filteredPendentes.length} atividades</p>
                     </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
-                    Urgentes
-                  </Badge>
                 </div>
 
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {filteredPendentes.map((atividade) => {
-                    const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
-                    const PriorityIcon = prioridadeConfig.icon
                     return (
                       <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
                         isLiquidGlass
@@ -362,9 +258,7 @@ export default function AtividadesPage() {
                             <h3 className="font-bold text-foreground transition-colors">
                               {atividade.titulo}
                             </h3>
-                            <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
-                              <PriorityIcon className={`h-4 w-4 ${prioridadeConfig.color}`} />
-                            </div>
+                            
                           </div>
                           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                             {atividade.descricao}
@@ -376,21 +270,13 @@ export default function AtividadesPage() {
                                   <BookOpen className="h-3 w-3" />
                                   <span className="font-medium">{atividade.disciplina}</span>
                                 </div>
-                                <Badge className={getDificuldadeColor(atividade.dificuldade)}>
-                                  {atividade.dificuldade}
-                                </Badge>
+                                
                               </div>
                               <div className="text-right">
                                 <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                                   <CalIcon className="h-3 w-3" />
                                   <span className="font-bold">Vence: {atividade.dataVencimento}</span>
                                 </div>
-                                {atividade.participantes > 1 && (
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Users className="h-3 w-3" />
-                                    <span>{atividade.participantes} participantes</span>
-                                  </div>
-                                )}
                               </div>
                             </div>
 
@@ -460,15 +346,10 @@ export default function AtividadesPage() {
                       <p className="text-sm text-muted-foreground">{filteredConcluidas.length} atividades</p>
                     </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
-                    Sucesso
-                  </Badge>
                 </div>
 
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {filteredConcluidas.map((atividade) => {
-                    const prioridadeConfig = getPrioridadeConfig(atividade.prioridade)
-                    const PriorityIcon = prioridadeConfig.icon
                     return (
                       <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
                         isLiquidGlass
@@ -480,9 +361,6 @@ export default function AtividadesPage() {
                             <h3 className="font-bold text-foreground transition-colors">
                               {atividade.titulo}
                             </h3>
-                            <div className={`w-8 h-8 rounded-lg ${prioridadeConfig.bg} flex items-center justify-center`}>
-                              <PriorityIcon className={`h-4 w-4 ${prioridadeConfig.color}`} />
-                            </div>
                           </div>
                           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                             {atividade.descricao}
@@ -493,21 +371,12 @@ export default function AtividadesPage() {
                                 <BookOpen className="h-3 w-3" />
                                 <span className="font-medium">{atividade.disciplina}</span>
                               </div>
-                              <Badge className={getDificuldadeColor(atividade.dificuldade)}>
-                                {atividade.dificuldade}
-                              </Badge>
                             </div>
                             <div className="text-right">
                               <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                                 <CheckCircle className="h-3 w-3" />
                                 <span className="font-bold">Concluída: {atividade.dataConclusao}</span>
                               </div>
-                              {atividade.participantes > 1 && (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Users className="h-3 w-3" />
-                                  <span>{atividade.participantes} participantes</span>
-                                </div>
-                              )}
                             </div>
                           </div>
                         </div>
