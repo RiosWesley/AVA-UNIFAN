@@ -12,6 +12,32 @@ import { getStudentGradebook } from "@/src/services/BoletimService"
 
 const UNIDADES_PADRAO = ["1ª Unidade", "2ª Unidade", "Prova Final", "Média Final"];
 
+function normalizarUnidade(unidade: string): string {
+  const s = String(unidade ?? "").trim().toLowerCase();
+
+  // Prova Final
+  if (s === "pf" || (s.includes("prova") && s.includes("final")) || s === "final" || s === "exame final") {
+    return "Prova Final";
+  }
+
+  // 1ª Unidade (cobre variações comuns: 1, 1ª, 1º, 1o, unidade 1, 1 bimestre, primeiro)
+  const padraoUnidade1 =
+    /(^|\s)(1|1ª|1º|1o|primeira)(\s*)(unid|unidade|unidad|bimestre|bim)\b|(?:unidade|bimestre)\s*1\b/;
+  if (padraoUnidade1.test(s)) {
+    return "1ª Unidade";
+  }
+
+  // 2ª Unidade (cobre variações comuns: 2, 2ª, 2º, 2o, unidade 2, 2 bimestre, segundo)
+  const padraoUnidade2 =
+    /(^|\s)(2|2ª|2º|2o|segunda)(\s*)(unid|unidade|unidad|bimestre|bim)\b|(?:unidade|bimestre)\s*2\b/;
+  if (padraoUnidade2.test(s)) {
+    return "2ª Unidade";
+  }
+
+  // Mantém original caso não reconhecido
+  return unidade;
+}
+
 export default function AlunoBoletimPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false);
   const [gradebook, setGradebook] = useState<GradebookData | null>(null);
@@ -88,12 +114,27 @@ export default function AlunoBoletimPage() {
   const { geral, disciplinas } = gradebook;
 
   const processarNotasDisciplina = (disciplina: any) => {
-    const notasMap = new Map(
-      disciplina.notas.map((n: { unidade: string; nota: number | null }) => [
-        n.unidade,
-        n.nota,
-      ]),
-    );
+    const notasMap = new Map<string, number | null>();
+
+    for (const n of (disciplina?.notas ?? []) as Array<{ unidade: string; nota: number | null }>) {
+      const chave = normalizarUnidade(n.unidade);
+      const valor = n.nota === null ? null : Number(n.nota);
+
+      if (valor === null || Number.isNaN(valor)) {
+        if (!notasMap.has(chave)) {
+          notasMap.set(chave, null);
+        }
+        continue;
+      }
+
+      const atual = notasMap.get(chave);
+      if (atual === null || typeof atual === "undefined") {
+        notasMap.set(chave, valor);
+      } else {
+        notasMap.set(chave, atual + valor);
+      }
+    }
+
     const notasCompletas = UNIDADES_PADRAO.map(unidade => {
       if (unidade === "Média Final") {
         return { unidade, nota: disciplina.media };
