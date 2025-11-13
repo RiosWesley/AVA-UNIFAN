@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect, useMemo } from "react"
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
@@ -16,58 +16,54 @@ import { completeStudentActivity, getStudentActivities, uploadStudentActivity } 
 import { PageSpinner } from "@/components/ui/page-spinner"
 
 export default function AtividadesPage() {
+
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [allActivities, setAllActivities] = useState<StudentActivity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
   const [modalEnviarAtividadeOpen, setModalEnviarAtividadeOpen] = useState(false)
-  const [atividadeSelecionada, setAtividadeSelecionada] = useState<StudentActivity | null>(null);
+  const [atividadeSelecionada, setAtividadeSelecionada] = useState<StudentActivity | null>(null)
   
+
   const queryClient = useQueryClient()
-  const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb'; // MOCKADO
+
+  const getStudentId = () => {
+    if (typeof window !== 'undefined') {
+      const ls = localStorage.getItem('ava:studentId')
+      if (ls) return ls
+    }
+    return '29bc17a4-0b68-492b-adef-82718898d9eb'
+  }
+  const studentId = getStudentId()
 
   useEffect(() => {
     const checkTheme = () => setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"));
     checkTheme();
     const observer = new MutationObserver(checkTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    
-    const loadActivities = async () => {
-        try {
-            const data = await getStudentActivities(studentId);
-            setAllActivities(data);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    loadActivities();
-
     return () => observer.disconnect();
   }, []);
 
+  const { data: allActivities = [], isLoading, error } = useQuery({
+    queryKey: ['studentActivities', studentId],
+    queryFn: () => getStudentActivities(studentId),
+    enabled: !!studentId,
+  });
+
   const completeActivityMutation = useMutation({
-     mutationFn: (activityId: string) => {
-      return completeStudentActivity(activityId, studentId);
-    },
-    onSuccess: (data, activityId) => {
-      setAllActivities(prev => prev.map(act => 
-        act.id === activityId 
-          ? { ...act, status: 'concluido', dataConclusao: new Date().toLocaleDateString('pt-BR') } 
-          : act
-      ));
-      
-      queryClient.invalidateQueries({ queryKey: ['activities', studentId] });
-      
+    mutationFn: (activityId: string) => completeStudentActivity(activityId, studentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['studentActivities', studentId] });
       toast({
         title: "Atividade concluída!",
-        description: "Parabéns! Você marcou a atividade como concluída.",
+        description: "Seu status foi atualizado.",
       });
     },
-    onError: () => { /* ... */ },
+    onError: () => {
+      toast({
+        title: "Erro ao concluir atividade",
+        description: "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    },
   });
   
     const handleCompleteActivity = (activityId: string) => {
@@ -75,33 +71,18 @@ export default function AtividadesPage() {
     };
 
   const uploadActivityMutation = useMutation({
-    mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment:string }) => {
-      return uploadStudentActivity(activityId, studentId, file, comment);
-    },
+    mutationFn: ({ activityId, file, comment }: { activityId: string; file: File; comment: string }) => 
+      uploadStudentActivity(activityId, studentId, file, comment),
     onSuccess: (data, variables) => {
-      setAllActivities(prev => prev.map(act => 
-        act.id === variables.activityId 
-          ? { ...act, status: 'concluido', dataConclusao: new Date().toLocaleDateString('pt-BR') } 
-          : act
-      ));
-      
-      queryClient.invalidateQueries({ queryKey: ['activities', studentId] });
-
+      queryClient.invalidateQueries({ queryKey: ['studentActivities', studentId] });
       toast({
-        title: "Atividade enviada com sucesso!",
-        description: `${variables.file.name} foi enviada para a atividade.`,
+        title: "Atividade enviada com sucesso! 🎉",
+        description: `${variables.file.name} foi enviada.`,
       });
-
       setModalEnviarAtividadeOpen(false);
       setAtividadeSelecionada(null);
     },
-    onError: () => {
-      toast({
-        title: "Erro ao enviar atividade",
-        description: "Verifique o arquivo e tente novamente.",
-        variant: "destructive",
-      });
-    },
+    onError: () => { /* ... */ },
   });
 
   const handleEnviarAtividade = async (activityId: string, file: File, comment: string) => {
@@ -113,15 +94,21 @@ export default function AtividadesPage() {
     setModalEnviarAtividadeOpen(true);
   };
 
-  const atividadesPendentes = allActivities.filter(a => a.status === 'pendente');
-  const atividadesConcluidas = allActivities.filter(a => a.status === 'concluido' || a.status === 'avaliado');
+  const { atividadesPendentes, atividadesConcluidas } = useMemo(() => {
+    const pendentes = allActivities.filter(a => a.status === 'pendente');
+    const concluidas = allActivities.filter(a => a.status === 'concluido' || a.status === 'avaliado');
+    return { atividadesPendentes: pendentes, atividadesConcluidas: concluidas };
+  }, [allActivities]);
 
-  const filteredPendentes = atividadesPendentes.filter(a =>
-    a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const filteredConcluidas = atividadesConcluidas.filter(a =>
-    a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPendentes = useMemo(() => 
+    atividadesPendentes.filter(a =>
+      a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [atividadesPendentes, searchTerm]);
+
+  const filteredConcluidas = useMemo(() =>
+    atividadesConcluidas.filter(a =>
+      a.titulo.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [atividadesConcluidas, searchTerm]);
 
   if (isLoading) {
     return (
@@ -140,7 +127,7 @@ export default function AtividadesPage() {
         <Sidebar userRole="aluno" />
         <main className="flex-1 overflow-y-auto flex items-center justify-center">
           <div className="text-center">
-            <p className="text-red-500 text-lg font-semibold">{error}</p>
+            <p className="text-red-500 text-lg font-semibold">{(error as Error).message}</p>
           </div>
         </main>
       </div>
