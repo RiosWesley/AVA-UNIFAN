@@ -130,6 +130,23 @@ export interface ForumPost {
   parentPostId?: string | null
 }
 
+// ---------- Chat ----------
+export interface ChatThread {
+  id: string
+  classId: string
+  professorName: string
+  discipline: string
+  lastMessageAt: string | null
+  unreadCount?: number
+}
+
+export interface ChatMessage {
+  id: string
+  author: 'prof' | 'aluno'
+  content: string
+  sentAt: string
+}
+
 export interface VideoLesson {
   id: string
   title: string
@@ -273,6 +290,13 @@ export const apiClient = {
     return data
   },
 
+  async getNoticesForStudent(studentId: string): Promise<Notice[]> {
+    // Preferir endpoint agregador do backend
+    const { data } = await api.get<Notice[]>(`/notice-board/student/${studentId}`)
+    // Garantir ordenação DESC
+    return [...data].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+  },
+
   async getMaterialsByClass(classId: string): Promise<MaterialItem[]> {
     const { data } = await api.get<MaterialItem[]>(`/materials/class/${classId}`)
     return data
@@ -348,6 +372,24 @@ export const apiClient = {
   // -------- Classes --------
   async getClassDetails(classId: string): Promise<ClassDetail> {
     const { data } = await api.get<ClassDetail>(`/classes/${classId}`)
+    return data
+  },
+
+  // -------- Chats --------
+  async getChatThreads(studentId: string): Promise<ChatThread[]> {
+    const { data } = await api.get<ChatThread[]>(`/chats/students/${studentId}/threads`)
+    return data
+  },
+
+  async getChatMessages(studentId: string, classId: string): Promise<ChatMessage[]> {
+    const { data } = await api.get<ChatMessage[]>(`/chats/students/${studentId}/classes/${classId}/messages`)
+    return data
+  },
+
+  async sendChatMessage(params: { studentId: string; classId: string; content: string }): Promise<ChatMessage> {
+    const { data } = await api.post<ChatMessage>(`/chats/students/${params.studentId}/classes/${params.classId}/messages`, {
+      content: params.content
+    })
     return data
   }
 }
