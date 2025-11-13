@@ -43,12 +43,7 @@ export const uploadStudentActivity = async (
   try {
     const response = await api.post(
       `/activities/students/${studentId}/activities/${activityId}/submissions/upload`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+      formData
     );
     return response.data;
   } catch (error) {

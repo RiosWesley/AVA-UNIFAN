@@ -26,7 +26,7 @@ export const transformarDadosParaComponente = (dadosApi: ClassFromAPI[]): Semest
     }
     
     acc[semestreId].disciplinas.push({
-      id: item.discipline.id,
+      id: item.id,
       nome: item.discipline.name,
       codigo: item.code,
       professor: item.teacher?.name || "Professor não definido",

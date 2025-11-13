@@ -8,112 +8,114 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, Clock, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock } from "lucide-react"
 import Link from "next/link"
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ModalDiscussaoForum, ModalVideoAula, ModalVideoChamada } from '@/components/modals'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
+import { useParams } from 'next/navigation'
+import { apiClient, type Forum, type VideoLesson, type MaterialItem, type Notice, type ClassActivity, type ActivitySubmissionStatus } from '@/lib/api-client'
 
 export default function DisciplinaDetalhePage() {
+  const params = useParams() as { id: string }
+  const classId = params.id
+
+  // Fallback: obter studentId do localStorage se existir ou usar um mock UUID consistente com outras telas
+  const getStudentId = () => {
+    if (typeof window !== 'undefined') {
+      const ls = localStorage.getItem('ava:studentId')
+      if (ls) return ls
+    }
+    return '29bc17a4-0b68-492b-adef-82718898d9eb'
+  }
+  const studentId = getStudentId()
+
+  // Detalhes da turma para preencher cabeçalho
+  const classDetailsQuery = useQuery({
+    queryKey: ['class-details', classId],
+    queryFn: () => apiClient.getClassDetails(classId),
+    enabled: !!classId,
+  })
+
+  // Cabeçalho da disciplina (placeholder básico; pode ser enriquecido se houver endpoint)
   const disciplina = {
-    nome: "Matemática",
-    codigo: "MAT001",
-    professor: "Prof. Carlos Silva",
-    progresso: 75,
+    nome: classDetailsQuery.data?.discipline?.name || "Disciplina",
+    codigo: classDetailsQuery.data?.code || classId,
+    professor: classDetailsQuery.data?.teacher?.name || "",
+    progresso: 0,
   }
 
-  const avisos = [
-    {
-      titulo: "Prova de Álgebra - Próxima Semana",
-      data: "15/03/2024",
-      conteudo: "A prova abordará os tópicos: equações do 2º grau, sistemas lineares e funções quadráticas.",
-    },
-    {
-      titulo: "Material Complementar Disponível",
-      data: "12/03/2024",
-      conteudo: "Adicionei exercícios extras sobre funções no material da disciplina.",
-    },
-  ]
+  // Avisos por turma
+  const noticesQuery = useQuery({
+    queryKey: ['notice-board', classId],
+    queryFn: () => apiClient.getNoticesByClass(classId as string),
+    enabled: !!classId,
+  })
 
-  const materiais = [
-    { nome: "Apostila - Funções Quadráticas", tipo: "PDF", tamanho: "2.5 MB", data: "10/03/2024" },
-    { nome: "Lista de Exercícios 03", tipo: "PDF", tamanho: "1.2 MB", data: "08/03/2024" },
-    { nome: "Vídeo Aula - Sistemas Lineares", tipo: "MP4", tamanho: "45 MB", data: "05/03/2024" },
-  ]
+  // Materiais por turma
+  const materialsQuery = useQuery({
+    queryKey: ['materials', classId],
+    queryFn: () => apiClient.getMaterialsByClass(classId as string),
+    enabled: !!classId,
+  })
 
-  const [atividades, setAtividades] = useState([
-    {
-      id: 1,
-      titulo: "Lista de Exercícios - Funções",
-      prazo: "20/03/2024",
-      status: "Pendente",
-      nota: null,
-      descricao: "Resolver exercícios 1 a 15 da apostila",
-    },
-    {
-      id: 2,
-      titulo: "Trabalho em Grupo - Aplicações",
-      prazo: "25/03/2024",
-      status: "Em andamento",
-      nota: null,
-      descricao: "Apresentar aplicações práticas de funções quadráticas",
-    },
-    {
-      id: 3,
-      titulo: "Prova Bimestral",
-      prazo: "15/03/2024",
-      status: "Concluída",
-      nota: 8.5,
-      descricao: "Avaliação sobre todo o conteúdo do bimestre",
-    },
-  ])
+  // Atividades por turma
+  const activitiesQuery = useQuery({
+    queryKey: ['activities-class', classId],
+    queryFn: () => apiClient.getActivitiesByClass(classId as string),
+    enabled: !!classId,
+  })
 
-  const [forums, setForums] = useState<any[]>([
-    {
-      id: 1,
-      titulo: "Dúvidas sobre Funções Quadráticas",
-      descricao: "Espaço para dúvidas e discussões sobre funções quadráticas.",
-      autor: "Prof. Carlos Silva",
-      dataCriacao: "15/03/2024",
-      comentarios: [
-        { id: 1, autor: "Ana Silva", texto: "Como encontro o vértice?", data: "16/03/2024 14:30" },
-        { id: 2, autor: "João Pedro", texto: "x = -b/2a resolve a abscissa do vértice.", data: "16/03/2024 15:10" },
-      ]
-    },
-    {
-      id: 2,
-      titulo: "Trabalho em Grupo - Aplicações",
-      descricao: "Troca de ideias para o trabalho em grupo.",
-      autor: "Prof. Carlos Silva",
-      dataCriacao: "18/03/2024",
-      comentarios: [
-        { id: 1, autor: "Marina", texto: "Podemos usar um exemplo de otimização?", data: "18/03/2024 16:20" },
-      ]
+  // Status de submissão por atividade (carregado após listar atividades)
+  const [submissionStatusByActivity, setSubmissionStatusByActivity] = useState<Record<string, ActivitySubmissionStatus>>({})
+  useEffect(() => {
+    const loadStatuses = async () => {
+      if (!activitiesQuery.data || !studentId) return
+      try {
+        const results = await Promise.all(
+          activitiesQuery.data.map((a) => apiClient.getActivitySubmissionStatus(String(a.id), studentId).catch(() => null))
+        )
+        const map: Record<string, ActivitySubmissionStatus> = {}
+        results.forEach((status) => {
+          if (status) map[status.activityId] = status
+        })
+        setSubmissionStatusByActivity(map)
+      } catch {
+        // silenciosamente ignora falhas parciais
+      }
     }
-  ])
+    loadStatuses()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activitiesQuery.data, studentId])
+
+  // Fóruns por turma
+  const forumsQuery = useQuery({
+    queryKey: ['forums', classId],
+    queryFn: () => apiClient.getForumsByClass(classId as string),
+    enabled: !!classId,
+  })
+
+  // Posts do fórum carregados ao abrir discussão
   const [modalDiscussaoOpen, setModalDiscussaoOpen] = useState(false)
   const [forumSelecionado, setForumSelecionado] = useState<any>(null)
+  // Mapeia IDs numéricos usados pelo modal -> UUIDs reais do backend
+  const [postIdMap, setPostIdMap] = useState<Record<number, string>>({})
 
   // Upload activity states
-  const [uploadFiles, setUploadFiles] = useState<Record<number, File | null>>({})
-  const [uploadComments, setUploadComments] = useState<Record<number, string>>({})
+  const [uploadFiles, setUploadFiles] = useState<Record<string, File | null>>({})
+  const [uploadComments, setUploadComments] = useState<Record<string, string>>({})
 
   // Upload activity mutation
   const uploadActivityMutation = useMutation({
-    mutationFn: async ({ activityId, file, comment }: { activityId: number; file: File; comment: string }) => {
-      // TODO: Replace with actual API call
-      // Simulate upload
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Update activity status locally
-      setAtividades(prev => prev.map(a => 
-        a.id === activityId 
-          ? { ...a, status: 'Concluída', nota: null }
-          : a
-      ))
-
-      return { activityId, fileName: file.name }
+    mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment: string }) => {
+      const res = await apiClient.uploadActivitySubmission({
+        studentId,
+        activityId,
+        file,
+        comment
+      })
+      return res
     },
     onSuccess: (data, variables) => {
       toast({
@@ -123,6 +125,17 @@ export default function DisciplinaDetalhePage() {
       // Clear upload state
       setUploadFiles(prev => ({ ...prev, [variables.activityId]: null }))
       setUploadComments(prev => ({ ...prev, [variables.activityId]: '' }))
+      // Atualiza status local para refletir imediatamente no UI
+      setSubmissionStatusByActivity(prev => ({
+        ...prev,
+        [variables.activityId]: {
+          activityId: String(variables.activityId),
+          studentId,
+          status: 'completed',
+          submittedAt: new Date().toISOString(),
+          grade: null
+        }
+      }))
     },
     onError: (error, variables) => {
       toast({
@@ -133,7 +146,7 @@ export default function DisciplinaDetalhePage() {
     },
   })
 
-  const handleFileChange = (activityId: number, file: File | null) => {
+  const handleFileChange = (activityId: string, file: File | null) => {
     if (file) {
       // Validate file type
       const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png', 'text/plain']
@@ -160,9 +173,9 @@ export default function DisciplinaDetalhePage() {
     setUploadFiles(prev => ({ ...prev, [activityId]: file }))
   }
 
-  const handleSubmitActivity = (atividade: any) => {
-    const file = uploadFiles[atividade.id]
-    const comment = uploadComments[atividade.id] || ''
+  const handleSubmitActivity = (atividade: { id: string }) => {
+    const file = uploadFiles[String(atividade.id)]
+    const comment = uploadComments[String(atividade.id)] || ''
 
     if (!file) {
       toast({
@@ -174,19 +187,30 @@ export default function DisciplinaDetalhePage() {
     }
 
     uploadActivityMutation.mutate({
-      activityId: atividade.id,
+      activityId: String(atividade.id),
       file,
       comment
     })
   }
 
   // Vídeo-aulas
-  const [videoAulas, setVideoAulas] = useState<Array<{ id: number; titulo: string; duracao: string; visto: boolean; url: string }>>([
-    { id: 1, titulo: 'Introdução às Funções', duracao: '12:30', visto: true, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
-    { id: 2, titulo: 'Funções Quadráticas - Parte 1', duracao: '18:05', visto: false, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
-    { id: 3, titulo: 'Vértice e Forma Canônica', duracao: '15:42', visto: false, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
-    { id: 4, titulo: 'Aplicações Práticas', duracao: '20:10', visto: false, url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
-  ])
+  const videoLessonsQuery = useQuery({
+    queryKey: ['video-lessons', classId],
+    queryFn: () => apiClient.getVideoLessonsByClass(classId as string),
+    enabled: !!classId,
+  })
+  const [videoAulas, setVideoAulas] = useState<Array<{ id: number; titulo: string; duracao: string; visto: boolean; url: string }>>([])
+  useEffect(() => {
+    if (!videoLessonsQuery.data) return
+    const mapped = videoLessonsQuery.data.map((v: VideoLesson, idx) => ({
+      id: Number.isFinite(Number(v.id)) ? Number(v.id) : idx + 1,
+      titulo: v.title,
+      duracao: v.durationSeconds ? `${Math.floor(v.durationSeconds / 60)}:${String(Math.floor(v.durationSeconds % 60)).padStart(2, '0')}` : '00:00',
+      visto: Boolean(v.watched),
+      url: v.videoUrl,
+    }))
+    setVideoAulas(mapped)
+  }, [videoLessonsQuery.data])
   const [videoAulaSelecionadaId, setVideoAulaSelecionadaId] = useState<number | null>(null)
   const [modalVideoAulaAberto, setModalVideoAulaAberto] = useState(false)
   const videoAulaSelecionada = useMemo(() => videoAulas.find(v => v.id === videoAulaSelecionadaId) || null, [videoAulas, videoAulaSelecionadaId])
@@ -194,11 +218,12 @@ export default function DisciplinaDetalhePage() {
   // Mutation for marking video as watched
   const markAsWatchedMutation = useMutation({
     mutationFn: async (videoId: number) => {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 300))
-      return videoId
+      const original = videoLessonsQuery.data?.find(v => Number(v.id) === videoId || v.id === String(videoId))
+      const idStr = original?.id ? String(original.id) : String(videoId)
+      await apiClient.markVideoLessonWatched(idStr, studentId)
+      return idStr
     },
-    onSuccess: (videoId) => {
+    onSuccess: () => {
       toast({
         title: "Vídeo marcado como assistido! ✓",
         description: "Seu progresso foi atualizado.",
@@ -248,39 +273,124 @@ export default function DisciplinaDetalhePage() {
     setModalVideoChamadaAberto(true)
   }
 
-  const handleVerDiscussao = (forum: any) => {
-    setForumSelecionado(forum)
-    setModalDiscussaoOpen(true)
+  const handleVerDiscussao = async (forum: any) => {
+    const toPtBrDate = (value: any): string => {
+      if (!value) return ''
+      // Converte 'YYYY-MM-DD HH:mm:ss.sss+TZ' -> ISO
+      const str = String(value)
+      const iso = str.includes('T') ? str : str.replace(' ', 'T')
+      const d = new Date(iso)
+      return isNaN(d.getTime()) ? '' : d.toLocaleString('pt-BR')
+    }
+    const flattenPosts = (
+      posts: any[],
+      acc: any[] = [],
+      parentNumericId?: number,
+      idMap: Record<number, string> = {}
+    ) => {
+      posts.forEach((p) => {
+        const numericId = acc.length + 1
+        idMap[numericId] = String(p.id ?? numericId)
+        acc.push({
+          id: numericId,
+          autor: p.user?.name ?? p.authorName ?? '—',
+          texto: p.content ?? '',
+          data: toPtBrDate(p.postedAt ?? p.createdAt),
+          ...(parentNumericId ? { parentId: parentNumericId } : {}),
+        })
+        if (Array.isArray(p.replies) && p.replies.length > 0) {
+          flattenPosts(p.replies, acc, numericId, idMap)
+        }
+      })
+      return { comments: acc, idMap }
+    }
+
+    try {
+      const posts = await apiClient.getForumPostsByForumId(String(forum.id))
+      const { comments: comentarios, idMap } = flattenPosts(Array.isArray(posts) ? posts : [])
+      setPostIdMap(idMap)
+
+      setForumSelecionado({
+        id: forum.id,
+        titulo: forum.titulo,
+        descricao: forum.descricao,
+        autor: forum.autor,
+        dataCriacao: forum.dataCriacao,
+        comentarios,
+      })
+      setModalDiscussaoOpen(true)
+    } catch (e) {
+      // Abre mesmo com falha (ex.: fórum sem posts ainda)
+      setForumSelecionado({
+        id: forum.id,
+        titulo: forum.titulo,
+        descricao: forum.descricao,
+        autor: forum.autor,
+        dataCriacao: forum.dataCriacao,
+        comentarios: [],
+      })
+      setPostIdMap({})
+      setModalDiscussaoOpen(true)
+      toast({
+        title: "Não foi possível carregar a discussão",
+        description: "Mostrando a discussão sem comentários. Tente recarregar em instantes.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleResponderDiscussao = (texto: string, parentId?: number) => {
     if (!forumSelecionado) return
-    setForums(prev => prev.map(f => {
-      if (f.id !== forumSelecionado.id) return f
-      const novoId = Math.max(0, ...f.comentarios.map((c: any) => c.id)) + 1
-      const mencionado = parentId ? (f.comentarios.find((c: any) => c.id === parentId)?.autor || '') : ''
-      const novo = {
-        id: novoId,
-        autor: 'Você',
-        texto: mencionado ? `@${mencionado} ${texto}` : texto,
-        data: new Date().toLocaleString('pt-BR'),
-        ...(parentId ? { parentId } : {})
+    ;(async () => {
+      try {
+        const realParentId = parentId ? postIdMap[parentId] : undefined
+        await apiClient.createForumPost({
+          userId: studentId,
+          forumId: String(forumSelecionado.id),
+          content: texto,
+          parentPostId: realParentId ? String(realParentId) : undefined
+        })
+        // Refetch posts to reflect thread
+        const posts = await apiClient.getForumPostsByForumId(String(forumSelecionado.id))
+        const { comments: comentarios, idMap } = ((): { comments: any[]; idMap: Record<number, string> } => {
+          const toPtBrDate = (val: any) => {
+            if (!val) return ''
+            const iso = String(val).includes('T') ? String(val) : String(val).replace(' ', 'T')
+            const d = new Date(iso)
+            return isNaN(d.getTime()) ? '' : d.toLocaleString('pt-BR')
+          }
+          const acc: any[] = []
+          const map: Record<number, string> = {}
+          const walk = (arr: any[], parentNumericId?: number) => {
+            arr.forEach((p) => {
+              const numericId = acc.length + 1
+              map[numericId] = String(p.id ?? numericId)
+              acc.push({
+                id: numericId,
+                autor: p.user?.name ?? p.authorName ?? '—',
+                texto: p.content ?? '',
+                data: toPtBrDate(p.postedAt ?? p.createdAt),
+                ...(parentNumericId ? { parentId: parentNumericId } : {}),
+              })
+              if (Array.isArray(p.replies) && p.replies.length > 0) walk(p.replies, numericId)
+            })
+          }
+          walk(Array.isArray(posts) ? posts : [])
+          return { comments: acc, idMap: map }
+        })()
+        setPostIdMap(idMap)
+        setForumSelecionado((curr: any) => curr ? {
+          ...curr,
+          comentarios
+        } : curr)
+      } catch {
+        toast({
+          title: "Não foi possível publicar a resposta",
+          description: "Tente novamente mais tarde.",
+          variant: "destructive",
+        })
       }
-      return { ...f, comentarios: [...f.comentarios, novo] }
-    }))
-    setForumSelecionado((curr: any) => curr ? {
-      ...curr,
-      comentarios: [
-        ...curr.comentarios,
-        {
-          id: Math.max(0, ...curr.comentarios.map((c: any) => c.id)) + 1,
-          autor: 'Você',
-          texto: parentId ? `@${curr.comentarios.find((c: any) => c.id === parentId)?.autor || ''} ${texto}` : texto,
-          data: new Date().toLocaleString('pt-BR'),
-          ...(parentId ? { parentId } : {})
-        }
-      ]
-    } : curr)
+    })()
   }
 
 
@@ -317,19 +427,32 @@ export default function DisciplinaDetalhePage() {
 
             <TabsContent value="avisos">
               <div className="space-y-4">
-                {avisos.map((aviso, index) => (
-                  <Card key={index}>
+                {noticesQuery.isLoading && (
+                  <Card>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg">{aviso.titulo}</CardTitle>
-                          <CardDescription>{aviso.data}</CardDescription>
+                          <CardTitle className="text-lg">Carregando avisos...</CardTitle>
+                          <CardDescription>Aguarde</CardDescription>
+                        </div>
+                        <Bell className="h-5 w-5 text-primary" />
+                      </div>
+                    </CardHeader>
+                  </Card>
+                )}
+                {(noticesQuery.data || []).map((aviso: Notice) => (
+                  <Card key={aviso.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{aviso.title}</CardTitle>
+                          <CardDescription>{new Date(aviso.createdAt).toLocaleDateString('pt-BR')}</CardDescription>
                         </div>
                         <Bell className="h-5 w-5 text-primary" />
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm">{aviso.conteudo}</p>
+                      <p className="text-sm">{aviso.content}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -338,20 +461,48 @@ export default function DisciplinaDetalhePage() {
 
             <TabsContent value="materiais">
               <div className="space-y-4">
-                {materiais.map((material, index) => (
-                  <Card key={index}>
+                {materialsQuery.isLoading && (
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <FileText className="h-8 w-8 text-primary" />
                           <div>
-                            <h4 className="font-medium">{material.nome}</h4>
+                            <h4 className="font-medium">Carregando materiais...</h4>
+                            <p className="text-sm text-muted-foreground">Aguarde</p>
+                          </div>
+                        </div>
+                        <Button size="sm" disabled>Download</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {(materialsQuery.data || []).map((material: MaterialItem) => (
+                  <Card key={material.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-8 w-8 text-primary" />
+                          <div>
+                            <h4 className="font-medium">{material.title ?? material.name ?? 'Material'}</h4>
                             <p className="text-sm text-muted-foreground">
-                              {material.tipo} • {material.tamanho} • {material.data}
+                              {material.type ?? (material.fileUrl ? material.fileUrl.split('.').pop()?.toUpperCase() : '')}
+                              {material.sizeBytes ? ` • ${(material.sizeBytes / (1024 * 1024)).toFixed(2)} MB` : ''}
+                              {(material.uploadedAt || material.createdAt) ? ` • ${new Date((material.uploadedAt || material.createdAt) as string).toLocaleDateString('pt-BR')}` : ''}
                             </p>
                           </div>
                         </div>
-                        <Button size="sm">Download</Button>
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const base = process.env.NEXT_PUBLIC_API_URL || ''
+                            const isAbsolute = /^https?:\/\//i.test(material.fileUrl || '')
+                            const url = isAbsolute ? material.fileUrl : `${base}${material.fileUrl || ''}`
+                            window.open(url, '_blank')
+                          }}
+                        >
+                          Download
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -361,36 +512,41 @@ export default function DisciplinaDetalhePage() {
 
             <TabsContent value="atividades">
               <div className="space-y-4">
-                {atividades.map((atividade, index) => (
-                  <Card key={index}>
+                {activitiesQuery.isLoading && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Carregando atividades...</CardTitle>
+                    </CardHeader>
+                  </Card>
+                )}
+                {(activitiesQuery.data || []).map((atividade: ClassActivity) => {
+                  const status = submissionStatusByActivity[String(atividade.id)]
+                  const normalized = (status?.status || '').toString().toLowerCase()
+                  const isCompleted = normalized === 'submitted' || normalized === 'graded' || normalized === 'completed'
+                  const badgeLabel = isCompleted ? "Concluída" : "Pendente"
+                  const badgeVariant = isCompleted ? "default" : "destructive"
+                  return (
+                  <Card key={atividade.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg">{atividade.titulo}</CardTitle>
-                          <CardDescription>Prazo: {atividade.prazo}</CardDescription>
+                          <CardTitle className="text-lg">{atividade.title}</CardTitle>
+                          <CardDescription>Prazo: {new Date(atividade.dueDate).toLocaleDateString('pt-BR')}</CardDescription>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {atividade.nota && <Badge variant="default">Nota: {atividade.nota}</Badge>}
+                          {typeof status?.grade === 'number' && <Badge variant="default">Nota: {status.grade}</Badge>}
                           <Badge
-                            variant={
-                              atividade.status === "Concluída"
-                                ? "default"
-                                : atividade.status === "Em andamento"
-                                  ? "secondary"
-                                  : "destructive"
-                            }
+                            variant={badgeVariant as any}
                           >
-                            {atividade.status === "Concluída" && <CheckCircle className="h-3 w-3 mr-1" />}
-                            {atividade.status === "Em andamento" && <Clock className="h-3 w-3 mr-1" />}
-                            {atividade.status === "Pendente" && <AlertCircle className="h-3 w-3 mr-1" />}
-                            {atividade.status}
+                            {isCompleted ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
+                            {badgeLabel}
                           </Badge>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm mb-4">{atividade.descricao}</p>
-                      {atividade.status === "Pendente" && (
+                      <p className="text-sm mb-4">{atividade.description}</p>
+                      {!isCompleted && (
                         <div className="space-y-4 border-t pt-4">
                           <div>
                             <Label htmlFor={`arquivo-${atividade.id}`}>Enviar Arquivo</Label>
@@ -399,12 +555,12 @@ export default function DisciplinaDetalhePage() {
                               type="file"
                               className="mt-1"
                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
-                              onChange={(e) => handleFileChange(atividade.id, e.target.files?.[0] || null)}
+                              onChange={(e) => handleFileChange(String(atividade.id), e.target.files?.[0] || null)}
                             />
-                            {uploadFiles[atividade.id] && (
+                            {uploadFiles[String(atividade.id)] && (
                               <p className="text-sm text-green-600 mt-1 flex items-center gap-2">
                                 <CheckCircle className="h-4 w-4" />
-                                {uploadFiles[atividade.id]?.name} ({(uploadFiles[atividade.id]?.size! / 1024).toFixed(1)} KB)
+                                {uploadFiles[String(atividade.id)]?.name} ({(uploadFiles[String(atividade.id)]?.size! / 1024).toFixed(1)} KB)
                               </p>
                             )}
                           </div>
@@ -414,12 +570,12 @@ export default function DisciplinaDetalhePage() {
                               id={`comentario-${atividade.id}`}
                               placeholder="Adicione um comentário..."
                               className="mt-1"
-                              value={uploadComments[atividade.id] || ''}
-                              onChange={(e) => setUploadComments(prev => ({ ...prev, [atividade.id]: e.target.value }))}
+                              value={uploadComments[String(atividade.id)] || ''}
+                              onChange={(e) => setUploadComments(prev => ({ ...prev, [String(atividade.id)]: e.target.value }))}
                             />
                           </div>
                           <Button
-                            onClick={() => handleSubmitActivity(atividade)}
+                            onClick={() => handleSubmitActivity({ id: String(atividade.id) })}
                             disabled={uploadActivityMutation.isPending}
                             className="w-full"
                           >
@@ -439,45 +595,69 @@ export default function DisciplinaDetalhePage() {
                       )}
                     </CardContent>
                   </Card>
-                ))}
+                )})}
               </div>
             </TabsContent>
 
             <TabsContent value="forum">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Fórum da Disciplina</h3>
-                {forums.map((forum) => (
+                {forumsQuery.isLoading && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Carregando fóruns...</CardTitle>
+                    </CardHeader>
+                  </Card>
+                )}
+                {(forumsQuery.data || []).map((forum: Forum) => {
+                  const titulo = forum.title
+                  const autor = forum.authorName || (forum as any)?.createdBy?.name || '—'
+                  const rawCreated: any = (forum as any)?.createdAt ?? (forum as any)?.created_at ?? null
+                  const dataCriacao = rawCreated
+                    ? (() => {
+                        const s = String(rawCreated)
+                        const iso = s.includes('T') ? s : s.replace(' ', 'T')
+                        const d = new Date(iso)
+                        return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR')
+                      })()
+                    : ''
+                  const descricao = forum.description
+                  const comentariosCount = forum.postsCount ?? 0
+                  const forumView = { id: forum.id, titulo, descricao, autor, dataCriacao, comentarios: [] as any[] }
+                  return (
                   <Card key={forum.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <CardTitle className="text-lg">{forum.titulo}</CardTitle>
+                          <CardTitle className="text-lg">{titulo}</CardTitle>
                           <CardDescription>
-                            Criado por {forum.autor} em {forum.dataCriacao}
+                            {`Criado por ${autor}${dataCriacao ? ` em ${dataCriacao}` : ''}`}
                           </CardDescription>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge variant="secondary">{forum.comentarios.length} comentários</Badge>
-                          <Button size="sm" variant="outline" onClick={() => handleVerDiscussao(forum)}>
+                          <Badge variant="secondary">{comentariosCount} comentários</Badge>
+                          <Button size="sm" variant="outline" onClick={() => handleVerDiscussao(forumView)}>
                             <MessageSquare className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">{forum.descricao}</p>
+                      <p className="text-sm text-muted-foreground mb-3">{descricao}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          Última atualização: {forum.comentarios[forum.comentarios.length - 1]?.data || forum.dataCriacao}
-                        </span>
-                        <Button size="sm" variant="outline" onClick={() => handleVerDiscussao(forum)}>
+                        {dataCriacao ? (
+                          <span className="text-xs text-muted-foreground">
+                            Criado em: {dataCriacao}
+                          </span>
+                        ) : <span />}
+                        <Button size="sm" variant="outline" onClick={() => handleVerDiscussao(forumView)}>
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Ver Discussão
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )})}
               </div>
             </TabsContent>
 
