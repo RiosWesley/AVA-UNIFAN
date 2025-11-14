@@ -150,9 +150,17 @@ export interface ChatMessage {
 export interface VideoLesson {
   id: string
   title: string
+  description?: string
   durationSeconds?: number
   watched?: boolean
-  videoUrl: string
+  videoUrl?: string // Legado - não usar mais
+  status?: string
+  visibility?: string
+  mimeType?: string
+  sizeBytes?: number
+  createdAt?: string
+  teacher?: { id: string; name?: string }
+  attachmentUrls?: string[]
 }
 
 export interface ClassDetail {
@@ -414,8 +422,30 @@ export const apiClient = {
   },
 
   async getVideoLessonsByClass(classId: string): Promise<VideoLesson[]> {
-    const { data } = await api.get<VideoLesson[]>(`/video-lessons/class/${classId}`)
-    return data
+    try {
+      const { data } = await api.get<VideoLesson[]>(`/video-lessons/classes/${classId}/video-lessons`)
+      return data
+    } catch (err: any) {
+      const status = err?.response?.status
+      // Fallback para endpoint legado sem guard
+      if (status === 401 || status === 403 || status === 404) {
+        const { data } = await api.get<VideoLesson[]>(`/video-lessons/class/${classId}`)
+        return data as any
+      }
+      throw err
+    }
+  },
+
+  async getVideoLessonStreamUrl(classId: string, videoLessonId: string): Promise<{ url: string; expiresInSeconds: number; mimeType: string }> {
+    try {
+      const { data } = await api.get<{ url: string; expiresInSeconds: number; mimeType: string }>(
+        `/video-lessons/classes/${classId}/video-lessons/${videoLessonId}/stream-url`
+      )
+      return data
+    } catch (err) {
+      // Sem fallback direto para stream-url legado; propaga erro
+      throw err
+    }
   },
 
   async markVideoLessonWatched(videoId: string, studentId: string): Promise<void> {

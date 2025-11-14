@@ -34,6 +34,7 @@ export function ModalVideoAula({ isOpen, onClose, aulas, selectedId, onSelect }:
   const [showPulse, setShowPulse] = React.useState<'play' | 'pause' | null>(null)
   const [isFullscreen, setIsFullscreen] = React.useState(false)
 
+
   React.useEffect(() => {
     const v = videoRef.current
     if (!v) return
@@ -112,7 +113,7 @@ export function ModalVideoAula({ isOpen, onClose, aulas, selectedId, onSelect }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="fixed inset-0 left-0 top-0 h-screen w-screen max-w-none translate-x-0 translate-y-0 rounded-none p-0 border-0">
+      <DialogContent className="fixed inset-0 left-0 top-0 h-screen w-screen max-w-none translate-x-0 translate-y-0 rounded-none p-0 border-0 overflow-hidden">
         <div className="flex h-full">
           {/* Lateral: trilha */}
           <aside className={cn("border-r border-border/50 bg-background/95 backdrop-blur transition-all duration-200", collapsed ? "w-14" : "w-80")}> 
@@ -176,7 +177,7 @@ export function ModalVideoAula({ isOpen, onClose, aulas, selectedId, onSelect }:
           </aside>
 
           {/* Player */}
-          <section className="flex-1 flex flex-col">
+          <section className="flex-1 flex flex-col min-w-0">
             <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-primary/20 to-transparent">
               <div className="flex items-center gap-2 text-foreground">
                 <Play className="h-5 w-5 text-primary" />
@@ -193,12 +194,26 @@ export function ModalVideoAula({ isOpen, onClose, aulas, selectedId, onSelect }:
                 </Button>
               </DialogClose>
             </div>
-            <div ref={playerContainerRef} className="flex-1 bg-black relative">
+            <div ref={playerContainerRef} className="flex-1 bg-black relative overflow-hidden min-h-[320px] sm:min-h-[420px] md:min-h-[520px] grid grid-rows-[1fr_auto]">
               {selecionada ? (
                 <>
-                  <video ref={videoRef} className="w-full h-full max-h-full" onClick={togglePlay}>
-                    <source src={selecionada.url} type="video/mp4" />
-                  </video>
+                  {selecionada.url ? (
+                    <video
+                      ref={videoRef}
+                      className="w-full h-full object-contain"
+                      onClick={togglePlay}
+                      playsInline
+                    >
+                      <source src={selecionada.url} type="video/mp4" />
+                    </video>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                        <p>Carregando vídeo...</p>
+                      </div>
+                    </div>
+                  )}
                   {/* Pulse overlay */}
                   {showPulse && (
                     <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -212,7 +227,7 @@ export function ModalVideoAula({ isOpen, onClose, aulas, selectedId, onSelect }:
                     </div>
                   )}
                   {/* Controls */}
-                  <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                  <div className="p-3 bg-gradient-to-t from-black/60 to-transparent">
                     <div className="flex items-center gap-2 text-white">
                       <Button size="icon" variant="ghost" className="text-white hover:text-white hover:bg-white/10" onClick={togglePlay} aria-label={isPlaying ? 'Pausar' : 'Reproduzir'}>
                         {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}

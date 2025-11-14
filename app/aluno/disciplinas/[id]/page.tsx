@@ -11,15 +11,16 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from 'react'
-import { ModalDiscussaoForum, ModalVideoAula, ModalVideoChamada } from '@/components/modals'
+import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { apiClient, type Forum, type VideoLesson, type MaterialItem, type Notice, type ClassActivity, type ActivitySubmissionStatus } from '@/lib/api-client'
 
 export default function DisciplinaDetalhePage() {
   const params = useParams() as { id: string }
   const classId = params.id
+  const router = useRouter()
 
   // Fallback: obter studentId do localStorage se existir ou usar um mock UUID consistente com outras telas
   const getStudentId = () => {
@@ -202,20 +203,49 @@ export default function DisciplinaDetalhePage() {
     queryFn: () => apiClient.getVideoLessonsByClass(classId as string),
     enabled: !!classId,
   })
-  const [videoAulas, setVideoAulas] = useState<Array<{ id: number; titulo: string; duracao: string; visto: boolean; url: string }>>([])
+  const [videoAulas, setVideoAulas] = useState<Array<{ id: number; titulo: string; duracao: string; visto: boolean; url: string; videoLessonId: string; status?: string }>>([])
   useEffect(() => {
-    if (!videoLessonsQuery.data) return
-    const mapped = videoLessonsQuery.data.map((v: VideoLesson, idx) => ({
-      id: Number.isFinite(Number(v.id)) ? Number(v.id) : idx + 1,
-      titulo: v.title,
-      duracao: v.durationSeconds ? `${Math.floor(v.durationSeconds / 60)}:${String(Math.floor(v.durationSeconds % 60)).padStart(2, '0')}` : '00:00',
-      visto: Boolean(v.watched),
-      url: v.videoUrl,
-    }))
+    if (!videoLessonsQuery.data) {
+      setVideoAulas([])
+      return
+    }
+    console.log('Video lessons data:', videoLessonsQuery.data)
+    const mapped = (Array.isArray(videoLessonsQuery.data) ? videoLessonsQuery.data : []).map((v: any, idx) => {
+      // Suporta tanto camelCase quanto snake_case do backend
+      const id = v.id
+      const title = v.title || 'Sem título'
+      const durationSeconds = v.durationSeconds || v.duration_seconds || 0
+      const status = v.status || 'pending'
+      const rawVideoUrl = v.videoUrl || v.video_url || ''
+      const attachments: string[] = (v.attachmentUrls || v.attachment_urls || []) as string[]
+
+      // Usa URL válida ou cai para um anexo de vídeo (ex.: mp4) se existir
+      const isValidHttpUrl = (s: any) => {
+        if (typeof s !== 'string') return false
+        try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:' } catch { return false }
+      }
+      const videoAttachment = attachments.find((u: string) => /\.(mp4|webm|ogg)(\?|$)/i.test(u)) || ''
+      const initialUrl = isValidHttpUrl(rawVideoUrl) ? rawVideoUrl : (isValidHttpUrl(videoAttachment) ? videoAttachment : '')
+      
+      // Gera um ID numérico único baseado no índice para compatibilidade com o modal
+      const numericId = idx + 1
+      
+      return {
+        id: numericId,
+        titulo: title,
+        duracao: durationSeconds ? `${Math.floor(durationSeconds / 60)}:${String(Math.floor(durationSeconds % 60)).padStart(2, '0')}` : '00:00',
+        visto: Boolean(v.watched),
+        url: initialUrl, // URL será buscada dinamicamente via stream-url se vazia
+        videoLessonId: String(id),
+        status: status,
+      }
+    })
+    console.log('Mapped video aulas:', mapped)
     setVideoAulas(mapped)
   }, [videoLessonsQuery.data])
   const [videoAulaSelecionadaId, setVideoAulaSelecionadaId] = useState<number | null>(null)
   const [modalVideoAulaAberto, setModalVideoAulaAberto] = useState(false)
+  const [streamUrlCache, setStreamUrlCache] = useState<Record<string, { url: string; expiresAt: number }>>({})
   const videoAulaSelecionada = useMemo(() => videoAulas.find(v => v.id === videoAulaSelecionadaId) || null, [videoAulas, videoAulaSelecionadaId])
 
   // Mutation for marking video as watched
@@ -234,18 +264,43 @@ export default function DisciplinaDetalhePage() {
     },
   })
 
-  const abrirVideoAula = (id: number) => {
-    setVideoAulaSelecionadaId(id)
-    setModalVideoAulaAberto(true)
+  // Query para buscar stream URL quando necessário
+  const videoAulaSelecionadaData = videoAulas.find(v => v.id === videoAulaSelecionadaId)
+  const streamUrlQuery = useQuery({
+    queryKey: ['video-lesson-stream', classId, videoAulaSelecionadaData?.videoLessonId],
+    queryFn: () => {
+      if (!videoAulaSelecionadaData?.videoLessonId || !classId) throw new Error('Missing data')
+      return apiClient.getVideoLessonStreamUrl(classId as string, videoAulaSelecionadaData.videoLessonId)
+    },
+    // Busca stream URL somente quando o modal estiver aberto e ainda não tivermos URL
+    enabled: !!modalVideoAulaAberto && !!videoAulaSelecionadaData?.videoLessonId && !!classId && !videoAulaSelecionadaData?.url,
+    staleTime: 9 * 60 * 1000, // 9 minutos (URL expira em 10 minutos)
+  })
 
-    // Mark as watched with mutation
-    const video = videoAulas.find(v => v.id === id)
-    if (video && !video.visto) {
-      markAsWatchedMutation.mutate(id)
+  // Atualizar URL quando stream URL for obtida
+  useEffect(() => {
+    if (streamUrlQuery.data && videoAulaSelecionadaId && videoAulaSelecionadaData) {
+      const expiresAt = Date.now() + (streamUrlQuery.data.expiresInSeconds * 1000)
+      setStreamUrlCache(prev => ({
+        ...prev,
+        [videoAulaSelecionadaData.videoLessonId]: {
+          url: streamUrlQuery.data.url,
+          expiresAt,
+        }
+      }))
+      setVideoAulas(prev => prev.map(v => 
+        v.id === videoAulaSelecionadaId 
+          ? { ...v, url: streamUrlQuery.data.url }
+          : v
+      ))
     }
+  }, [streamUrlQuery.data, videoAulaSelecionadaId, videoAulaSelecionadaData])
 
-    // Update local state
-    setVideoAulas(prev => prev.map(v => v.id === id ? { ...v, visto: true } : v))
+  const abrirVideoAula = (id: number) => {
+    const video = videoAulas.find(v => v.id === id)
+    if (video) {
+      router.push(`/aluno/disciplinas/${classId}/videoaulas/${video.videoLessonId}`)
+    }
   }
 
   const selecionarDaTrilha = (id: number) => {
@@ -730,12 +785,30 @@ export default function DisciplinaDetalhePage() {
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-                  <div
-                    className="bg-green-600 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${(videoAulas.filter(v => v.visto).length / videoAulas.length) * 100}%` }}
-                  ></div>
-                </div>
+                {videoAulas.length > 0 && (
+                  <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                    <div
+                      className="bg-green-600 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${(videoAulas.filter(v => v.visto).length / videoAulas.length) * 100}%` }}
+                    ></div>
+                  </div>
+                )}
+
+                {videoLessonsQuery.isLoading && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">Carregando video-aulas...</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {!videoLessonsQuery.isLoading && videoAulas.length === 0 && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">Nenhuma video-aula disponível ainda.</p>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {videoAulas.map((aula) => (
                   <Card key={aula.id}>
@@ -804,17 +877,6 @@ export default function DisciplinaDetalhePage() {
           </Tabs>
         </div>
       </main>
-      <ModalVideoAula
-        isOpen={modalVideoAulaAberto}
-        onClose={setModalVideoAulaAberto}
-        aulas={videoAulas}
-        selectedId={videoAulaSelecionadaId}
-        onSelect={(id) => {
-          setVideoAulaSelecionadaId(id)
-          setVideoAulas(prev => prev.map(v => v.id === id ? { ...v, visto: true } : v))
-        }}
-      />
-
       <ModalVideoChamada
         isOpen={modalVideoChamadaAberto}
         onClose={setModalVideoChamadaAberto}
