@@ -6,246 +6,46 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Sidebar } from "@/components/layout/sidebar"
-import { Users, BookOpen, FileText, CheckCircle, Calendar, TrendingUp, Clock } from "lucide-react"
+import { Users, BookOpen, FileText, CheckCircle, Calendar, TrendingUp, Clock, ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { FrequencyModal } from "@/components/modals"
+import { getTurmasProfessor, Turma, Aluno, Aula } from "@/src/services/ProfessorTurmasService"
+import { lancarFrequencia } from "@/src/services/ProfessorFrequenciaService"
+import { toastSuccess, toastError } from "@/components/ui/toast"
 
-interface Aula {
-  id: string
-  data: Date
-  horario: string
-  sala: string
-  status: 'agendada' | 'lancada' | 'retificada'
-  alunosPresentes?: string[]
-  dataLancamento?: Date
-  aulaIndex?: number // Para ordenar temporalmente as aulas do mesmo dia
-}
-
-interface Aluno {
-  id: string
-  nome: string
-  matricula: string
-}
-
-interface Turma {
-  id: number
-  nome: string
-  disciplina: string
-  alunos: number
-  mediaGeral: number
-  frequenciaMedia: number
-  proximaAula: string
-  sala: string
-  atividades: number
-  avaliacoes: number
-  listaAlunos: Aluno[]
-  aulas: Aula[]
-}
-
-interface Aluno {
-  id: string
-  nome: string
-  matricula: string
-}
+// ID mockado do professor para desenvolvimento
+const MOCK_TEACHER_ID = '3f259c81-4a5c-4ae8-8b81-6d59f5eb3028'
 
 export default function ProfessorTurmasPage() {
+  const [turmas, setTurmas] = useState<Turma[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedAulas, setSelectedAulas] = useState<Aula[]>([])
   const [frequenciaData, setFrequenciaData] = useState<Record<string, Record<string, boolean>>>({})
+  const [saving, setSaving] = useState(false)
+  const [isRetificacao, setIsRetificacao] = useState(false)
 
-  const turmas: Turma[] = [
-    {
-      id: 1,
-      nome: "9º Ano A",
-      disciplina: "Matemática",
-      alunos: 28,
-      mediaGeral: 7.8,
-      frequenciaMedia: 92,
-      proximaAula: "Segunda, 08:00 - 09:40",
-      sala: "A-101",
-      atividades: 3,
-      avaliacoes: 2,
-      listaAlunos: [
-        { id: "1", nome: "Ana Silva", matricula: "231550652" },
-        { id: "2", nome: "Bruno Costa", matricula: "231550653" },
-        { id: "3", nome: "Carla Santos", matricula: "231550654" },
-        { id: "4", nome: "Daniel Oliveira", matricula: "231550655" },
-        { id: "5", nome: "Elisa Pereira", matricula: "231550656" },
-        { id: "6", nome: "Felipe Rodrigues", matricula: "231550657" },
-        { id: "7", nome: "Gabriela Lima", matricula: "231550658" },
-        { id: "8", nome: "Henrique Alves", matricula: "231550659" },
-        { id: "9", nome: "Isabela Cruz", matricula: "231550660" },
-        { id: "10", nome: "João Mendes", matricula: "231550661" },
-        { id: "11", nome: "Karina Dias", matricula: "231550662" },
-        { id: "12", nome: "Lucas Ferreira", matricula: "231550663" },
-        { id: "13", nome: "Mariana Gomes", matricula: "231550664" },
-        { id: "14", nome: "Nathan Cardoso", matricula: "231550665" },
-        { id: "15", nome: "Olivia Barbosa", matricula: "231550666" },
-        { id: "16", nome: "Pedro Castro", matricula: "231550667" },
-        { id: "17", nome: "Quintino Azevedo", matricula: "231550668" },
-        { id: "18", nome: "Rafaela Borges", matricula: "231550669" },
-        { id: "19", nome: "Santiago Campos", matricula: "231550670" },
-        { id: "20", nome: "Tatiana Diniz", matricula: "231550671" },
-        { id: "21", nome: "Ulisses Evaristo", matricula: "231550672" },
-        { id: "22", nome: "Vanessa Freitas", matricula: "231550673" },
-        { id: "23", nome: "Wesley Garcia", matricula: "231550674" },
-        { id: "24", nome: "Ximena Herrera", matricula: "231550675" },
-        { id: "25", nome: "Yasmin Ignacio", matricula: "231550676" },
-        { id: "26", nome: "Zeca Joaquim", matricula: "231550677" },
-        { id: "27", nome: "Amanda Keli", matricula: "231550678" },
-        { id: "28", nome: "Bernardo Lopes", matricula: "231550679" },
-      ],
-      aulas: [
-        {
-          id: "1",
-          data: new Date(),
-          horario: "08:00 - 09:40",
-          sala: "A-101",
-          status: 'agendada',
-          aulaIndex: 0,
-        },
-        {
-          id: "2",
-          data: new Date(), // Mesmo dia
-          horario: "10:00 - 11:40",
-          sala: "A-101",
-          status: 'agendada',
-          aulaIndex: 1,
-        },
-        {
-          id: "3",
-          data: new Date(), // Mesmo dia
-          horario: "14:00 - 15:40",
-          sala: "A-101",
-          status: 'agendada',
-          aulaIndex: 2,
-        },
-        {
-          id: "4",
-          data: new Date(Date.now() + 24 * 60 * 60 * 1000), // amanhã
-          horario: "08:00 - 09:40",
-          sala: "A-101",
-          status: 'agendada',
-          aulaIndex: 0,
-        },
-        {
-          id: "5",
-          data: new Date(Date.now() - 24 * 60 * 60 * 1000), // ontem
-          horario: "08:00 - 09:40",
-          sala: "A-101",
-          status: 'lancada',
-          alunosPresentes: ["1", "2", "3"],
-          dataLancamento: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          aulaIndex: 0,
-        },
-      ]
-    },
-    {
-      id: 2,
-      nome: "8º Ano B",
-      disciplina: "Matemática",
-      alunos: 25,
-      mediaGeral: 8.2,
-      frequenciaMedia: 89,
-      proximaAula: "Segunda, 10:00 - 11:40",
-      sala: "A-102",
-      atividades: 2,
-      avaliacoes: 1,
-      listaAlunos: [
-        { id: "29", nome: "Daniel Oliveira", matricula: "231550680" },
-        { id: "30", nome: "Elisa Pereira", matricula: "231550681" },
-        { id: "31", nome: "Fernando Quintas", matricula: "231550682" },
-        { id: "32", nome: "Gabriela Torres", matricula: "231550683" },
-        { id: "33", nome: "Hugo Uchoa", matricula: "231550684" },
-        { id: "34", nome: "Iris Vasconcelos", matricula: "231550685" },
-        { id: "35", nome: "Júlio Wagner", matricula: "231550686" },
-        { id: "36", nome: "Kátia Xavier", matricula: "231550687" },
-        { id: "37", nome: "Leonardo Yamasaki", matricula: "231550688" },
-        { id: "38", nome: "Mônica Zancanela", matricula: "231550689" },
-        { id: "39", nome: "Nícolas Alves", matricula: "231550690" },
-        { id: "40", nome: "Otávio Borges", matricula: "231550691" },
-        { id: "41", nome: "Patrícia Castro", matricula: "231550692" },
-        { id: "42", nome: "Quésia Dias", matricula: "231550693" },
-        { id: "43", nome: "Roberto Elias", matricula: "231550694" },
-        { id: "44", nome: "Sônia Freitas", matricula: "231550695" },
-        { id: "45", nome: "Tiago Garcia", matricula: "231550696" },
-        { id: "46", nome: "Ursula Herrera", matricula: "231550697" },
-        { id: "47", nome: "Victor Ignacio", matricula: "231550698" },
-        { id: "48", nome: "Wanda Joaquim", matricula: "231550699" },
-        { id: "49", nome: "Xuxa Keli", matricula: "231550700" },
-        { id: "50", nome: "Yuri Lopes", matricula: "231550701" },
-        { id: "51", nome: "Zara Mendes", matricula: "231550702" },
-        { id: "52", nome: "André Nogueira", matricula: "231550703" },
-        { id: "53", nome: "Bruna Oliveira", matricula: "231550704" },
-      ],
-      aulas: [
-        {
-          id: "4",
-          data: new Date(),
-          horario: "10:00 - 11:40",
-          sala: "A-102",
-          status: 'agendada',
-        },
-      ]
-    },
-    {
-      id: 3,
-      nome: "7º Ano C",
-      disciplina: "Matemática",
-      alunos: 30,
-      mediaGeral: 7.5,
-      frequenciaMedia: 95,
-      proximaAula: "Segunda, 14:00 - 15:40",
-      sala: "A-103",
-      atividades: 4,
-      avaliacoes: 3,
-      listaAlunos: [
-        { id: "54", nome: "Felipe Rodrigues", matricula: "231550705" },
-        { id: "55", nome: "Gabriela Lima", matricula: "231550706" },
-        { id: "56", nome: "Heitor Moreira", matricula: "231550707" },
-        { id: "57", nome: "Ivana Nunes", matricula: "231550708" },
-        { id: "58", nome: "Jorge Oliveira", matricula: "231550709" },
-        { id: "59", nome: "Kelly Pinto", matricula: "231550710" },
-        { id: "60", nome: "Luiz Queiroz", matricula: "231550711" },
-        { id: "61", nome: "Marta Ribeiro", matricula: "231550712" },
-        { id: "62", nome: "Nelson Santos", matricula: "231550713" },
-        { id: "63", nome: "Ornela Tavares", matricula: "231550714" },
-        { id: "64", nome: "Paulo Uchôa", matricula: "231550715" },
-        { id: "65", nome: "Quezia Vargas", matricula: "231550716" },
-        { id: "66", nome: "Rafael Williams", matricula: "231550717" },
-        { id: "67", nome: "Sueli Xavier", matricula: "231550718" },
-        { id: "68", nome: "Túlio Yamasaki", matricula: "231550719" },
-        { id: "69", nome: "Umbelina Zancanela", matricula: "231550720" },
-        { id: "70", nome: "Vinícius Alves", matricula: "231550721" },
-        { id: "71", nome: "Wellington Borges", matricula: "231550722" },
-        { id: "72", nome: "Xênia Castro", matricula: "231550723" },
-        { id: "73", nome: "Yago Dias", matricula: "231550724" },
-        { id: "74", nome: "Zilda Elias", matricula: "231550725" },
-        { id: "75", nome: "Antônio Freitas", matricula: "231550726" },
-        { id: "76", nome: "Beatriz Garcia", matricula: "231550727" },
-        { id: "77", nome: "Caio Herrera", matricula: "231550728" },
-        { id: "78", nome: "Débora Ignacio", matricula: "231550729" },
-        { id: "79", nome: "Eduardo Joaquim", matricula: "231550730" },
-        { id: "80", nome: "Fábia Keli", matricula: "231550731" },
-        { id: "81", nome: "Gustavo Lopes", matricula: "231550732" },
-        { id: "82", nome: "Helena Mendes", matricula: "231550733" },
-        { id: "83", nome: "Ícaro Nogueira", matricula: "231550734" },
-      ],
-      aulas: [
-        {
-          id: "5",
-          data: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // daqui 2 dias
-          horario: "14:00 - 15:40",
-          sala: "A-103",
-          status: 'agendada',
-        },
-      ]
-    },
-  ]
+  // Buscar turmas do professor ao carregar
+  useEffect(() => {
+    const loadTurmas = async () => {
+      try {
+        setLoading(true)
+        // Usando ID mockado do professor
+        const turmasData = await getTurmasProfessor(MOCK_TEACHER_ID)
+        setTurmas(turmasData)
+      } catch (error) {
+        console.error('Erro ao carregar turmas:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadTurmas()
+  }, [])
 
   const isToday = (date: Date) => {
     const today = new Date()
@@ -282,6 +82,7 @@ export default function ProfessorTurmasPage() {
     const aulasDoDia = getAulasDoMesmoDia(turma, aula)
     setSelectedTurma(turma)
     setSelectedAulas(aulasDoDia)
+    setIsRetificacao(false) // É um lançamento novo
 
     // Inicializar todos os alunos como ausentes em todas as aulas
     const initialData: Record<string, Record<string, boolean>> = {}
@@ -299,24 +100,112 @@ export default function ProfessorTurmasPage() {
     const aulasDoDia = getAulasDoMesmoDia(turma, aula)
     setSelectedTurma(turma)
     setSelectedAulas(aulasDoDia)
+    setIsRetificacao(true) // É uma retificação
 
-    // Carregar dados existentes ou marcar todos como ausentes
+    // Carregar dados existentes do banco
+    // Como a frequência é armazenada por data, todas as aulas do mesmo dia compartilham os mesmos dados
     const initialData: Record<string, Record<string, boolean>> = {}
+    
     turma.listaAlunos.forEach(aluno => {
       initialData[aluno.id] = {}
       aulasDoDia.forEach(aula => {
-        const isPresente = aula.alunosPresentes?.includes(aluno.id) || false
+        // Verificar se o aluno está na lista de presentes desta aula
+        // Se não tiver alunosPresentes na aula específica, verificar em qualquer aula do dia
+        let isPresente = false
+        if (aula.alunosPresentes && aula.alunosPresentes.length > 0) {
+          isPresente = aula.alunosPresentes.includes(aluno.id)
+        } else {
+          // Fallback: verificar em todas as aulas do dia
+          const aulaComDados = aulasDoDia.find(a => a.alunosPresentes && a.alunosPresentes.length > 0)
+          if (aulaComDados) {
+            isPresente = aulaComDados.alunosPresentes.includes(aluno.id)
+          }
+        }
         initialData[aluno.id][aula.id] = isPresente
       })
     })
+    
+    console.log('Dados de frequência carregados:', initialData)
+    console.log('Aulas do dia:', aulasDoDia.map(a => ({ id: a.id, alunosPresentes: a.alunosPresentes })))
+    
     setFrequenciaData(initialData)
     setIsModalOpen(true)
   }
 
-  const handleSaveFrequencia = () => {
-    // Aqui seria implementada a lógica para salvar no backend
-    console.log('Salvando frequência:', frequenciaData)
-    setIsModalOpen(false)
+  const handleSaveFrequencia = async () => {
+    if (!selectedTurma || selectedAulas.length === 0) return
+
+    try {
+      setSaving(true)
+      
+      // Buscar enrollments dos alunos
+      const enrollmentsMap = new Map<string, string>() // studentId -> enrollmentId
+      
+      // Preparar dados para envio
+      const frequencias: Array<{
+        enrollment_id: string
+        student_id: string
+        date: string
+        present: boolean
+      }> = []
+
+      // Para cada aluno e cada aula, criar registro de frequência
+      selectedTurma.listaAlunos.forEach(aluno => {
+        selectedAulas.forEach(aula => {
+          const presente = frequenciaData[aluno.id]?.[aula.id] || false
+          const dateStr = aula.data.toISOString().split('T')[0] // YYYY-MM-DD
+          
+          frequencias.push({
+            enrollment_id: aluno.enrollmentId,
+            student_id: aluno.id,
+            date: dateStr,
+            present: presente,
+          })
+        })
+      })
+
+      await lancarFrequencia(frequencias)
+      
+      // Recarregar turmas para atualizar dados
+      const turmasData = await getTurmasProfessor(MOCK_TEACHER_ID)
+      setTurmas(turmasData)
+      
+      // Mostrar toast de sucesso
+      const totalAlunos = selectedTurma.listaAlunos.length
+      const totalAulas = selectedAulas.length
+      const dataFormatada = selectedAulas[0]?.data.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long'
+      })
+      
+      if (isRetificacao) {
+        toastSuccess(
+          'Frequência retificada com sucesso!',
+          `A frequência de ${totalAlunos} aluno(s) para ${totalAulas} aula(s) do dia ${dataFormatada} foi atualizada.`
+        )
+      } else {
+        toastSuccess(
+          'Frequência lançada com sucesso!',
+          `A frequência de ${totalAlunos} aluno(s) para ${totalAulas} aula(s) do dia ${dataFormatada} foi registrada.`
+        )
+      }
+      
+      setIsModalOpen(false)
+    } catch (error: any) {
+      console.error('Erro ao salvar frequência:', error)
+      
+      // Mostrar toast de erro
+      const mensagemErro = error?.response?.data?.message || error?.message || 'Erro desconhecido'
+      toastError(
+        'Erro ao salvar frequência',
+        isRetificacao 
+          ? `Não foi possível retificar a frequência. ${mensagemErro}`
+          : `Não foi possível lançar a frequência. ${mensagemErro}`
+      )
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleFrequenciaChange = (alunoId: string, aulaId: string, presente: boolean) => {
@@ -365,6 +254,11 @@ export default function ProfessorTurmasPage() {
             </div>
           </div>
 
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground">Carregando turmas...</p>
+            </div>
+          ) : (
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
@@ -379,8 +273,10 @@ export default function ProfessorTurmasPage() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-primary">83</div>
-                    <p className="text-xs text-muted-foreground">Distribuídos em 3 turmas</p>
+                    <div className="text-2xl font-bold text-primary">
+                      {turmas.reduce((acc, turma) => acc + turma.alunos, 0)}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Distribuídos em {turmas.length} turmas</p>
                   </CardContent>
                 </LiquidGlassCard>
 
@@ -390,8 +286,13 @@ export default function ProfessorTurmasPage() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-primary">7.8</div>
-                    <p className="text-xs text-muted-foreground">+0.2 desde o último bimestre</p>
+                    <div className="text-2xl font-bold text-primary">
+                      {turmas.length > 0 
+                        ? (turmas.reduce((acc, turma) => acc + turma.mediaGeral, 0) / turmas.length).toFixed(1)
+                        : '0.0'
+                      }
+                    </div>
+                    <p className="text-xs text-muted-foreground">Média de todas as turmas</p>
                   </CardContent>
                 </LiquidGlassCard>
 
@@ -401,66 +302,77 @@ export default function ProfessorTurmasPage() {
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-destructive">9</div>
+                    <div className="text-2xl font-bold text-destructive">
+                      {turmas.reduce((acc, turma) => acc + turma.atividades, 0)}
+                    </div>
                     <p className="text-xs text-muted-foreground">Para correção</p>
                   </CardContent>
                 </LiquidGlassCard>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="space-y-3">
                 {turmas.map((turma) => (
-                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={turma.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-xl">{turma.nome}</CardTitle>
-                          <CardDescription>{turma.disciplina}</CardDescription>
+                  <Link 
+                    key={turma.id} 
+                    href={`/professor/turmas/${turma.id}`}
+                    className="block group"
+                  >
+                    <div className="transition-all duration-300 rounded-xl border border-border/50 px-6 py-5 hover:shadow-lg bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60">
+                      <div className="flex items-center justify-between gap-6">
+                        {/* Ícone */}
+                        <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors flex-shrink-0">
+                          <BookOpen className="h-7 w-7 text-white" />
                         </div>
-                        <Badge variant="outline">{turma.alunos} alunos</Badge>
+
+                        {/* Informações da Turma */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">
+                              {turma.nome}
+                            </h3>
+                            <Badge variant="outline" className="text-xs">
+                              {turma.alunos} alunos
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                            {turma.disciplina}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              <span>{turma.proximaAula}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4" />
+                              <span>Sala {turma.sala}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span>Média: <strong>{turma.mediaGeral}</strong></span>
+                              <span>•</span>
+                              <span>Freq: <strong>{turma.frequenciaMedia}%</strong></span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Estatísticas */}
+                        <div className="flex items-center gap-6 text-sm text-muted-foreground min-w-0 flex-shrink-0">
+                          <div className="text-center">
+                            <div className="font-semibold text-foreground">{turma.atividades}</div>
+                            <div className="text-xs">Atividades</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-semibold text-foreground">{turma.avaliacoes}</div>
+                            <div className="text-xs">Avaliações</div>
+                          </div>
+                        </div>
+
+                        {/* Indicador de ação */}
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
+                          <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Média da Turma</p>
-                            <p className="font-semibold text-lg">{turma.mediaGeral}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Frequência</p>
-                            <p className="font-semibold text-lg">{turma.frequenciaMedia}%</p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {turma.proximaAula}
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <BookOpen className="h-4 w-4 mr-2" />
-                            Sala {turma.sala}
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between text-sm">
-                          <span>Atividades: {turma.atividades}</span>
-                          <span>Avaliações: {turma.avaliacoes}</span>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <Link href={`/professor/turmas/${turma.id}`} className="flex-1">
-                            <LiquidGlassButton className="w-full" size="sm">
-                              Gerenciar Turma
-                            </LiquidGlassButton>
-                          </Link>
-                          <LiquidGlassButton variant="outline" size="sm">
-                            <FileText className="h-4 w-4" />
-                          </LiquidGlassButton>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </LiquidGlassCard>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </TabsContent>
@@ -557,6 +469,7 @@ export default function ProfessorTurmasPage() {
               </div>
             </TabsContent>
           </Tabs>
+          )}
 
           {/* Modal de Frequência */}
           <FrequencyModal
