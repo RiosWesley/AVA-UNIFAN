@@ -43,7 +43,11 @@ export function toast({ variant = 'info', title, description, duration = 4000 }:
       <Icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         {title && <div className="font-semibold text-sm">{title}</div>}
-        {description && <div className="text-sm opacity-90 mt-1">{description}</div>}
+        {description && (
+          <div className="text-sm opacity-90 mt-1 whitespace-pre-line">
+            {description}
+          </div>
+        )}
       </div>
       <button
         onClick={() => sonnerToast.dismiss(t)}

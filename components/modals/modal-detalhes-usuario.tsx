@@ -24,7 +24,7 @@ import {
 type Role = "aluno" | "professor" | "coordenador" | "administrador"
 
 export interface UsuarioDetalhes {
-  id: number
+  id: string
   nome: string
   email: string
   usuario?: string

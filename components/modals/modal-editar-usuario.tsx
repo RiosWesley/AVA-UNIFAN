@@ -13,7 +13,7 @@ import { toast } from "@/components/ui/toast"
 type Role = "aluno" | "professor" | "coordenador" | "administrador"
 
 export interface Usuario {
-  id: number
+  id: string
   nome: string
   email: string
   usuario?: string
@@ -48,6 +48,72 @@ export function ModalEditarUsuario({
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Função para formatar CPF
+  const formatarCPF = (value: string): string => {
+    const cpf = value.replace(/\D/g, "")
+    if (cpf.length <= 3) return cpf
+    if (cpf.length <= 6) return `${cpf.slice(0, 3)}.${cpf.slice(3)}`
+    if (cpf.length <= 9) return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6)}`
+    return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9, 11)}`
+  }
+
+  // Função para validar CPF
+  const validarCPF = (cpf: string): boolean => {
+    const cpfLimpo = cpf.replace(/\D/g, "")
+    
+    // Verificar se tem 11 dígitos
+    if (cpfLimpo.length !== 11) return false
+    
+    // Verificar se todos os dígitos são iguais (CPF inválido)
+    if (/^(\d)\1{10}$/.test(cpfLimpo)) return false
+    
+    // Validar dígitos verificadores
+    let soma = 0
+    let resto
+    
+    // Validar primeiro dígito verificador
+    for (let i = 1; i <= 9; i++) {
+      soma += parseInt(cpfLimpo.substring(i - 1, i)) * (11 - i)
+    }
+    resto = (soma * 10) % 11
+    if (resto === 10 || resto === 11) resto = 0
+    if (resto !== parseInt(cpfLimpo.substring(9, 10))) return false
+    
+    // Validar segundo dígito verificador
+    soma = 0
+    for (let i = 1; i <= 10; i++) {
+      soma += parseInt(cpfLimpo.substring(i - 1, i)) * (12 - i)
+    }
+    resto = (soma * 10) % 11
+    if (resto === 10 || resto === 11) resto = 0
+    if (resto !== parseInt(cpfLimpo.substring(10, 11))) return false
+    
+    return true
+  }
+
+  // Handler para mudança no campo CPF
+  const handleCpfChange = (value: string) => {
+    const formatted = formatarCPF(value)
+    setCpf(formatted)
+    
+    // Limpar erro ao digitar
+    if (errors.cpf) {
+      const newErrors = { ...errors }
+      delete newErrors.cpf
+      setErrors(newErrors)
+    }
+    
+    // Validar apenas se o usuário digitou algo
+    if (formatted.replace(/\D/g, "").length > 0) {
+      const cpfLimpo = formatted.replace(/\D/g, "")
+      if (cpfLimpo.length < 11) {
+        setErrors({ ...errors, cpf: "CPF deve conter 11 dígitos" })
+      } else if (!validarCPF(formatted)) {
+        setErrors({ ...errors, cpf: "CPF inválido" })
+      }
+    }
+  }
+
   useEffect(() => {
     const checkTheme = () => {
       if (typeof document !== 'undefined') {
@@ -71,7 +137,8 @@ export function ModalEditarUsuario({
       setEmail(usuario.email || '')
       setUsuarioLogin(usuario.usuario || '')
       setTelefone(usuario.telefone || '')
-      setCpf(usuario.cpf || '')
+      // Formatar CPF ao carregar
+      setCpf(usuario.cpf ? formatarCPF(usuario.cpf) : '')
       setRole(usuario.role)
       setStatus(usuario.status)
       setSenha('')
@@ -94,9 +161,11 @@ export function ModalEditarUsuario({
     }
 
     if (cpf) {
-      const cpfDigits = cpf.replace(/\D/g, "")
-      if (cpfDigits.length !== 11) {
+      const cpfLimpo = cpf.replace(/\D/g, "")
+      if (cpfLimpo.length !== 11) {
         novosErros.cpf = 'CPF deve conter 11 dígitos'
+      } else if (!validarCPF(cpf)) {
+        novosErros.cpf = 'CPF inválido'
       }
     }
 
@@ -204,8 +273,9 @@ export function ModalEditarUsuario({
                 <Input
                   id="cpf"
                   value={cpf}
-                  onChange={(e) => setCpf(e.target.value)}
+                  onChange={(e) => handleCpfChange(e.target.value)}
                   placeholder="000.000.000-00"
+                  maxLength={14}
                   className={errors.cpf ? 'border-destructive' : ''}
                 />
                 {errors.cpf && (

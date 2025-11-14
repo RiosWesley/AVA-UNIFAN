@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -9,38 +9,54 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, Search, Edit, Mail, Eye, Ban } from "lucide-react"
+import { Users, Plus, Search, Edit, Mail, Eye, Ban, ChevronLeft, ChevronRight } from "lucide-react"
 import { ModalEditarUsuario, type Usuario as UsuarioType } from "@/components/modals/modal-editar-usuario"
 import { ModalDetalhesUsuario, type UsuarioDetalhes } from "@/components/modals/modal-detalhes-usuario"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
-
-type Role = "aluno" | "professor" | "coordenador" | "administrador"
-
-type Usuario = {
-  id: number
-  nome: string
-  email: string
-  usuario?: string
-  telefone?: string
-  cpf?: string
-  role: Role
-  status: "Ativo" | "Inativo"
-}
-
-const MOCK_USUARIOS: Usuario[] = [
-  { id: 1, nome: "Ana Silva", email: "ana@escola.com", role: "professor", status: "Ativo" },
-  { id: 2, nome: "João Santos", email: "joao@escola.com", role: "aluno", status: "Ativo" },
-  { id: 3, nome: "Maria Oliveira", email: "maria@escola.com", role: "coordenador", status: "Inativo" },
-  { id: 4, nome: "Carlos Lima", email: "carlos@escola.com", role: "administrador", status: "Ativo" },
-]
+import { usuariosService, type Usuario, type Role } from "@/src/services/usuariosService"
+import { toast } from "@/components/ui/toast"
 
 export default function UsuariosAdministradorPage() {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(MOCK_USUARIOS)
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<Role | "todos">("todos")
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null)
   const [usuarioDetalhes, setUsuarioDetalhes] = useState<UsuarioDetalhes | null>(null)
   const [usuarioInativando, setUsuarioInativando] = useState<Usuario | null>(null)
+  
+  // Estados de paginação
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+
+  // Resetar página quando filtros mudarem
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [roleFilter, search])
+
+  // Carregar usuários ao montar o componente e quando a página, filtros ou busca mudarem
+  useEffect(() => {
+    carregarUsuarios()
+  }, [currentPage, itemsPerPage, roleFilter, search])
+
+  async function carregarUsuarios() {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await usuariosService.listar(currentPage, itemsPerPage, roleFilter, search)
+      setUsuarios(response.data)
+      setTotalPages(response.totalPages)
+      setTotal(response.total)
+    } catch (err: any) {
+      setError(err.message || "Erro ao carregar usuários")
+      console.error("Erro ao carregar usuários:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const [form, setForm] = useState<{
     nome: string
@@ -64,89 +80,262 @@ export default function UsuariosAdministradorPage() {
     status: "Ativo",
   })
 
-  const filtrados = useMemo(() => {
-    return usuarios.filter((u) => {
-      const hitsRole = roleFilter === "todos" ? true : u.role === roleFilter
-      const q = search.toLowerCase().trim()
-      const hitsSearch = q
-        ? u.nome.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
-        : true
-      return hitsRole && hitsSearch
-    })
-  }, [usuarios, roleFilter, search])
+  // Usar os usuários diretamente, pois o filtro já é feito no backend
+  const filtrados = usuarios
 
-  function handleCreate(e: React.FormEvent) {
+  // Funções de paginação
+  function handlePageChange(newPage: number) {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  function handleItemsPerPageChange(newLimit: number) {
+    setItemsPerPage(newLimit)
+    setCurrentPage(1) // Resetar para primeira página
+  }
+
+  // Função para formatar CPF
+  function formatarCPF(value: string): string {
+    const cpf = value.replace(/\D/g, "")
+    if (cpf.length <= 3) return cpf
+    if (cpf.length <= 6) return `${cpf.slice(0, 3)}.${cpf.slice(3)}`
+    if (cpf.length <= 9) return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6)}`
+    return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9, 11)}`
+  }
+
+  // Função para validar CPF
+  function validarCPF(cpf: string): boolean {
+    const cpfLimpo = cpf.replace(/\D/g, "")
+    
+    // Verificar se tem 11 dígitos
+    if (cpfLimpo.length !== 11) return false
+    
+    // Verificar se todos os dígitos são iguais (CPF inválido)
+    if (/^(\d)\1{10}$/.test(cpfLimpo)) return false
+    
+    // Validar dígitos verificadores
+    let soma = 0
+    let resto
+    
+    // Validar primeiro dígito verificador
+    for (let i = 1; i <= 9; i++) {
+      soma += parseInt(cpfLimpo.substring(i - 1, i)) * (11 - i)
+    }
+    resto = (soma * 10) % 11
+    if (resto === 10 || resto === 11) resto = 0
+    if (resto !== parseInt(cpfLimpo.substring(9, 10))) return false
+    
+    // Validar segundo dígito verificador
+    soma = 0
+    for (let i = 1; i <= 10; i++) {
+      soma += parseInt(cpfLimpo.substring(i - 1, i)) * (12 - i)
+    }
+    resto = (soma * 10) % 11
+    if (resto === 10 || resto === 11) resto = 0
+    if (resto !== parseInt(cpfLimpo.substring(10, 11))) return false
+    
+    return true
+  }
+
+  // Estado para erro de CPF
+  const [cpfError, setCpfError] = useState<string | null>(null)
+
+  // Handler para mudança no campo CPF
+  function handleCpfChange(value: string) {
+    const formatted = formatarCPF(value)
+    setForm({ ...form, cpf: formatted })
+    
+    // Validar apenas se o usuário digitou algo
+    if (formatted.replace(/\D/g, "").length > 0) {
+      const cpfLimpo = formatted.replace(/\D/g, "")
+      if (cpfLimpo.length < 11) {
+        setCpfError("CPF deve conter 11 dígitos")
+      } else if (!validarCPF(formatted)) {
+        setCpfError("CPF inválido")
+      } else {
+        setCpfError(null)
+      }
+    } else {
+      setCpfError(null)
+    }
+  }
+
+  // Função para validar senha forte
+  function validarSenhaForte(senha: string): { valida: boolean; requisitos: string[] } {
+    const requisitos: string[] = []
+    
+    if (senha.length < 8) {
+      requisitos.push("Mínimo de 8 caracteres")
+    }
+    if (!/[A-Z]/.test(senha)) {
+      requisitos.push("Pelo menos 1 letra maiúscula")
+    }
+    if (!/[a-z]/.test(senha)) {
+      requisitos.push("Pelo menos 1 letra minúscula")
+    }
+    if (!/[0-9]/.test(senha)) {
+      requisitos.push("Pelo menos 1 número")
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(senha)) {
+      requisitos.push("Pelo menos 1 caractere especial (!@#$%^&*...)")
+    }
+    
+    return {
+      valida: requisitos.length === 0,
+      requisitos
+    }
+  }
+
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!form.nome.trim() || !form.email.trim()) return
-    const cpfDigits = form.cpf.replace(/\D/g, "")
-    if (form.cpf && cpfDigits.length !== 11) {
-      alert("CPF deve conter 11 dígitos.")
+    
+    // Validar CPF se preenchido
+    if (form.cpf) {
+      const cpfLimpo = form.cpf.replace(/\D/g, "")
+      if (cpfLimpo.length !== 11) {
+        setCpfError("CPF deve conter 11 dígitos")
+        return
+      }
+      if (!validarCPF(form.cpf)) {
+        setCpfError("CPF inválido")
+        return
+      }
+    }
+
+    // Validar senha forte
+    if (!form.senha) {
+      toast({
+        variant: 'error',
+        title: 'Senha obrigatória',
+        description: 'Por favor, informe uma senha para o usuário.'
+      })
       return
     }
+
     if (form.senha !== form.confirmarSenha) {
-      alert("As senhas não coincidem.")
+      toast({
+        variant: 'error',
+        title: 'Senhas não coincidem',
+        description: 'As senhas informadas não são iguais. Por favor, verifique.'
+      })
       return
     }
-    if (form.senha && form.senha.length < 6) {
-      alert("A senha deve ter pelo menos 6 caracteres.")
+
+    const validacaoSenha = validarSenhaForte(form.senha)
+    if (!validacaoSenha.valida) {
+      const requisitosTexto = validacaoSenha.requisitos.map(r => `• ${r}`).join('\n')
+      toast({
+        variant: 'error',
+        title: 'Senha não atende aos requisitos',
+        description: `A senha precisa ter:\n${requisitosTexto}`,
+        duration: 6000
+      })
       return
     }
-    const novo: Usuario = {
-      id: Math.max(0, ...usuarios.map((u) => u.id)) + 1,
-      nome: form.nome.trim(),
-      email: form.email.trim(),
-      usuario: form.usuario.trim() || undefined,
-      telefone: form.telefone.trim() || undefined,
-      cpf: cpfDigits ? cpfDigits : undefined,
-      role: form.role,
-      status: form.status,
+    
+    try {
+      setError(null)
+      setCpfError(null)
+      const novo = await usuariosService.criar({
+        nome: form.nome.trim(),
+        email: form.email.trim(),
+        usuario: form.usuario.trim() || undefined,
+        telefone: form.telefone.trim() || undefined,
+        cpf: form.cpf.replace(/\D/g, "") || undefined,
+        senha: form.senha,
+        confirmarSenha: form.confirmarSenha,
+        role: form.role,
+        status: form.status,
+      })
+      // Recarregar a lista para atualizar a paginação
+      await carregarUsuarios()
+      setForm({
+        nome: "",
+        email: "",
+        usuario: "",
+        telefone: "",
+        cpf: "",
+        senha: "",
+        confirmarSenha: "",
+        role: "aluno",
+        status: "Ativo",
+      })
+      setCpfError(null)
+      
+      // Toast de sucesso
+      toast({
+        variant: 'success',
+        title: 'Usuário cadastrado com sucesso!',
+        description: `O usuário "${novo.nome}" foi cadastrado com sucesso.`,
+        duration: 5000
+      })
+    } catch (err: any) {
+      setError(err.message || "Erro ao criar usuário")
+      toast({
+        variant: 'error',
+        title: 'Erro ao cadastrar usuário',
+        description: err.message || "Não foi possível criar o usuário. Tente novamente."
+      })
     }
-    setUsuarios((prev) => [novo, ...prev])
-    setForm({
-      nome: "",
-      email: "",
-      usuario: "",
-      telefone: "",
-      cpf: "",
-      senha: "",
-      confirmarSenha: "",
-      role: "aluno",
-      status: "Ativo",
-    })
   }
 
   function handleEditar(usuario: Usuario) {
     setUsuarioEditando(usuario)
   }
 
-  function handleSalvarEdicao(usuarioAtualizado: UsuarioType) {
-    setUsuarios((prev) =>
-      prev.map((u) => (u.id === usuarioAtualizado.id ? usuarioAtualizado : u))
-    )
-    setUsuarioEditando(null)
+  async function handleSalvarEdicao(usuarioAtualizado: UsuarioType) {
+    try {
+      setError(null)
+      const atualizado = await usuariosService.atualizar(usuarioAtualizado.id, {
+        nome: usuarioAtualizado.nome,
+        email: usuarioAtualizado.email,
+        usuario: usuarioAtualizado.usuario,
+        telefone: usuarioAtualizado.telefone,
+        cpf: usuarioAtualizado.cpf,
+        role: usuarioAtualizado.role,
+        status: usuarioAtualizado.status,
+      })
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === atualizado.id ? atualizado : u))
+      )
+      setUsuarioEditando(null)
+    } catch (err: any) {
+      setError(err.message || "Erro ao atualizar usuário")
+      alert(err.message || "Erro ao atualizar usuário")
+    }
   }
 
   function handleInativar(usuario: Usuario) {
     setUsuarioInativando(usuario)
   }
 
-  function confirmarInativacao() {
+  async function confirmarInativacao() {
     if (!usuarioInativando) return
-    setUsuarios((prev) =>
-      prev.map((u) =>
-        u.id === usuarioInativando.id ? { ...u, status: "Inativo" as const } : u
+    try {
+      setError(null)
+      const atualizado = await usuariosService.inativar(usuarioInativando.id)
+      setUsuarios((prev) =>
+        prev.map((u) => (u.id === atualizado.id ? atualizado : u))
       )
-    )
-    setUsuarioInativando(null)
+      setUsuarioInativando(null)
+    } catch (err: any) {
+      setError(err.message || "Erro ao inativar usuário")
+      alert(err.message || "Erro ao inativar usuário")
+    }
   }
 
-  function handleDetalhes(usuario: Usuario) {
-    const usuarioDetalhes: UsuarioDetalhes = {
-      ...usuario,
-      dataCadastro: "01/01/2024",
-      ultimoAcesso: "15/03/2024"
+  async function handleDetalhes(usuario: Usuario) {
+    try {
+      setError(null)
+      const detalhes = await usuariosService.buscarDetalhes(usuario.id)
+      setUsuarioDetalhes(detalhes)
+    } catch (err: any) {
+      setError(err.message || "Erro ao carregar detalhes do usuário")
+      alert(err.message || "Erro ao carregar detalhes do usuário")
     }
-    setUsuarioDetalhes(usuarioDetalhes)
   }
 
   return (
@@ -155,15 +344,9 @@ export default function UsuariosAdministradorPage() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Gestão de Usuários</h1>
-              <p className="text-muted-foreground">Cadastrar, listar, buscar e filtrar usuários</p>
-            </div>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Usuário
-            </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Gestão de Usuários</h1>
+            <p className="text-muted-foreground">Cadastrar, listar, buscar e filtrar usuários</p>
           </div>
 
           <Tabs defaultValue="lista" className="space-y-6">
@@ -182,6 +365,11 @@ export default function UsuariosAdministradorPage() {
                   <CardDescription>Gerencie os usuários do sistema</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {error && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                      {error}
+                    </div>
+                  )}
                   <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="flex-1">
                       <Input
@@ -202,12 +390,17 @@ export default function UsuariosAdministradorPage() {
                         <SelectItem value="administrador">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={() => setCurrentPage(1)}>
                       <Search className="w-4 h-4 mr-2" />
                       Buscar
                     </Button>
                   </div>
 
+                  {loading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Carregando usuários...
+                    </div>
+                  ) : (
                   <div className="space-y-3">
                     {filtrados.map((u) => (
                       <Card key={u.id} className="border-l-4 border-l-green-500">
@@ -258,10 +451,79 @@ export default function UsuariosAdministradorPage() {
                         </CardContent>
                       </Card>
                     ))}
-                    {filtrados.length === 0 && (
-                      <p className="text-sm text-muted-foreground">Nenhum usuário encontrado.</p>
+                    {filtrados.length === 0 && !loading && (
+                      <p className="text-sm text-muted-foreground text-center py-8">Nenhum usuário encontrado.</p>
                     )}
                   </div>
+                  )}
+
+                  {/* Controles de Paginação */}
+                  {!loading && total > 0 && (
+                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Mostrando</span>
+                        <Select value={itemsPerPage.toString()} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
+                          <SelectTrigger className="w-20 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span>de {total} usuários</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum: number
+                            if (totalPages <= 5) {
+                              pageNum = i + 1
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i
+                            } else {
+                              pageNum = currentPage - 2 + i
+                            }
+                            
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handlePageChange(pageNum)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {pageNum}
+                              </Button>
+                            )
+                          })}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -292,7 +554,17 @@ export default function UsuariosAdministradorPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="cpf">CPF</Label>
-                      <Input id="cpf" value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" />
+                      <Input 
+                        id="cpf" 
+                        value={form.cpf} 
+                        onChange={(e) => handleCpfChange(e.target.value)} 
+                        placeholder="000.000.000-00"
+                        maxLength={14}
+                        className={cpfError ? "border-red-500" : ""}
+                      />
+                      {cpfError && (
+                        <p className="text-sm text-red-500">{cpfError}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>Papel</Label>
