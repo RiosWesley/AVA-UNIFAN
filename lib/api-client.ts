@@ -91,7 +91,7 @@ export interface MaterialItem {
   sizeBytes?: number
   uploadedAt?: string
   createdAt?: string
-  fileUrl: string
+  fileUrl: string[]
 }
 
 export interface ClassActivity {
@@ -300,6 +300,61 @@ export const apiClient = {
   async getMaterialsByClass(classId: string): Promise<MaterialItem[]> {
     const { data } = await api.get<MaterialItem[]>(`/materials/class/${classId}`)
     return data
+  },
+
+  async downloadMaterialAttachment(materialId: string, attachmentUrl: string): Promise<void> {
+    try {
+      const response = await api.get(`/materials/${materialId}/attachments/download`, {
+        params: { attachmentUrl },
+        responseType: 'blob',
+      })
+      
+      // Função para extrair o nome original do arquivo (remove timestamp e nanoid)
+      const extractOriginalFileName = (fileName: string): string => {
+        // Formato: timestamp-nanoid-nomeOriginal
+        const parts = fileName.split('-')
+        if (parts.length >= 3) {
+          // Remove os dois primeiros elementos (timestamp e nanoid)
+          return parts.slice(2).join('-')
+        }
+        return fileName
+      }
+      
+      // Extrai o nome do arquivo do header Content-Disposition ou da URL
+      const contentDisposition = response.headers['content-disposition']
+      let fileName = 'material'
+      
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="?(.+?)"?$/i)
+        if (fileNameMatch) {
+          fileName = decodeURIComponent(fileNameMatch[1])
+          fileName = extractOriginalFileName(fileName)
+        }
+      } else {
+        // Fallback: tenta extrair da URL
+        try {
+          const url = new URL(attachmentUrl)
+          const rawFileName = decodeURIComponent(url.pathname.split('/').pop() || 'material')
+          fileName = extractOriginalFileName(rawFileName)
+        } catch {
+          const rawFileName = attachmentUrl.split('/').pop() || 'material'
+          fileName = extractOriginalFileName(rawFileName)
+        }
+      }
+      
+      // Cria um link temporário para download
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', fileName)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Erro ao fazer download do anexo:', error)
+      throw new Error('Não foi possível fazer download do arquivo.')
+    }
   },
 
   async getActivitiesByClass(classId: string): Promise<ClassActivity[]> {

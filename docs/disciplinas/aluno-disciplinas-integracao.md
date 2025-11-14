@@ -9,7 +9,7 @@ Conectar as abas da página `app/aluno/disciplinas/[id]/page.tsx` ao backend `av
   - Frontend: consumir o endpoint e listar avisos por turma.
 - Materiais
   - Backend: já disponível `GET /materials/class/:classId`.
-  - Frontend: listar materiais e usar `fileUrl` no download.
+  - Frontend: listar materiais e usar `fileUrl[]` (array) no(s) botão(ões) de download.
 - Atividades
   - Backend: `GET /activities/class/:classId`; upload de submissão do aluno via `POST /activities/students/:studentId/activities/:activityId/submissions/upload`; status do aluno via `GET /activities/:activityId/submissions/students/:studentId`.
   - Frontend: listar, enviar e exibir status por atividade.

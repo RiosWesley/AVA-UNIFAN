@@ -60,6 +60,9 @@ export default function DisciplinaDetalhePage() {
     enabled: !!classId,
   })
 
+  // Estado para rastrear downloads em andamento
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set())
+
   // Atividades por turma
   const activitiesQuery = useQuery({
     queryKey: ['activities-class', classId],
@@ -486,23 +489,79 @@ export default function DisciplinaDetalhePage() {
                           <div>
                             <h4 className="font-medium">{material.title ?? material.name ?? 'Material'}</h4>
                             <p className="text-sm text-muted-foreground">
-                              {material.type ?? (material.fileUrl ? material.fileUrl.split('.').pop()?.toUpperCase() : '')}
+                              {(() => {
+                                const first = Array.isArray(material.fileUrl) ? material.fileUrl[0] : undefined
+                                const ext = first ? first.split('.').pop()?.toUpperCase() : ''
+                                return material.type ?? (ext || '')
+                              })()}
                               {material.sizeBytes ? ` • ${(material.sizeBytes / (1024 * 1024)).toFixed(2)} MB` : ''}
                               {(material.uploadedAt || material.createdAt) ? ` • ${new Date((material.uploadedAt || material.createdAt) as string).toLocaleDateString('pt-BR')}` : ''}
                             </p>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            const base = process.env.NEXT_PUBLIC_API_URL || ''
-                            const isAbsolute = /^https?:\/\//i.test(material.fileUrl || '')
-                            const url = isAbsolute ? material.fileUrl : `${base}${material.fileUrl || ''}`
-                            window.open(url, '_blank')
-                          }}
-                        >
-                          Download
-                        </Button>
+                        <div className="flex gap-2 flex-wrap justify-end">
+                          {((Array.isArray(material.fileUrl) ? material.fileUrl : (material.fileUrl ? [material.fileUrl] : [])) as string[]).map((url: string, idx: number) => {
+                            const downloadKey = `${material.id}-${url}`
+                            const isDownloading = downloadingFiles.has(downloadKey)
+                            
+                            // Função para extrair o nome original do arquivo (remove timestamp e nanoid)
+                            const extractOriginalFileName = (fileName: string): string => {
+                              // Formato: timestamp-nanoid-nomeOriginal
+                              const parts = fileName.split('-')
+                              if (parts.length >= 3) {
+                                // Remove os dois primeiros elementos (timestamp e nanoid)
+                                return parts.slice(2).join('-')
+                              }
+                              return fileName
+                            }
+                            
+                            const name = (() => {
+                              try {
+                                const u = new URL(url)
+                                const fileName = decodeURIComponent(u.pathname.split('/').pop() || `arquivo-${idx + 1}`)
+                                return extractOriginalFileName(fileName)
+                              } catch {
+                                const fileName = decodeURIComponent(url.split('/').pop() || `arquivo-${idx + 1}`)
+                                return extractOriginalFileName(fileName)
+                              }
+                            })()
+                            
+                            const handleDownload = async () => {
+                              if (!material.id) return
+                              setDownloadingFiles(prev => new Set(prev).add(downloadKey))
+                              try {
+                                await apiClient.downloadMaterialAttachment(material.id, url)
+                                toast({
+                                  title: "Download iniciado",
+                                  description: `Baixando ${name}...`,
+                                })
+                              } catch (error) {
+                                toast({
+                                  title: "Erro ao fazer download",
+                                  description: "Não foi possível baixar o arquivo. Tente novamente.",
+                                  variant: "destructive",
+                                })
+                              } finally {
+                                setDownloadingFiles(prev => {
+                                  const next = new Set(prev)
+                                  next.delete(downloadKey)
+                                  return next
+                                })
+                              }
+                            }
+                            
+                            return (
+                              <Button 
+                                key={`${material.id}-${idx}`} 
+                                size="sm" 
+                                onClick={handleDownload}
+                                disabled={isDownloading}
+                              >
+                                {isDownloading ? 'Baixando...' : name}
+                              </Button>
+                            )
+                          })}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
