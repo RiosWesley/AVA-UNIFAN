@@ -282,7 +282,7 @@ export function Sidebar({ userRole }: SidebarProps) {
               <Button
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-green-600 relative group transition-all duration-300 cursor-pointer",
+                  "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-green-600 relative group transition-all duration-300 cursor-pointer mb-1",
                   isLightMode && !isActive ? "border-0" : "border border-transparent hover:border-sidebar-border/50",
                   isActive && "bg-green-500/30 text-green-700 dark:text-green-400 border-green-500/20",
                   isCollapsed && "px-2 justify-center",
@@ -323,7 +323,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                 {!isCollapsed && (
                   <>
                     <span className="font-medium flex-1 text-left">{item.label}</span>
-                    {isGroup ? (
+                    {isGroup && (
                       <div className="flex items-center">
                         <div className={cn(
                           "transition-all duration-300 ease-in-out",
@@ -332,17 +332,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                           <ChevronRight className="h-4 w-4 opacity-70" />
                         </div>
                       </div>
-                    ) : ('badge' in item && (item as any).badge && (
-                      <div className={cn(
-                        "flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-semibold transition-all duration-300",
-                        isActive
-                          ? "bg-green-500 text-white shadow-lg"
-                          : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
-                        hoveredItem === (item as any).href && "text-green-500"
-                      )}>
-                        {(item as any).badge}
-                      </div>
-                    ))}
+                    )}
                   </>
                 )}
                 {!isCollapsed && hoveredItem === (item as any).href && (
@@ -398,7 +388,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                             <Button
                               variant={childActive ? "secondary" : "ghost"}
                               className={cn(
-                                "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 cursor-pointer",
+                                "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300 cursor-pointer mb-1",
                                 // No modo claro, remover borda quando não ativo
                                 isLightMode && !childActive ? "border-0" : "border border-transparent hover:border-sidebar-border/50",
                                 "h-10 px-6",
@@ -419,11 +409,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                                 <ChildIcon className="h-4 w-4" />
                               </div>
                               <span className="text-sm flex-1 text-left">{child.label}</span>
-                              {'badge' in child && child.badge && (
-                                <div className="flex items-center justify-center min-w-[18px] h-5 px-1 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                                  {child.badge}
-                                </div>
-                              )}
+                              
                             </Button>
                           </Link>
                         )
