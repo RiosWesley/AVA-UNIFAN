@@ -14,6 +14,7 @@ import { ModalEditarUsuario, type Usuario as UsuarioType } from "@/components/mo
 import { ModalDetalhesUsuario, type UsuarioDetalhes } from "@/components/modals/modal-detalhes-usuario"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 import { usuariosService, type Usuario, type Role } from "@/src/services/usuariosService"
+import { getDepartments, addTeachersToDepartment, setDepartmentCoordinator, type Department } from "@/src/services/departmentsService"
 import { toast } from "@/components/ui/toast"
 
 export default function UsuariosAdministradorPage() {
@@ -31,6 +32,11 @@ export default function UsuariosAdministradorPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+
+  // Departamentos (para quando a role selecionada for professor)
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([])
+  const [selectedCoordinatorDept, setSelectedCoordinatorDept] = useState<string>("")
 
   // Resetar página quando filtros mudarem
   useEffect(() => {
@@ -80,6 +86,27 @@ export default function UsuariosAdministradorPage() {
     status: "Ativo",
   })
 
+  // Carregar departamentos quando o papel requer vínculo com departamento
+  useEffect(() => {
+    async function loadDepartmentsIfNeeded() {
+      if (form.role === "professor" || form.role === "coordenador") {
+        try {
+          const depts = await getDepartments() // admin pode ver todos
+          setDepartments(depts)
+          if (form.role === "professor") {
+            setSelectedDepartments((prev) => (prev.length ? prev : [""]))
+          }
+        } catch (err) {
+          console.error("Erro ao carregar departamentos:", err)
+        }
+      } else {
+        setSelectedDepartments([])
+        setSelectedCoordinatorDept("")
+      }
+    }
+    loadDepartmentsIfNeeded()
+  }, [form.role])
+
   // Usar os usuários diretamente, pois o filtro já é feito no backend
   const filtrados = usuarios
 
@@ -94,6 +121,21 @@ export default function UsuariosAdministradorPage() {
   function handleItemsPerPageChange(newLimit: number) {
     setItemsPerPage(newLimit)
     setCurrentPage(1) // Resetar para primeira página
+  }
+
+  // Combobox dinâmicos de departamentos (para professores)
+  function addDepartmentCombo() {
+    setSelectedDepartments((prev) => [...prev, ""])
+  }
+  function removeDepartmentCombo(index: number) {
+    setSelectedDepartments((prev) => prev.filter((_, i) => i !== index))
+  }
+  function editDepartmentCombo(index: number, departmentId: string) {
+    setSelectedDepartments((prev) => {
+      const next = [...prev]
+      next[index] = departmentId
+      return next
+    })
   }
 
   // Função para formatar CPF
@@ -250,6 +292,52 @@ export default function UsuariosAdministradorPage() {
         role: form.role,
         status: form.status,
       })
+
+      // Se for coordenador, exigir seleção de UM departamento e aplicar
+      if (form.role === "coordenador") {
+        if (!selectedCoordinatorDept) {
+          toast({
+            variant: 'error',
+            title: 'Selecione o departamento',
+            description: 'Coordenadores precisam estar vinculados a um departamento.',
+          })
+          return
+        }
+        try {
+          await setDepartmentCoordinator(selectedCoordinatorDept, novo.id)
+        } catch (linkErr: any) {
+          console.error("Erro ao definir coordenador do departamento:", linkErr)
+          toast({
+            variant: 'error',
+            title: 'Usuário criado, mas houve erro ao definir coordenador',
+            description: linkErr?.message || 'Tente definir novamente em Departamentos.',
+          })
+        }
+      }
+
+      // Se for professor e houver departamentos selecionados, vincular nos departamentos
+      if (form.role === "professor" && selectedDepartments.length > 0) {
+        try {
+          const toLink = Array.from(new Set(selectedDepartments.filter(Boolean)))
+          if (toLink.length === 0) {
+            // nada para vincular
+          } else {
+          await Promise.all(
+              toLink.map((deptId) =>
+              addTeachersToDepartment(deptId, [novo.id])
+            )
+          )
+          }
+        } catch (linkErr: any) {
+          console.error("Erro ao vincular professor aos departamentos:", linkErr)
+          toast({
+            variant: 'error',
+            title: 'Professor criado, mas houve erro ao vincular departamento',
+            description: linkErr?.message || 'Tente vincular novamente na tela de departamentos.'
+          })
+        }
+      }
+
       // Recarregar a lista para atualizar a paginação
       await carregarUsuarios()
       setForm({
@@ -263,6 +351,8 @@ export default function UsuariosAdministradorPage() {
         role: "aluno",
         status: "Ativo",
       })
+      setSelectedDepartments([])
+      setSelectedCoordinatorDept("")
       setCpfError(null)
       
       // Toast de sucesso
@@ -580,6 +670,65 @@ export default function UsuariosAdministradorPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {form.role === "professor" && (
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Departamentos (adicione quantos precisar)</Label>
+                        <div className="space-y-2">
+                          {selectedDepartments.length === 0 && (
+                            <p className="text-sm text-muted-foreground">Clique em “Adicionar departamento”.</p>
+                          )}
+                          {selectedDepartments.map((value, index) => {
+                            // Evitar duplicados: opções disponíveis são todas menos as já escolhidas (exceto a do índice atual)
+                            const used = new Set(selectedDepartments.filter((_, i) => i !== index && selectedDepartments[i]))
+                            const available = departments.filter(d => !used.has(d.id))
+                            return (
+                              <div key={index} className="flex items-center gap-2">
+                                <Select value={value} onValueChange={(v) => editDepartmentCombo(index, v)}>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Selecione o departamento" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {available.map((dept) => (
+                                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {selectedDepartments.length > 1 && (
+                                  <Button type="button" variant="outline" onClick={() => removeDepartmentCombo(index)}>
+                                    Remover
+                                  </Button>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button type="button" variant="outline" onClick={addDepartmentCombo}>
+                            Adicionar departamento
+                          </Button>
+                          {selectedDepartments.filter(Boolean).length > 0 && (
+                            <p className="text-xs text-muted-foreground self-center">
+                              Selecionados: {Array.from(new Set(selectedDepartments.filter(Boolean))).length}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {form.role === "coordenador" && (
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Departamento (apenas um)</Label>
+                        <Select value={selectedCoordinatorDept} onValueChange={(v) => setSelectedCoordinatorDept(v)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione o departamento" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departments.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label>Status</Label>
                       <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "Ativo" | "Inativo" })}>
@@ -610,6 +759,7 @@ export default function UsuariosAdministradorPage() {
                             email: "",
                             usuario: "",
                             telefone: "",
+                            cpf: "",
                             senha: "",
                             confirmarSenha: "",
                             role: "aluno",
