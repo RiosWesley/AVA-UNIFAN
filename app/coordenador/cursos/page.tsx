@@ -11,8 +11,12 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { BookOpen, Plus, Search, Users, GraduationCap, Eye, Edit, X } from "lucide-react"
+import { BookOpen, Plus, Search, Users, Eye, X, Loader2, GraduationCap } from "lucide-react"
 import { toast } from "@/components/ui/toast"
+import { getDepartments, type Department } from "@/src/services/departmentsService"
+import { createCourse, getCourses, type BackendCourse } from "@/src/services/coursesService"
+
+const MOCK_COORDINATOR_ID = "5f634e5c-d028-434d-af46-cc9ea23eb77b"
 
 type Curso = {
   id: string
@@ -23,7 +27,7 @@ type Curso = {
   duracao: number
   status: "ativo" | "inativo"
   alunos: number
-  professores: number
+  disciplinas: number
   turmas: number
   descricao?: string
 }
@@ -50,49 +54,11 @@ export default function CoordenadorCursosPage() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const coordenadorDepartamento = "Sistemas de Informação"
+  const [department, setDepartment] = useState<Department | null>(null)
+  const coordenadorDepartamento = department?.name ?? ""
 
-  const [cursos, setCursos] = useState<Curso[]>([
-    {
-      id: "1",
-      nome: "Sistemas de Informação",
-      codigo: "SI",
-      departamento: "Sistemas de Informação",
-      cargaHoraria: 3200,
-      duracao: 8,
-      status: "ativo",
-      alunos: 120,
-      professores: 15,
-      turmas: 8,
-      descricao: "Curso de graduação em Sistemas de Informação"
-    },
-    {
-      id: "2",
-      nome: "Análise e Desenvolvimento de Sistemas",
-      codigo: "ADS",
-      departamento: "Sistemas de Informação",
-      cargaHoraria: 2400,
-      duracao: 6,
-      status: "ativo",
-      alunos: 95,
-      professores: 12,
-      turmas: 6,
-      descricao: "Curso tecnológico em Análise e Desenvolvimento de Sistemas"
-    },
-    {
-      id: "3",
-      nome: "Engenharia de Software",
-      codigo: "ES",
-      departamento: "Sistemas de Informação",
-      cargaHoraria: 3600,
-      duracao: 10,
-      status: "ativo",
-      alunos: 80,
-      professores: 10,
-      turmas: 5,
-      descricao: "Curso de graduação em Engenharia de Software"
-    }
-  ])
+  const [cursos, setCursos] = useState<Curso[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -113,8 +79,7 @@ export default function CoordenadorCursosPage() {
   const cursosFiltrados = cursos.filter(curso => {
     const matchesSearch = curso.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       curso.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDepartment = curso.departamento === coordenadorDepartamento
-    return matchesSearch && matchesDepartment
+    return matchesSearch
   })
 
   const validarModal = (): boolean => {
@@ -140,7 +105,7 @@ export default function CoordenadorCursosPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSalvarCurso = () => {
+  const handleSalvarCurso = async () => {
     if (!validarModal()) {
       toast({
         variant: "error",
@@ -150,36 +115,51 @@ export default function CoordenadorCursosPage() {
       return
     }
 
-    const novoCurso: Curso = {
-      id: Date.now().toString(),
-      nome: modalData.nome.trim(),
-      codigo: modalData.codigo.trim().toUpperCase(),
-      departamento: coordenadorDepartamento,
-      cargaHoraria: parseInt(modalData.cargaHoraria),
-      duracao: parseInt(modalData.duracao),
-      status: "ativo",
-      alunos: 0,
-      professores: 0,
-      turmas: 0,
-      descricao: modalData.descricao.trim() || undefined
+    if (!department?.id) {
+      toast({
+        variant: "error",
+        title: "Departamento não encontrado",
+        description: "Não foi possível identificar o departamento do coordenador"
+      })
+      return
     }
 
-    setCursos([...cursos, novoCurso])
-    toast({
-      variant: "success",
-      title: "Curso criado",
-      description: `"${novoCurso.nome}" foi criado com sucesso!`
-    })
+    try {
+      const created = await createCourse({
+        name: modalData.nome.trim(),
+        code: modalData.codigo.trim().toUpperCase(),
+        totalHours: parseInt(modalData.cargaHoraria),
+        durationSemesters: parseInt(modalData.duracao),
+        description: modalData.descricao.trim() || undefined,
+        departmentId: department.id,
+        status: "active",
+      })
 
-    setIsModalOpen(false)
-    setModalData({
-      nome: "",
-      codigo: "",
-      cargaHoraria: "",
-      duracao: "",
-      descricao: ""
-    })
-    setErrors({})
+      toast({
+        variant: "success",
+        title: "Curso criado",
+        description: `"${created.name}" foi criado com sucesso!`
+      })
+
+      await carregarCursos(department.id)
+
+      setIsModalOpen(false)
+      setModalData({
+        nome: "",
+        codigo: "",
+        cargaHoraria: "",
+        duracao: "",
+        descricao: ""
+      })
+      setErrors({})
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Não foi possível criar o curso"
+      toast({
+        variant: "error",
+        title: "Erro ao criar curso",
+        description: Array.isArray(message) ? message.join(", ") : message
+      })
+    }
   }
 
   const handleAbrirModal = () => {
@@ -210,6 +190,67 @@ export default function CoordenadorCursosPage() {
     router.push(`/coordenador/cursos/${cursoId}`)
   }
 
+  const mapBackendToCurso = (c: BackendCourse, deptName: string): Curso => ({
+    id: c.id,
+    nome: c.name,
+    codigo: c.code,
+    departamento: deptName,
+    cargaHoraria: c.totalHours,
+    duracao: c.durationSemesters,
+    status: c.status === "active" ? "ativo" : "inativo",
+    alunos: c.studentsCount ?? 0,
+    disciplinas: c.disciplinesCount ?? 0,
+    turmas: c.classesCount ?? 0,
+    descricao: c.description,
+  })
+
+  async function carregarCursos(departmentId: string) {
+    try {
+      setIsLoading(true)
+      const backendCourses = await getCourses(departmentId)
+      const deptName = department?.name ?? ""
+      const mapped = backendCourses.map((c) => mapBackendToCurso(c, deptName))
+      setCursos(mapped)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Não foi possível carregar os cursos"
+      toast({
+        variant: "error",
+        title: "Erro ao carregar cursos",
+        description: Array.isArray(message) ? message.join(", ") : message
+      })
+      setCursos([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    async function bootstrap() {
+      try {
+        setIsLoading(true)
+        const coordinatorId = MOCK_COORDINATOR_ID
+        const depts = await getDepartments(coordinatorId)
+        if (!depts || depts.length === 0) {
+          throw new Error("Nenhum departamento encontrado para este coordenador")
+        }
+        const dept = depts[0]
+        setDepartment(dept)
+        await carregarCursos(dept.id)
+      } catch (error: any) {
+        const message = error?.response?.data?.message || error?.message || "Falha ao inicializar a página"
+        toast({
+          variant: "error",
+          title: "Erro",
+          description: Array.isArray(message) ? message.join(", ") : message
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    bootstrap()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="coordenador" />
@@ -230,7 +271,11 @@ export default function CoordenadorCursosPage() {
                   Cursos
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
-                  Gerenciamento de cursos do departamento {coordenadorDepartamento}
+                  {department ? (
+                    <>Gerenciamento de cursos do departamento {coordenadorDepartamento}</>
+                  ) : (
+                    <>Carregando departamento...</>
+                  )}
                 </p>
                 <Badge variant="secondary" className="mt-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                   {cursosFiltrados.length} curso{cursosFiltrados.length !== 1 ? 's' : ''} encontrado{cursosFiltrados.length !== 1 ? 's' : ''}
@@ -255,96 +300,105 @@ export default function CoordenadorCursosPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cursosFiltrados.map((curso) => (
-              <LiquidGlassCard
-                key={curso.id}
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">{curso.nome}</CardTitle>
-                      <CardDescription className="flex items-center gap-2">
-                        <span className="font-mono text-sm">{curso.codigo}</span>
-                        <Badge variant={curso.status === "ativo" ? "default" : "secondary"}>
-                          {curso.status === "ativo" ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {curso.descricao && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {curso.descricao}
-                    </p>
-                  )}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Carregando cursos...</span>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {cursosFiltrados.map((curso) => (
+                  <LiquidGlassCard
+                    key={curso.id}
+                    intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                    className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
+                      isLiquidGlass
+                        ? 'bg-black/30 dark:bg-gray-800/20'
+                        : 'bg-gray-50/60 dark:bg-gray-800/40'
+                    }`}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl mb-2">{curso.nome}</CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <span className="font-mono text-sm">{curso.codigo}</span>
+                            <Badge variant={curso.status === "ativo" ? "default" : "secondary"}>
+                              {curso.status === "ativo" ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {curso.descricao && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {curso.descricao}
+                        </p>
+                      )}
 
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Carga Horária</p>
-                      <p className="font-semibold">{curso.cargaHoraria}h</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Duração</p>
-                      <p className="font-semibold">{curso.duracao} semestres</p>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Carga Horária</p>
+                          <p className="font-semibold">{curso.cargaHoraria}h</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Duração</p>
+                          <p className="font-semibold">{curso.duracao} semestres</p>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
-                    <div className="text-center">
-                      <Users className="h-5 w-5 mx-auto mb-1 text-emerald-600 dark:text-emerald-400" />
-                      <p className="text-xs text-muted-foreground">Alunos</p>
-                      <p className="font-semibold">{curso.alunos}</p>
-                    </div>
-                    <div className="text-center">
-                      <GraduationCap className="h-5 w-5 mx-auto mb-1 text-purple-600 dark:text-purple-400" />
-                      <p className="text-xs text-muted-foreground">Professores</p>
-                      <p className="font-semibold">{curso.professores}</p>
-                    </div>
-                    <div className="text-center">
-                      <BookOpen className="h-5 w-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
-                      <p className="text-xs text-muted-foreground">Turmas</p>
-                      <p className="font-semibold">{curso.turmas}</p>
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
+                        <div className="text-center">
+                          <Users className="h-5 w-5 mx-auto mb-1 text-emerald-600 dark:text-emerald-400" />
+                          <p className="text-xs text-muted-foreground">Alunos</p>
+                          <p className="font-semibold">{curso.alunos}</p>
+                        </div>
+                        <div className="text-center">
+                          <GraduationCap className="h-5 w-5 mx-auto mb-1 text-purple-600 dark:text-purple-400" />
+                          <p className="text-xs text-muted-foreground">Disciplinas</p>
+                          <p className="font-semibold">{curso.disciplinas}</p>
+                        </div>
+                        <div className="text-center">
+                          <BookOpen className="h-5 w-5 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                          <p className="text-xs text-muted-foreground">Turmas</p>
+                          <p className="font-semibold">{curso.turmas}</p>
+                        </div>
+                      </div>
 
-                  <div className="flex gap-2 pt-2">
-                    <LiquidGlassButton
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleVisualizarCurso(curso.id)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Visualizar
-                    </LiquidGlassButton>
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-            ))}
-          </div>
+                      <div className="flex gap-2 pt-2">
+                        <LiquidGlassButton
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => handleVisualizarCurso(curso.id)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Visualizar
+                        </LiquidGlassButton>
+                      </div>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ))}
+              </div>
 
-          {cursosFiltrados.length === 0 && (
-            <LiquidGlassCard
-              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`text-center py-12 ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40'
-              }`}
-            >
-              <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-semibold mb-2">Nenhum curso encontrado</p>
-              <p className="text-muted-foreground">
-                {searchTerm ? "Tente ajustar sua busca" : "Comece criando um novo curso"}
-              </p>
-            </LiquidGlassCard>
+              {cursosFiltrados.length === 0 && (
+                <LiquidGlassCard
+                  intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                  className={`text-center py-12 ${
+                    isLiquidGlass
+                      ? 'bg-black/30 dark:bg-gray-800/20'
+                      : 'bg-gray-50/60 dark:bg-gray-800/40'
+                  }`}
+                >
+                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg font-semibold mb-2">Nenhum curso encontrado</p>
+                  <p className="text-muted-foreground">
+                    {searchTerm ? "Tente ajustar sua busca" : "Comece criando um novo curso"}
+                  </p>
+                </LiquidGlassCard>
+              )}
+            </>
           )}
         </div>
       </main>
@@ -356,7 +410,11 @@ export default function CoordenadorCursosPage() {
               <div>
                 <h2 className="text-xl font-bold">Novo Curso</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Adicione um novo curso ao departamento {coordenadorDepartamento}
+                  {department ? (
+                    <>Adicione um novo curso ao departamento {coordenadorDepartamento}</>
+                  ) : (
+                    <>Carregando departamento...</>
+                  )}
                 </p>
               </div>
             </DialogTitle>
