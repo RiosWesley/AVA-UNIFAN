@@ -10,7 +10,7 @@ import { Combobox } from "@/components/ui/combobox"
 import type { ComboboxOption } from "@/components/ui/combobox"
 
 export interface AvisoData {
-  id?: number
+  id?: string
   titulo: string
   turma: string
   data: string

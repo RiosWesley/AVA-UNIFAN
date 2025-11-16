@@ -7,116 +7,183 @@ import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sidebar } from "@/components/layout/sidebar"
-import { MessageSquare, Megaphone, Eye, Edit, Trash2, TrendingUp, Send, Plus, Bell } from "lucide-react"
+import { Edit, Trash2, Send, Plus, Bell } from "lucide-react"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ModalNovaMensagem, ModalAviso, ModalConfirmacao } from "@/components/modals"
 import type { AvisoData } from "@/components/modals"
 import type { ComboboxOption } from "@/components/ui/combobox"
-import type { DestinatarioOption } from "@/components/modals/modal-nova-mensagem"
 
 export default function CoordenadorComunicacaoPage() {
   const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
-  const destinatarios: DestinatarioOption[] = [
-    { id: 'direcao', label: 'Direção' },
-    { id: 'professores', label: 'Todos os Professores' },
-    { id: 'prof-maria', label: 'Prof. Maria Santos' },
-    { id: 'secretaria', label: 'Secretaria' },
-    { id: 'alunos', label: 'Todos os Alunos' },
-  ]
-
   const [isAvisoOpen, setIsAvisoOpen] = useState(false)
   const [editingAviso, setEditingAviso] = useState<AvisoData | undefined>(undefined)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [avisoParaExcluir, setAvisoParaExcluir] = useState<number | null>(null)
+  const [avisoParaExcluir, setAvisoParaExcluir] = useState<string | null>(null)
   const turmaOptions: ComboboxOption[] = [
-    { id: 'todos', label: 'Todos os usuários' },
-    { id: 'alunos', label: 'Todos os alunos' },
-    { id: 'professores', label: 'Professores' },
-    { id: 'pais', label: 'Pais e responsáveis' },
-    { id: 'fundamental', label: 'Ensino Fundamental' },
-    { id: 'medio', label: 'Ensino Médio' },
+    { id: 'all', label: 'Todos os usuários' },
+    { id: 'student', label: 'Todos os alunos' },
+    { id: 'teacher', label: 'Professores' },
   ]
 
-  const [comunicadosPublicados, setComunicadosPublicados] = useState([
-    {
-      id: 1,
-      titulo: "Calendário de Provas - 2º Bimestre",
-      categoria: "Acadêmico",
-      data: "18/03/2024",
-      visualizacoes: 245,
-      publico: "Todos os alunos",
-      status: "Ativo",
-    },
-    {
-      id: 2,
-      titulo: "Feira de Ciências 2024",
-      categoria: "Evento",
-      data: "15/03/2024",
-      visualizacoes: 189,
-      publico: "Ensino Médio",
-      status: "Ativo",
-    },
-    {
-      id: 3,
-      titulo: "Reunião de Pais - Março",
-      categoria: "Evento",
-      data: "10/03/2024",
-      visualizacoes: 156,
-      publico: "Pais e responsáveis",
-      status: "Arquivado",
-    },
-  ])
+  const [comunicadosPublicados, setComunicadosPublicados] = useState<Array<{
+    id: string
+    titulo: string
+    data: string
+    visualizacoes: number
+    publico: string
+    status?: string
+    conteudo?: string
+  }>>([])
 
-  const mensagensInstitucionais = [
-    {
-      id: 1,
-      remetente: "Direção",
-      assunto: "Planejamento do próximo semestre",
-      data: "Hoje, 09:30",
-      lida: false,
-    },
-    {
-      id: 2,
-      remetente: "Prof. Maria Santos",
-      assunto: "Solicitação de material didático",
-      data: "Ontem, 14:20",
-      lida: true,
-    },
-    {
-      id: 3,
-      remetente: "Secretaria",
-      assunto: "Relatório de frequência",
-      data: "2 dias atrás",
-      lida: true,
-    },
-  ]
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const currentUserId = "5f634e5c-d028-434d-af46-cc9ea23eb77b"
 
-  const estatisticasComunicacao = {
-    comunicadosAtivos: 12,
-    visualizacoesTotais: 1250,
-    engajamentoMedio: 78,
-    mensagensEnviadas: 45,
+  // Inbox e conversas (mensagens diretas)
+  type InboxItem = {
+    otherUser: { id: string; name: string; email: string }
+    lastMessage: { id: string; content: string; sentAt: string; isRead: boolean }
+    unreadCount: number
+  }
+  const [inbox, setInbox] = useState<InboxItem[]>([])
+  const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(null)
+  const [conversation, setConversation] = useState<Array<{ id: string; content: string; sentAt: string; senderId: string; receiverId?: string }>>([])
+  const [replyText, setReplyText] = useState<string>("")
+
+  const fetchInbox = async () => {
+    if (!API_URL || !currentUserId) return
+    try {
+      const res = await fetch(`${API_URL}/messages/inbox`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar inbox')
+      const data = await res.json()
+      const normalized: InboxItem[] = (Array.isArray(data) ? data : []).map((i: any) => ({
+        ...i,
+        lastMessage: { ...i.lastMessage, sentAt: i.lastMessage?.sentAt ?? new Date().toISOString() },
+      }))
+      setInbox(normalized)
+    } catch {
+      setInbox([])
+    }
   }
 
-  const handleSaveAviso = (data: AvisoData) => {
-    if (data.id) {
-      setComunicadosPublicados(prev => prev.map(c => 
-        c.id === data.id 
-          ? { ...c, titulo: data.titulo, publico: data.turma, data: data.data }
-          : c
-      ))
-    } else {
-      const newId = Math.max(0, ...comunicadosPublicados.map(c => c.id)) + 1
-      setComunicadosPublicados(prev => [{
-        id: newId,
-        titulo: data.titulo,
-        categoria: "Informativo",
-        data: data.data,
+  const fetchConversation = async (otherId: string) => {
+    if (!API_URL || !currentUserId) return
+    try {
+      const res = await fetch(`${API_URL}/messages/conversation/${otherId}`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar conversa')
+      const list = await res.json()
+      const items = (Array.isArray(list) ? list : []).map((m: any) => ({
+        id: m.id as string,
+        content: m.content as string,
+        sentAt: m.sentAt,
+        senderId: m.sender?.id as string,
+        receiverId: m.receiver?.id as string | undefined,
+      }))
+      setConversation(items)
+
+      // marcar como lidas mensagens recebidas não lidas
+      const unreadReceived = (Array.isArray(list) ? list : []).filter((m: any) => m.receiver?.id === currentUserId && !m.isRead)
+      await Promise.all(unreadReceived.map((m: any) => (
+        fetch(`${API_URL}/messages/${m.id}/read`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+          body: JSON.stringify({ read: true }),
+        })
+      )))
+      // atualizar inbox
+      fetchInbox()
+    } catch {
+      setConversation([])
+    }
+  }
+
+  const handleSelectInboxItem = (otherId: string) => {
+    setSelectedOtherUserId(otherId)
+    fetchConversation(otherId)
+  }
+
+  const handleReply = async () => {
+    if (!API_URL || !currentUserId || !selectedOtherUserId || !replyText.trim()) return
+    try {
+      await fetch(`${API_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+        body: JSON.stringify({
+          content: replyText,
+          receiverId: selectedOtherUserId,
+        }),
+      })
+      setReplyText("")
+      await fetchConversation(selectedOtherUserId)
+    } catch {
+      // ignore
+    }
+  }
+
+  const mapAudienceToLabel = (audience?: string | null) => {
+    if (audience === 'student') return 'Todos os alunos'
+    if (audience === 'teacher') return 'Professores'
+    return 'Todos os usuários'
+  }
+
+  const refreshAvisos = async () => {
+    if (!API_URL) return
+    try {
+      const res = await fetch(`${API_URL}/notice-board?includeExpired=true`, { headers: { 'Content-Type': 'application/json' } })
+      if (!res.ok) throw new Error('Erro ao listar avisos')
+      const list = await res.json()
+      const items = (Array.isArray(list) ? list : list?.data ?? []).map((n: any) => ({
+        id: n.id as string,
+        titulo: n.title as string,
+        data: new Date(n.createdAt ?? n.publishedAt ?? Date.now()).toLocaleDateString('pt-BR'),
         visualizacoes: 0,
-        publico: data.turma,
-        status: "Ativo",
-      }, ...prev])
+        publico: mapAudienceToLabel(n.audience),
+        status: 'Ativo',
+        conteudo: n.content as string,
+      }))
+      setComunicadosPublicados(items)
+    } catch {
+      // mantém vazio em caso de erro
+    }
+  }
+
+  useEffect(() => {
+    refreshAvisos()
+    fetchInbox()
+  }, [])
+
+  const handleSaveAviso = async (data: AvisoData) => {
+    const audience = turmaOptions.find(o => o.label === data.turma)?.id as 'all' | 'student' | 'teacher' | undefined
+    const payload: any = {
+      title: data.titulo,
+      content: data.conteudo ?? '',
+      audience: (audience ?? 'all'),
+    }
+    if (data.data) {
+      payload.expiresAt = data.data
+    }
+
+    try {
+      if (data.id) {
+        await fetch(`${API_URL}/notice-board/${data.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      } else {
+        await fetch(`${API_URL}/notice-board`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      }
+      await refreshAvisos()
+    } catch {
+      // no-op
     }
   }
 
@@ -125,7 +192,7 @@ export default function CoordenadorComunicacaoPage() {
     setIsAvisoOpen(true)
   }
 
-  const openEditAviso = (comunicadoId: number) => {
+  const openEditAviso = (comunicadoId: string) => {
     const found = comunicadosPublicados.find(c => c.id === comunicadoId)
     if (found) {
       setEditingAviso({
@@ -133,18 +200,27 @@ export default function CoordenadorComunicacaoPage() {
         titulo: found.titulo,
         turma: found.publico,
         data: found.data,
+        conteudo: found.conteudo,
       })
       setIsAvisoOpen(true)
     }
   }
 
-  const confirmDelete = (comunicadoId: number) => {
+  const confirmDelete = (comunicadoId: string) => {
     setAvisoParaExcluir(comunicadoId)
     setConfirmOpen(true)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (avisoParaExcluir != null) {
+      try {
+        await fetch(`${API_URL}/notice-board/${avisoParaExcluir}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      } catch {
+        // ignore
+      }
       setComunicadosPublicados(prev => prev.filter(c => c.id !== avisoParaExcluir))
       setAvisoParaExcluir(null)
     }
@@ -169,51 +245,7 @@ export default function CoordenadorComunicacaoPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Comunicados Ativos</CardTitle>
-                <Megaphone className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.comunicadosAtivos}</div>
-                <p className="text-xs text-muted-foreground">+3 este mês</p>
-              </CardContent>
-            </LiquidGlassCard>
-
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Visualizações</CardTitle>
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.visualizacoesTotais}</div>
-                <p className="text-xs text-muted-foreground">+15% vs mês anterior</p>
-              </CardContent>
-            </LiquidGlassCard>
-
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Engajamento</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.engajamentoMedio}%</div>
-                <p className="text-xs text-muted-foreground">Taxa média de leitura</p>
-              </CardContent>
-            </LiquidGlassCard>
-
-            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Mensagens Enviadas</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasComunicacao.mensagensEnviadas}</div>
-                <p className="text-xs text-muted-foreground">Este mês</p>
-              </CardContent>
-            </LiquidGlassCard>
-          </div>
+          {/* Cards de métricas removidos conforme solicitado */}
 
           <Tabs defaultValue="mensagens" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
@@ -234,8 +266,14 @@ export default function CoordenadorComunicacaoPage() {
                   <ModalNovaMensagem
                     isOpen={isNovaMensagemOpen}
                     onClose={() => setIsNovaMensagemOpen(false)}
-                    destinatarios={destinatarios}
-                    onSend={() => setIsNovaMensagemOpen(false)}
+                    currentUserId={currentUserId}
+                    onSend={({ destinatarioId }) => {
+                      setIsNovaMensagemOpen(false)
+                      fetchInbox()
+                      if (destinatarioId) {
+                        handleSelectInboxItem(destinatarioId)
+                      }
+                    }}
                   />
                 </Dialog>
               </div>
@@ -244,23 +282,24 @@ export default function CoordenadorComunicacaoPage() {
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle>Caixa de Entrada</CardTitle>
-                      <CardDescription>3 mensagens não lidas</CardDescription>
+                      <CardDescription>{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {mensagensInstitucionais.map((mensagem) => (
+                        {inbox.map((item) => (
                           <div
-                            key={mensagem.id}
-                              className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${
-                                !mensagem.lida ? "bg-primary/5 border-primary/20" : ""
-                              }`}
+                            key={item.otherUser.id}
+                            onClick={() => handleSelectInboxItem(item.otherUser.id)}
+                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
                           >
                             <div className="flex items-start justify-between mb-1">
-                              <h5 className="font-medium text-sm">{mensagem.remetente}</h5>
-                              {!mensagem.lida && <div className="w-2 h-2 bg-primary rounded-full" />}
+                              <h5 className="font-medium text-sm">{item.otherUser.name}</h5>
+                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full" />}
                             </div>
-                            <p className="font-medium text-sm mb-1">{mensagem.assunto}</p>
-                            <p className="text-xs text-muted-foreground">{mensagem.data}</p>
+                            <p className="font-medium text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(item.lastMessage?.sentAt || Date.now()).toLocaleString('pt-BR')}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -271,36 +310,48 @@ export default function CoordenadorComunicacaoPage() {
                 <div className="lg:col-span-2">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
-                      <CardTitle>Planejamento do próximo semestre</CardTitle>
-                      <CardDescription>De: Direção • Hoje, 09:30</CardDescription>
+                      <CardTitle>
+                        {selectedOtherUserId
+                          ? inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name
+                          : 'Selecione uma conversa'}
+                      </CardTitle>
+                      {selectedOtherUserId && (
+                        <CardDescription>
+                          {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.email}
+                        </CardDescription>
+                      )}
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <p>Cara Coordenação,</p>
-                        <p>
-                          Gostaria de agendar uma reunião para discutirmos o planejamento acadêmico do próximo semestre.
-                          Precisamos revisar:
-                        </p>
-                        <ul className="list-disc list-inside space-y-1 ml-4">
-                          <li>Grade curricular</li>
-                          <li>Distribuição de professores</li>
-                          <li>Calendário de avaliações</li>
-                          <li>Projetos especiais</li>
-                        </ul>
-                        <p>Aguardo retorno para agendarmos.</p>
-                        <p>
-                          Atenciosamente,
-                          <br />
-                          Direção
-                        </p>
-                        <div className="border-t pt-4">
-                          <Textarea placeholder="Digite sua resposta..." className="mb-4" />
-                          <LiquidGlassButton>
-                            <Send className="h-4 w-4 mr-2" />
-                            Responder
-                          </LiquidGlassButton>
+                      {selectedOtherUserId ? (
+                        <div className="space-y-4">
+                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                            {conversation.map((msg) => (
+                              <div key={msg.id} className={`flex ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`rounded-lg px-3 py-2 text-sm ${msg.senderId === currentUserId ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                                  <div className="text-[10px] text-muted-foreground mt-1">
+                                    {new Date(msg.sentAt).toLocaleString('pt-BR')}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="border-t pt-4">
+                            <Textarea
+                              placeholder="Digite sua resposta..."
+                              className="mb-4"
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                            />
+                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()}>
+                              <Send className="h-4 w-4 mr-2" />
+                              Responder
+                            </LiquidGlassButton>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Selecione uma conversa na lista ao lado.</div>
+                      )}
                     </CardContent>
                   </LiquidGlassCard>
                 </div>

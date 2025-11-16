@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -17,18 +17,80 @@ export interface DestinatarioOption {
 interface ModalNovaMensagemProps {
   isOpen: boolean
   onClose: () => void
-  onSend?: (payload: { destinatarioId: string | null; prioridade: string; assunto: string; mensagem: string }) => void
-  destinatarios: DestinatarioOption[]
+  onSend?: (payload: { destinatarioId: string | null; prioridade: string; assunto: string; mensagem: string, role: 'teacher' | 'student' | 'coordinator' }) => void
+  currentUserId: string
+  apiBaseUrl?: string
 }
 
-export function ModalNovaMensagem({ isOpen, onClose, onSend, destinatarios }: ModalNovaMensagemProps) {
+export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiBaseUrl }: ModalNovaMensagemProps) {
   const [selectedDestinatarioId, setSelectedDestinatarioId] = useState<string | null>(null)
   const [prioridade, setPrioridade] = useState<string>("normal")
   const [assunto, setAssunto] = useState("")
   const [mensagem, setMensagem] = useState("")
+  const [role, setRole] = useState<'teacher' | 'student' | 'coordinator' | ''>('')
+  const [remoteOptions, setRemoteOptions] = useState<DestinatarioOption[]>([])
+  const [lastQuery, setLastQuery] = useState("")
 
-  const handleSend = () => {
-    onSend?.({ destinatarioId: selectedDestinatarioId, prioridade, assunto, mensagem })
+  const API_URL = apiBaseUrl || process.env.NEXT_PUBLIC_API_URL || ""
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedDestinatarioId(null)
+      setPrioridade("normal")
+      setAssunto("")
+      setMensagem("")
+      setRole('')
+      setRemoteOptions([])
+      setLastQuery("")
+    }
+  }, [isOpen])
+
+  const handleSearch = useCallback(async (query: string) => {
+    setLastQuery(query)
+    if (!role || !API_URL) return
+    const q = (query ?? '').trim()
+    try {
+      const params = new URLSearchParams({
+        role,
+        coordinatorId: currentUserId,
+        q,
+        page: '1',
+        limit: '10',
+      })
+      const res = await fetch(`${API_URL}/communications/recipients?${params.toString()}`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!res.ok) {
+        throw new Error('Falha ao buscar destinatários')
+      }
+      const json = await res.json()
+      const opts: DestinatarioOption[] = (json?.data ?? []).map((u: any) => ({
+        id: u.id,
+        label: `${u.name} (${u.email})`,
+      }))
+      setRemoteOptions(opts)
+    } catch {
+      setRemoteOptions([])
+    }
+  }, [role, API_URL, currentUserId])
+
+  const handleSend = async () => {
+    if (!selectedDestinatarioId || !API_URL) return
+    const body = {
+      content: `Assunto: ${assunto}\n\n${mensagem}`,
+      receiverId: selectedDestinatarioId,
+    }
+    await fetch(`${API_URL}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': currentUserId,
+      },
+      body: JSON.stringify(body),
+    })
+    onSend?.({ destinatarioId: selectedDestinatarioId, prioridade, assunto, mensagem, role: (role || 'teacher') as any })
     onClose()
   }
 
@@ -42,28 +104,45 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, destinatarios }: Mo
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="destinatario">Destinatário</Label>
-              <Combobox
-                placeholder="Pesquise pelo nome do aluno ou turma"
-                options={destinatarios}
-                value={selectedDestinatarioId}
-                onChange={setSelectedDestinatarioId}
-              />
-            </div>
-            <div>
-              <Label htmlFor="prioridade">Prioridade</Label>
-              <Select value={prioridade} onValueChange={setPrioridade}>
+              <Label htmlFor="role">Público</Label>
+              <Select value={role} onValueChange={(v) => { setRole(v as any); setSelectedDestinatarioId(null); setRemoteOptions([]); if (lastQuery) handleSearch(lastQuery) }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Normal" />
+                  <SelectValue placeholder="Selecione o público" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="baixa">Baixa</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="urgente">Urgente</SelectItem>
+                  <SelectItem value="teacher">Professores</SelectItem>
+                  <SelectItem value="student">Alunos</SelectItem>
+                  <SelectItem value="coordinator">Coordenadores</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="destinatario">Destinatário</Label>
+              <Combobox
+                placeholder={role ? "Pesquise pelo nome ou email" : "Selecione o público primeiro"}
+                options={remoteOptions}
+                value={selectedDestinatarioId}
+                onChange={setSelectedDestinatarioId}
+                onSearch={(q) => {
+                  if (!role) return
+                  handleSearch(q)
+                }}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="prioridade">Prioridade</Label>
+            <Select value={prioridade} onValueChange={setPrioridade}>
+              <SelectTrigger>
+                <SelectValue placeholder="Normal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="baixa">Baixa</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="urgente">Urgente</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -78,7 +157,7 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, destinatarios }: Mo
         </div>
         <DialogFooter>
           <LiquidGlassButton variant="outline" onClick={onClose}>Cancelar</LiquidGlassButton>
-          <LiquidGlassButton onClick={handleSend} disabled={!selectedDestinatarioId || !assunto || !mensagem}>Enviar Mensagem</LiquidGlassButton>
+          <LiquidGlassButton onClick={handleSend} disabled={!role || !selectedDestinatarioId || !assunto || !mensagem}>Enviar Mensagem</LiquidGlassButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
