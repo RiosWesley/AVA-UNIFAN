@@ -1,137 +1,258 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
-import { MessageSquare, Users, TrendingUp, Eye, Shield, Settings, AlertTriangle, Download, FileText } from "lucide-react"
-import { ModalConfirmacao } from "@/components/modals"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
+import { MessageSquare, Users, TrendingUp, Eye, Plus, Shield, Settings } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { ModalNovaMensagem } from "@/components/modals"
 
-type AlertaModeracao = {
-  id: number
-  tipo: string
-  descricao: string
-  usuario: string
-  data: string
-  prioridade: "Alta" | "Média" | "Baixa"
-  status: "pendente" | "em_analise" | "resolvido"
+type OverviewData = {
+  totalMessages: number
+  totalNoticesActive: number
+  totalUsersActive: number
+  engagementRate: number
 }
 
-type ConfiguracaoSistema = {
-  id: string
-  nome: string
-  status: "Ativo" | "Inativo"
-  descricao: string
+type RoleChartItem = { role: string; count: number }
+type OverTimeItem = { bucket: string; total: number }
+
+type InboxItem = {
+  otherUser: { id: string; name: string; email: string; roles?: Array<{ name: string }> }
+  lastMessage: { id: string; content: string; sentAt: string; isRead: boolean }
+  unreadCount: number
 }
 
 export default function AdministradorComunicacaoPage() {
-  const [filtroPrioridade, setFiltroPrioridade] = useState<string>("todos")
-  const [alertasModeracao, setAlertasModeracao] = useState<AlertaModeracao[]>([
-    {
-      id: 1,
-      tipo: "Conteúdo Reportado",
-      descricao: "Mensagem no fórum reportada por linguagem inadequada",
-      usuario: "Bruno Santos (8º B)",
-      data: "Hoje, 14:30",
-      prioridade: "Alta",
-      status: "pendente",
-    },
-    {
-      id: 2,
-      tipo: "Spam Detectado",
-      descricao: "Múltiplas mensagens idênticas detectadas",
-      usuario: "Sistema",
-      data: "Ontem, 16:20",
-      prioridade: "Média",
-      status: "pendente",
-    },
-    {
-      id: 3,
-      tipo: "Comunicado Expirado",
-      descricao: "Comunicado sobre evento já passou da data",
-      usuario: "Sistema",
-      data: "2 dias atrás",
-      prioridade: "Baixa",
-      status: "pendente",
-    },
-  ])
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const currentUserId = "8bdcb155-3db3-4611-a9c7-db4db488ac5f"
 
-  const [configuracoesSistema, setConfiguracoesSistema] = useState<ConfiguracaoSistema[]>([
-    { id: "moderacao-auto", nome: "Moderação Automática", status: "Ativo", descricao: "Filtro automático de conteúdo" },
-    { id: "notificacoes-push", nome: "Notificações Push", status: "Ativo", descricao: "Notificações em tempo real" },
-    { id: "backup-mensagens", nome: "Backup de Mensagens", status: "Ativo", descricao: "Backup diário das comunicações" },
-    { id: "relatorios-auto", nome: "Relatórios Automáticos", status: "Ativo", descricao: "Relatórios semanais de atividade" },
-  ])
-
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [acaoConfirmacao, setAcaoConfirmacao] = useState<{ tipo: string; alertaId?: number } | null>(null)
-  const [tipoRelatorio, setTipoRelatorio] = useState<string>("")
-  const [periodoRelatorio, setPeriodoRelatorio] = useState<string>("")
+  const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
+  const [defaultDestinatarioId, setDefaultDestinatarioId] = useState<string | null>(null)
+  const [inbox, setInbox] = useState<InboxItem[]>([])
+  const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(null)
+  const [conversation, setConversation] = useState<Array<{ id: string; content: string; sentAt: string; senderId: string; receiverId?: string; sender?: any; receiver?: any }>>([])
+  const [replyText, setReplyText] = useState("")
+  const [otherUserRole, setOtherUserRole] = useState<string | null>(null)
+  const [periodDays, setPeriodDays] = useState<'7' | '30' | '90'>('30')
+  const [overview, setOverview] = useState<OverviewData | null>(null)
+  const [overviewLoading, setOverviewLoading] = useState(false)
+  const [overviewError, setOverviewError] = useState<string | null>(null)
+  const [roleChart, setRoleChart] = useState<RoleChartItem[]>([])
+  const [roleChartLoading, setRoleChartLoading] = useState(false)
+  const [roleChartError, setRoleChartError] = useState<string | null>(null)
+  const [overTime, setOverTime] = useState<OverTimeItem[]>([])
+  const [overTimeLoading, setOverTimeLoading] = useState(false)
+  const [overTimeError, setOverTimeError] = useState<string | null>(null)
 
   const estatisticasGerais = {
-    mensagensTotais: 1250,
-    comunicadosAtivos: 15,
-    usuariosAtivos: 890,
-    taxaEngajamento: 82,
+    mensagensTotais: overview?.totalMessages ?? 0,
+    comunicadosAtivos: overview?.totalNoticesActive ?? 0,
+    usuariosAtivos: overview?.totalUsersActive ?? 0,
+    taxaEngajamento: overview?.engagementRate ?? 0,
   }
 
-  const dadosEngajamento = [
-    { mes: "Jan", mensagens: 980, comunicados: 12, engajamento: 78 },
-    { mes: "Fev", mensagens: 1120, comunicados: 14, engajamento: 80 },
-    { mes: "Mar", mensagens: 1250, comunicados: 15, engajamento: 82 },
-  ]
+  const formatNumber = (value: number) => value.toLocaleString('pt-BR')
 
-  const comunicadosPorCategoria = [
-    { categoria: "Acadêmico", quantidade: 45, cor: "#15803d" },
-    { categoria: "Evento", quantidade: 32, cor: "#84cc16" },
-    { categoria: "Informativo", quantidade: 28, cor: "#f97316" },
-    { categoria: "Urgente", quantidade: 8, cor: "#be123c" },
-  ]
-
-  const alertasFiltrados = useMemo(() => {
-    if (filtroPrioridade === "todos") return alertasModeracao
-    const prioridadeNormalizada = filtroPrioridade.charAt(0).toUpperCase() + filtroPrioridade.slice(1)
-    return alertasModeracao.filter((alerta) => alerta.prioridade === prioridadeNormalizada)
-  }, [alertasModeracao, filtroPrioridade])
-
-  const handleInvestigar = (alertaId: number) => {
-    setAlertasModeracao((prev) =>
-      prev.map((alerta) => (alerta.id === alertaId ? { ...alerta, status: "em_analise" } : alerta))
-    )
-  }
-
-  const handleResolver = (alertaId: number) => {
-    setAcaoConfirmacao({ tipo: "resolver", alertaId })
-    setConfirmOpen(true)
-  }
-
-  const confirmarResolver = () => {
-    if (acaoConfirmacao?.alertaId) {
-      setAlertasModeracao((prev) => prev.filter((alerta) => alerta.id !== acaoConfirmacao.alertaId))
+  const fetchInbox = async () => {
+    if (!API_URL) return
+    try {
+      const res = await fetch(`${API_URL}/messages/inbox`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar inbox')
+      const data = await res.json()
+      const normalized: InboxItem[] = (Array.isArray(data) ? data : []).map((i: any) => ({
+        ...i,
+        lastMessage: { ...i.lastMessage, sentAt: i.lastMessage?.sentAt ?? new Date().toISOString() },
+      }))
+      setInbox(normalized)
+    } catch {
+      setInbox([])
     }
-    setConfirmOpen(false)
-    setAcaoConfirmacao(null)
   }
 
-  const toggleConfiguracao = (configId: string) => {
-    setConfiguracoesSistema((prev) =>
-      prev.map((config) =>
-        config.id === configId ? { ...config, status: config.status === "Ativo" ? "Inativo" : "Ativo" } : config
-      )
-    )
+  const fetchConversation = async (otherId: string) => {
+    if (!API_URL) return
+    try {
+      const res = await fetch(`${API_URL}/messages/conversation/${otherId}`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar conversa')
+      const list = await res.json()
+      const items = (Array.isArray(list) ? list : []).map((m: any) => ({
+        id: m.id as string,
+        content: m.content as string,
+        sentAt: m.sentAt,
+        senderId: m.sender?.id as string,
+        receiverId: m.receiver?.id as string | undefined,
+        sender: m.sender,
+        receiver: m.receiver,
+      }))
+      setConversation(items)
+
+      let detectedRole: string | null = null
+      for (const m of items) {
+        const other = m.senderId === otherId ? m.sender : m.receiver
+        const roles = other?.roles as Array<{ name: string }> | undefined
+        if (roles?.some(r => r.name === 'admin')) {
+          detectedRole = 'Administrador'
+          break
+        }
+        if (roles?.some(r => r.name === 'coordinator')) {
+          detectedRole = 'Coordenador'
+          break
+        }
+        if (roles?.some(r => r.name === 'teacher')) {
+          detectedRole = 'Professor'
+          break
+        }
+        if (roles?.some(r => r.name === 'student')) {
+          detectedRole = 'Aluno'
+        }
+      }
+      setOtherUserRole(detectedRole)
+
+      const unreadReceived = (Array.isArray(list) ? list : []).filter((m: any) => m.receiver?.id === currentUserId && !m.isRead)
+      await Promise.all(unreadReceived.map((m: any) => (
+        fetch(`${API_URL}/messages/${m.id}/read`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+          body: JSON.stringify({ read: true }),
+        })
+      )))
+      fetchInbox()
+    } catch {
+      setConversation([])
+    }
   }
 
-  const handleGerarRelatorio = () => {
-    if (!tipoRelatorio || !periodoRelatorio) return
-    console.log("Gerando relatório:", { tipoRelatorio, periodoRelatorio })
+  const handleSelectInboxItem = (otherId: string) => {
+    setSelectedOtherUserId(otherId)
+    fetchConversation(otherId)
   }
+
+  const handleReply = async () => {
+    if (!selectedOtherUserId || !replyText.trim()) return
+    try {
+      await fetch(`${API_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+        body: JSON.stringify({
+          content: replyText,
+          receiverId: selectedOtherUserId,
+        }),
+      })
+      setReplyText("")
+      await fetchConversation(selectedOtherUserId)
+    } catch {
+      // ignore erro
+    }
+  }
+
+  useEffect(() => {
+    fetchInbox()
+  }, [])
+
+  const dateRange = useMemo(() => {
+    const end = new Date()
+    const start = new Date(end)
+    start.setDate(end.getDate() - Number(periodDays))
+    return { start: start.toISOString(), end: end.toISOString() }
+  }, [periodDays])
+
+  useEffect(() => {
+    if (!API_URL) return
+    const controller = new AbortController()
+
+    const loadOverview = async () => {
+      setOverviewLoading(true)
+      setOverviewError(null)
+      try {
+        const params = new URLSearchParams({ start: dateRange.start, end: dateRange.end })
+        const res = await fetch(`${API_URL}/analytics/messages/overview?${params.toString()}`, { signal: controller.signal })
+        if (!res.ok) throw new Error('Falha ao carregar métricas')
+        const json = await res.json()
+        setOverview(json)
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          setOverviewError('Erro ao carregar métricas')
+          setOverview(null)
+        }
+      } finally {
+        setOverviewLoading(false)
+      }
+    }
+
+    const loadByRole = async () => {
+      setRoleChartLoading(true)
+      setRoleChartError(null)
+      try {
+        const params = new URLSearchParams({ start: dateRange.start, end: dateRange.end })
+        const res = await fetch(`${API_URL}/analytics/messages/by-role?${params.toString()}`, { signal: controller.signal })
+        if (!res.ok) throw new Error('Falha ao carregar mensagens por perfil')
+        const json = await res.json()
+        setRoleChart(json)
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          setRoleChartError('Erro ao carregar gráfico por perfil')
+          setRoleChart([])
+        }
+      } finally {
+        setRoleChartLoading(false)
+      }
+    }
+
+    const loadOverTime = async () => {
+      setOverTimeLoading(true)
+      setOverTimeError(null)
+      try {
+        const bucket = periodDays === '90' ? 'week' : 'day'
+        const params = new URLSearchParams({ start: dateRange.start, end: dateRange.end, bucket })
+        const res = await fetch(`${API_URL}/analytics/messages/over-time?${params.toString()}`, { signal: controller.signal })
+        if (!res.ok) throw new Error('Falha ao carregar evolução')
+        const json = await res.json()
+        setOverTime(json)
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          setOverTimeError('Erro ao carregar gráfico temporal')
+          setOverTime([])
+        }
+      } finally {
+        setOverTimeLoading(false)
+      }
+    }
+
+    loadOverview()
+    loadByRole()
+    loadOverTime()
+
+    return () => controller.abort()
+  }, [API_URL, dateRange.start, dateRange.end, periodDays])
+
+  const roleChartData = useMemo(() => {
+    const labels: Record<string, string> = {
+      admin: 'Administradores',
+      coordinator: 'Coordenadores',
+      teacher: 'Professores',
+      student: 'Alunos',
+    }
+    return roleChart.map(item => ({
+      categoria: labels[item.role] ?? item.role,
+      quantidade: item.count,
+    }))
+  }, [roleChart])
+
+  const overTimeData = useMemo(() => {
+    return overTime.map(item => ({
+      bucket: new Date(item.bucket).toLocaleDateString('pt-BR'),
+      mensagens: item.total,
+    }))
+  }, [overTime])
 
   return (
     <div className="flex h-screen bg-background">
@@ -163,8 +284,14 @@ export default function AdministradorComunicacaoPage() {
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasGerais.mensagensTotais}</div>
-                <p className="text-xs text-muted-foreground">+12% vs mês anterior</p>
+                <div className="text-2xl font-bold text-primary">
+                  {overviewLoading ? '...' : formatNumber(estatisticasGerais.mensagensTotais)}
+                </div>
+                {overviewError ? (
+                  <p className="text-xs text-destructive">{overviewError}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Últimos {periodDays} dias</p>
+                )}
               </CardContent>
             </LiquidGlassCard>
 
@@ -174,8 +301,10 @@ export default function AdministradorComunicacaoPage() {
                 <Eye className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasGerais.comunicadosAtivos}</div>
-                <p className="text-xs text-muted-foreground">3 publicados hoje</p>
+                <div className="text-2xl font-bold text-primary">
+                  {overviewLoading ? '...' : formatNumber(estatisticasGerais.comunicadosAtivos)}
+                </div>
+                <p className="text-xs text-muted-foreground">Ativos no momento</p>
               </CardContent>
             </LiquidGlassCard>
 
@@ -185,8 +314,10 @@ export default function AdministradorComunicacaoPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasGerais.usuariosAtivos}</div>
-                <p className="text-xs text-muted-foreground">97% do total de usuários</p>
+                <div className="text-2xl font-bold text-primary">
+                  {overviewLoading ? '...' : formatNumber(estatisticasGerais.usuariosAtivos)}
+                </div>
+                <p className="text-xs text-muted-foreground">Usuários ativos no sistema</p>
               </CardContent>
             </LiquidGlassCard>
 
@@ -196,248 +327,206 @@ export default function AdministradorComunicacaoPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{estatisticasGerais.taxaEngajamento}%</div>
-                <p className="text-xs text-muted-foreground">+2% vs mês anterior</p>
+                <div className="text-2xl font-bold text-primary">
+                  {overviewLoading ? '...' : `${estatisticasGerais.taxaEngajamento.toFixed(1)}%`}
+                </div>
+                <p className="text-xs text-muted-foreground">Mensagens lidas / enviadas</p>
               </CardContent>
             </LiquidGlassCard>
           </div>
 
-          <Tabs defaultValue="analytics" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="mensagens" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="moderacao">Moderação</TabsTrigger>
-              <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-              <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
             </TabsList>
 
+            <TabsContent value="mensagens">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Mensagens</h3>
+                <LiquidGlassButton onClick={() => { setDefaultDestinatarioId(null); setIsNovaMensagemOpen(true) }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Mensagem
+                </LiquidGlassButton>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <MessageSquare className="h-5 w-5 mr-2" />
+                        Caixa de Entrada
+                      </CardTitle>
+                      <CardDescription>{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {inbox.map((item) => (
+                          <div
+                            key={item.otherUser.id}
+                            onClick={() => handleSelectInboxItem(item.otherUser.id)}
+                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
+                          >
+                            <div className="flex items-start justify-between mb-1">
+                              <h5 className="font-medium text-sm">{item.otherUser.name}</h5>
+                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full" />}
+                            </div>
+                            <p className="font-medium text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(item.lastMessage?.sentAt || Date.now()).toLocaleString('pt-BR')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </LiquidGlassCard>
+                </div>
+
+                <div className="lg:col-span-2">
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardHeader>
+                      <CardTitle>
+                        {selectedOtherUserId
+                          ? (
+                            <span>
+                              {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name}
+                              {otherUserRole && (
+                                <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-xs">
+                                  {otherUserRole}
+                                </span>
+                              )}
+                            </span>
+                          )
+                          : 'Selecione uma conversa'}
+                      </CardTitle>
+                      {selectedOtherUserId && (
+                        <CardDescription>
+                          {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.email}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      {selectedOtherUserId ? (
+                        <div className="space-y-4">
+                          <div className="h-80 overflow-y-auto pr-2 space-y-4">
+                            {conversation.map((m) => (
+                              <div key={m.id} className={`flex ${m.senderId === currentUserId ? "justify-end" : "justify-start"}`}>
+                                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${m.senderId === currentUserId ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                                  <p>{m.content}</p>
+                                  <p className="mt-1 text-[10px] opacity-70">{new Date(m.sentAt).toLocaleString("pt-BR")}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Input
+                              placeholder="Digite sua mensagem..."
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault()
+                                  handleReply()
+                                }
+                              }}
+                            />
+                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()}>
+                              Enviar
+                            </LiquidGlassButton>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Nenhuma conversa aberta.</div>
+                      )}
+                    </CardContent>
+                  </LiquidGlassCard>
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="analytics">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Analytics</h3>
+                <select
+                  className="border rounded px-3 py-2 text-sm bg-background"
+                  value={periodDays}
+                  onChange={(e) => setPeriodDays(e.target.value as '7' | '30' | '90')}
+                >
+                  <option value="7">Últimos 7 dias</option>
+                  <option value="30">Últimos 30 dias</option>
+                  <option value="90">Últimos 90 dias</option>
+                </select>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Evolução da Comunicação</CardTitle>
-                    <CardDescription>Mensagens e comunicados por mês</CardDescription>
+                    <CardDescription>Mensagens no período selecionado</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={dadosEngajamento}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="mes" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="mensagens" stroke="#15803d" strokeWidth={3} name="Mensagens" />
-                        <Line
-                          type="monotone"
-                          dataKey="comunicados"
-                          stroke="#84cc16"
-                          strokeWidth={3}
-                          name="Comunicados"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {overTimeLoading ? (
+                      <div className="text-sm text-muted-foreground">Carregando...</div>
+                    ) : overTimeError ? (
+                      <div className="text-sm text-destructive">{overTimeError}</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={overTimeData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="bucket" />
+                          <YAxis />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="mensagens" stroke="#15803d" strokeWidth={3} name="Mensagens" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Comunicados por Categoria</CardTitle>
-                    <CardDescription>Distribuição dos tipos de comunicado</CardDescription>
+                    <CardTitle>Mensagens por Perfil</CardTitle>
+                    <CardDescription>Distribuição por role do remetente</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={comunicadosPorCategoria}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="categoria" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="quantidade" fill="#15803d" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
+                    {roleChartLoading ? (
+                      <CardContent>
+                        <div className="text-sm text-muted-foreground">Carregando...</div>
+                      </CardContent>
+                    ) : roleChartError ? (
+                      <CardContent>
+                        <div className="text-sm text-destructive">{roleChartError}</div>
+                      </CardContent>
+                    ) : (
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={roleChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="categoria" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="quantidade" fill="#15803d" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    )}
                 </Card>
               </div>
             </TabsContent>
 
-            <TabsContent value="moderacao">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Alertas de Moderação</h3>
-                  <div className="flex items-center space-x-2">
-                    <Select value={filtroPrioridade} onValueChange={setFiltroPrioridade}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Filtrar por prioridade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="média">Média</SelectItem>
-                        <SelectItem value="baixa">Baixa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {alertasFiltrados.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      Nenhum alerta encontrado com o filtro selecionado.
-                    </CardContent>
-                  </Card>
-                ) : (
-                  alertasFiltrados.map((alerta) => (
-                    <Card key={alerta.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <AlertTriangle className="h-5 w-5 text-destructive" />
-                              <h4 className="font-semibold text-lg">{alerta.tipo}</h4>
-                              <Badge
-                                variant={
-                                  alerta.prioridade === "Alta"
-                                    ? "destructive"
-                                    : alerta.prioridade === "Média"
-                                      ? "secondary"
-                                      : "outline"
-                                }
-                              >
-                                {alerta.prioridade}
-                              </Badge>
-                              {alerta.status === "em_analise" && (
-                                <Badge variant="secondary">Em Análise</Badge>
-                              )}
-                            </div>
-                            <p className="text-sm mb-2">{alerta.descricao}</p>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                              <span>Usuário: {alerta.usuario}</span>
-                              <span>{alerta.data}</span>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <LiquidGlassButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleInvestigar(alerta.id)}
-                              disabled={alerta.status === "em_analise"}
-                            >
-                              Investigar
-                            </LiquidGlassButton>
-                            <LiquidGlassButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleResolver(alerta.id)}
-                            >
-                              Resolver
-                            </LiquidGlassButton>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="configuracoes">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Configurações do Sistema</h3>
-
-                {configuracoesSistema.map((config) => (
-                  <Card key={config.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-lg mb-1">{config.nome}</h4>
-                          <p className="text-sm text-muted-foreground">{config.descricao}</p>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={config.status === "Ativo"}
-                              onCheckedChange={() => toggleConfiguracao(config.id)}
-                            />
-                            <Label className="text-sm">{config.status}</Label>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="relatorios">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gerar Relatórios</CardTitle>
-                  <CardDescription>Relatórios detalhados de comunicação</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Tipo de Relatório</Label>
-                        <Select value={tipoRelatorio} onValueChange={setTipoRelatorio}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="mensagens">Relatório de Mensagens</SelectItem>
-                            <SelectItem value="comunicados">Relatório de Comunicados</SelectItem>
-                            <SelectItem value="engajamento">Relatório de Engajamento</SelectItem>
-                            <SelectItem value="moderacao">Relatório de Moderação</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Período</Label>
-                        <Select value={periodoRelatorio} onValueChange={setPeriodoRelatorio}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o período" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="semana">Última semana</SelectItem>
-                            <SelectItem value="mes">Último mês</SelectItem>
-                            <SelectItem value="trimestre">Último trimestre</SelectItem>
-                            <SelectItem value="ano">Último ano</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end space-x-2">
-                      <LiquidGlassButton
-                        variant="outline"
-                        onClick={handleGerarRelatorio}
-                        disabled={!tipoRelatorio || !periodoRelatorio}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Visualizar
-                      </LiquidGlassButton>
-                      <LiquidGlassButton
-                        onClick={handleGerarRelatorio}
-                        disabled={!tipoRelatorio || !periodoRelatorio}
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Gerar Relatório
-                      </LiquidGlassButton>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </div>
       </main>
-
-      <ModalConfirmacao
-        isOpen={confirmOpen}
-        title="Resolver alerta"
-        description="Tem certeza que deseja marcar este alerta como resolvido? Esta ação não pode ser desfeita."
-        confirmLabel="Resolver"
-        onConfirm={confirmarResolver}
-        onClose={() => {
-          setConfirmOpen(false)
-          setAcaoConfirmacao(null)
+      <ModalNovaMensagem
+        isOpen={isNovaMensagemOpen}
+        onClose={() => setIsNovaMensagemOpen(false)}
+        currentUserId={currentUserId}
+        context="admin"
+        defaultDestinatarioId={defaultDestinatarioId}
+        onSend={({ destinatarioId }) => {
+          setIsNovaMensagemOpen(false)
+          fetchInbox()
+          if (destinatarioId) {
+            handleSelectInboxItem(destinatarioId)
+          }
         }}
       />
     </div>

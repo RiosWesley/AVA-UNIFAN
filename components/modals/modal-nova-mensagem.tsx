@@ -17,10 +17,10 @@ export interface DestinatarioOption {
 interface ModalNovaMensagemProps {
   isOpen: boolean
   onClose: () => void
-  onSend?: (payload: { destinatarioId: string | null; prioridade: string; assunto: string; mensagem: string, role: 'teacher' | 'student' | 'coordinator' }) => void
+  onSend?: (payload: { destinatarioId: string | null; prioridade: string; assunto: string; mensagem: string, role: 'teacher' | 'student' | 'coordinator' | 'admin' }) => void
   currentUserId: string
   apiBaseUrl?: string
-  context?: 'coordinator' | 'teacher' | 'student'
+  context?: 'coordinator' | 'teacher' | 'student' | 'admin'
   defaultDestinatarioId?: string | null
 }
 
@@ -29,7 +29,7 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
   const [prioridade, setPrioridade] = useState<string>("normal")
   const [assunto, setAssunto] = useState("")
   const [mensagem, setMensagem] = useState("")
-  const [role, setRole] = useState<'teacher' | 'student' | 'coordinator' | ''>(context === 'student' ? 'teacher' : '')
+  const [role, setRole] = useState<'teacher' | 'student' | 'coordinator' | 'admin' | ''>(context === 'student' ? 'teacher' : '')
   const [remoteOptions, setRemoteOptions] = useState<DestinatarioOption[]>([])
   const [lastQuery, setLastQuery] = useState("")
 
@@ -65,7 +65,7 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
         params.set('coordinatorId', currentUserId)
       } else if (context === 'student') {
         params.set('studentId', currentUserId)
-      }
+      } // admin não precisa parâmetro extra
       const res = await fetch(`${API_URL}/communications/recipients?${params.toString()}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -119,18 +119,10 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
                   <SelectValue placeholder="Selecione o público" />
                 </SelectTrigger>
                 <SelectContent>
-                  {context === 'student' ? (
-                    <>
-                      <SelectItem value="teacher">Professores</SelectItem>
-                      <SelectItem value="coordinator">Coordenadores</SelectItem>
-                    </>
-                  ) : (
-                    <>
-                      <SelectItem value="teacher">Professores</SelectItem>
-                      <SelectItem value="student">Alunos</SelectItem>
-                      <SelectItem value="coordinator">Coordenadores</SelectItem>
-                    </>
-                  )}
+                  <SelectItem value="teacher">Professores</SelectItem>
+                  {(context !== 'teacher' && context !== 'student') && <SelectItem value="student">Alunos</SelectItem>}
+                  {context !== 'teacher' && <SelectItem value="coordinator">Coordenadores</SelectItem>}
+                  {context === 'admin' && <SelectItem value="admin">Administradores</SelectItem>}
                 </SelectContent>
               </Select>
             </div>

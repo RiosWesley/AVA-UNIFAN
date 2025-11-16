@@ -31,6 +31,7 @@ export default function ProfessorComunicacaoPage() {
   const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(null)
   const [conversation, setConversation] = useState<Array<{ id: string; content: string; sentAt: string; senderId: string; receiverId?: string }>>([])
   const [replyText, setReplyText] = useState<string>("")
+  const [otherUserRole, setOtherUserRole] = useState<string | null>(null)
 
   const fetchInbox = async () => {
     if (!API_URL || !currentUserId) return
@@ -67,6 +68,32 @@ export default function ProfessorComunicacaoPage() {
       }))
       setConversation(items)
 
+      let detectedRole: string | null = null
+      if (Array.isArray(list)) {
+        for (const m of list) {
+          const sender = (m && m.sender) || null
+          const receiver = (m && m.receiver) || null
+          const other = sender?.id === otherId ? sender : (receiver?.id === otherId ? receiver : null)
+          const roles = other?.roles as Array<{ name: string }> | undefined
+          if (roles?.some(r => r.name === 'admin')) {
+            detectedRole = 'Administrador'
+            break
+          }
+          if (roles?.some(r => r.name === 'coordinator')) {
+            detectedRole = 'Coordenador'
+            break
+          }
+          if (roles?.some(r => r.name === 'teacher')) {
+            detectedRole = 'Professor'
+            break
+          }
+          if (roles?.some(r => r.name === 'student')) {
+            detectedRole = 'Aluno'
+          }
+        }
+      }
+      setOtherUserRole(detectedRole)
+
       // marcar como lidas as recebidas não lidas
       const unreadReceived = (Array.isArray(list) ? list : []).filter((m: any) => m.receiver?.id === currentUserId && !m.isRead)
       await Promise.all(unreadReceived.map((m: any) => (
@@ -85,6 +112,7 @@ export default function ProfessorComunicacaoPage() {
 
   const handleSelectInboxItem = (otherId: string) => {
     setSelectedOtherUserId(otherId)
+    setOtherUserRole(null)
     fetchConversation(otherId)
   }
 
@@ -294,10 +322,19 @@ export default function ProfessorComunicacaoPage() {
 
                 <div className="lg:col-span-2">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-                    <CardHeader>
+                      <CardHeader>
                       <CardTitle>
                         {selectedOtherUserId
-                          ? inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name
+                          ? (
+                            <span>
+                              {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name}
+                              {otherUserRole && (
+                                <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-xs">
+                                  {otherUserRole}
+                                </span>
+                              )}
+                            </span>
+                          )
                           : 'Selecione uma conversa'}
                       </CardTitle>
                       {selectedOtherUserId && (

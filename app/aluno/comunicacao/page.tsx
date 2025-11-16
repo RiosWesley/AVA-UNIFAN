@@ -67,13 +67,17 @@ export default function AlunoComunicacaoPage() {
           const other = sender?.id === otherId ? sender : (receiver?.id === otherId ? receiver : null)
           const roles = other?.roles as Array<{ name: string }> | undefined
           if (roles && roles.length > 0) {
+            if (roles.some(r => r.name === 'admin')) {
+              detectedRole = 'Administrador'
+              break
+            }
             if (roles.some(r => r.name === 'coordinator')) {
               detectedRole = 'Coordenador'
               break
             }
             if (roles.some(r => r.name === 'teacher')) {
               detectedRole = 'Professor'
-              // continua para ver se há coordenador, mas normalmente basta professor
+              break
             }
           }
         }
