@@ -7,50 +7,130 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { MessageSquare, Megaphone } from "lucide-react"
-import { useMemo, useState } from "react"
-import { useChatThreads, useChatMessages, useSendChatMessage, useStudentNotices } from "@/hooks/use-comunicacao"
+import { MessageSquare, Megaphone, Plus } from "lucide-react"
+import { useMemo, useState, useEffect } from "react"
+import { useStudentNotices } from "@/hooks/use-comunicacao"
 import { useCurrentStudent } from "@/hooks/use-dashboard"
+import { ModalNovaMensagem } from "@/components/modals"
 
 export default function AlunoComunicacaoPage() {
-  type UIChatMessage = { id: string; autor: "prof" | "aluno"; texto: string; quando: string; status?: "pending" | "error" | "sent" }
-
-  const [conversaSelecionadaId, setConversaSelecionadaId] = useState<string | null>(null)
-  const [messageText, setMessageText] = useState("")
+  const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
+  const [defaultDestinatarioId, setDefaultDestinatarioId] = useState<string | null>(null)
   const { data: currentStudent } = useCurrentStudent()
   const studentId = "29bc17a4-0b68-492b-adef-82718898d9eb"
-  const threads = useChatThreads(studentId)
-  const chatMessages = useChatMessages({ studentId, classId: conversaSelecionadaId })
-  const sendMessage = useSendChatMessage()
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
 
-  const mensagensDaConversa = useMemo(() => {
-    if (!chatMessages.data) return [] as UIChatMessage[]
-    return chatMessages.data.map((m) => {
-      const anyMsg = m as any
-      const status: "pending" | "error" | "sent" = anyMsg.__error ? "error" : (anyMsg.__optimistic ? "pending" : "sent")
-      return {
-        id: m.id,
-        autor: m.author,
-        texto: m.content,
-        quando: new Date(m.sentAt).toLocaleString("pt-BR"),
-        status,
-      } as UIChatMessage
-    })
-  }, [chatMessages.data])
+  type InboxItem = {
+    otherUser: { id: string; name: string; email: string }
+    lastMessage: { id: string; content: string; sentAt: string; isRead: boolean }
+    unreadCount: number
+  }
+  const [inbox, setInbox] = useState<InboxItem[]>([])
+  const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(null)
+  const [conversation, setConversation] = useState<Array<{ id: string; content: string; sentAt: string; senderId: string; receiverId?: string }>>([])
+  const [replyText, setReplyText] = useState<string>("")
+  const [otherUserRole, setOtherUserRole] = useState<string | null>(null)
 
-  function abrirConversa(conversaId: string) {
-    setConversaSelecionadaId(conversaId)
+  const fetchInbox = async () => {
+    if (!API_URL || !studentId) return
+    try {
+      const res = await fetch(`${API_URL}/messages/inbox`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': studentId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar inbox')
+      const data = await res.json()
+      const normalized: InboxItem[] = (Array.isArray(data) ? data : []).map((i: any) => ({
+        ...i,
+        lastMessage: { ...i.lastMessage, sentAt: i.lastMessage?.sentAt ?? new Date().toISOString() },
+      }))
+      setInbox(normalized)
+    } catch {
+      setInbox([])
+    }
   }
 
-  function enviarMensagem() {
-    if (!conversaSelecionadaId || !studentId) return
-    const texto = messageText.trim()
-    if (!texto) return
-    sendMessage.mutate({ studentId, classId: conversaSelecionadaId, content: texto })
-    setMessageText("")
+  const fetchConversation = async (otherId: string) => {
+    if (!API_URL || !studentId) return
+    try {
+      const res = await fetch(`${API_URL}/messages/conversation/${otherId}`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': studentId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar conversa')
+      const list = await res.json()
+
+      // detectar role do outro usuário a partir das mensagens retornadas
+      let detectedRole: string | null = null
+      if (Array.isArray(list)) {
+        for (const m of list) {
+          const sender = (m && m.sender) || null
+          const receiver = (m && m.receiver) || null
+          const other = sender?.id === otherId ? sender : (receiver?.id === otherId ? receiver : null)
+          const roles = other?.roles as Array<{ name: string }> | undefined
+          if (roles && roles.length > 0) {
+            if (roles.some(r => r.name === 'coordinator')) {
+              detectedRole = 'Coordenador'
+              break
+            }
+            if (roles.some(r => r.name === 'teacher')) {
+              detectedRole = 'Professor'
+              // continua para ver se há coordenador, mas normalmente basta professor
+            }
+          }
+        }
+      }
+      setOtherUserRole(detectedRole)
+
+      const items = (Array.isArray(list) ? list : []).map((m: any) => ({
+        id: m.id as string,
+        content: m.content as string,
+        sentAt: m.sentAt,
+        senderId: m.sender?.id as string,
+        receiverId: m.receiver?.id as string | undefined,
+      }))
+      setConversation(items)
+
+      const unreadReceived = (Array.isArray(list) ? list : []).filter((m: any) => m.receiver?.id === studentId && !m.isRead)
+      await Promise.all(unreadReceived.map((m: any) => (
+        fetch(`${API_URL}/messages/${m.id}/read`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': studentId },
+          body: JSON.stringify({ read: true }),
+        })
+      )))
+      fetchInbox()
+    } catch {
+      setConversation([])
+    }
+  }
+
+  const handleSelectInboxItem = (otherId: string) => {
+    setSelectedOtherUserId(otherId)
+    fetchConversation(otherId)
+  }
+
+  const handleReply = async () => {
+    if (!API_URL || !studentId || !selectedOtherUserId || !replyText.trim()) return
+    try {
+      await fetch(`${API_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': studentId },
+        body: JSON.stringify({
+          content: replyText,
+          receiverId: selectedOtherUserId,
+        }),
+      })
+      setReplyText("")
+      await fetchConversation(selectedOtherUserId)
+    } catch {
+      // ignore
+    }
   }
 
   const notices = useStudentNotices(studentId)
+
+  useEffect(() => {
+    fetchInbox()
+  }, [])
 
   return (
     <div className="flex h-screen bg-background">
@@ -72,29 +152,41 @@ export default function AlunoComunicacaoPage() {
             </TabsList>
 
             <TabsContent value="mensagens">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Mensagens</h3>
+                <div className="flex gap-2">
+                  <LiquidGlassButton onClick={() => { setDefaultDestinatarioId(null); setIsNovaMensagemOpen(true) }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Mensagem
+                  </LiquidGlassButton>
+                </div>
+              </div>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle className="flex items-center">
                         <MessageSquare className="h-5 w-5 mr-2" />
-                        Professores do semestre
+                        Caixa de Entrada
                       </CardTitle>
+                      <CardDescription>{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {threads.isLoading && <div className="text-sm text-muted-foreground">Carregando...</div>}
-                        {threads.error && <div className="text-sm text-destructive">Erro ao carregar conversas.</div>}
-                        {threads.data?.map((t) => (
+                        {inbox.map((item) => (
                           <div
-                            key={t.classId}
-                            onClick={() => abrirConversa(t.classId)}
-                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${conversaSelecionadaId === t.classId ? "bg-primary/5 border-primary/20" : ""}`}
+                            key={item.otherUser.id}
+                            onClick={() => handleSelectInboxItem(item.otherUser.id)}
+                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
                           >
                             <div className="flex items-start justify-between mb-1">
-                              <h5 className="font-medium text-sm">{t.professorName}</h5>
+                              <h5 className="font-medium text-sm">{item.otherUser.name}</h5>
+                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full" />}
                             </div>
-                            <p className="text-xs text-muted-foreground">{t.discipline}</p>
+                            <p className="font-medium text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(item.lastMessage?.sentAt || Date.now()).toLocaleString('pt-BR')}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -105,63 +197,53 @@ export default function AlunoComunicacaoPage() {
                 <div className="lg:col-span-2">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
-                      {(() => {
-                        const selecionada = threads.data?.find((p) => p.classId === conversaSelecionadaId)
-                        return selecionada ? (
-                          <>
-                            <CardTitle>{selecionada.professorName}</CardTitle>
-                            <CardDescription>{selecionada.discipline}</CardDescription>
-                          </>
-                        ) : (
-                          <>
-                            <CardTitle>Selecione uma conversa</CardTitle>
-                            <CardDescription>Escolha um professor à esquerda para abrir o chat</CardDescription>
-                          </>
-                        )
-                      })()}
+                      <CardTitle>
+                        {selectedOtherUserId
+                          ? (
+                            <span>
+                              {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name}
+                              {otherUserRole && (
+                                <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-xs">
+                                  {otherUserRole}
+                                </span>
+                              )}
+                            </span>
+                          )
+                          : 'Selecione uma conversa'}
+                      </CardTitle>
+                      {selectedOtherUserId && (
+                        <CardDescription>
+                          {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.email}
+                        </CardDescription>
+                      )}
                     </CardHeader>
                     <CardContent>
-                      {conversaSelecionadaId ? (
+                      {selectedOtherUserId ? (
                         <div className="space-y-4">
                           <div className="h-80 overflow-y-auto pr-2 space-y-4">
-                            {chatMessages.isLoading && <div className="text-sm text-muted-foreground">Carregando...</div>}
-                            {chatMessages.error && <div className="text-sm text-destructive">Erro ao carregar mensagens.</div>}
-                            {mensagensDaConversa.map((m) => {
-                              const bubbleBase = m.autor === "aluno" ? "bg-primary text-primary-foreground" : "bg-muted"
-                              const stateClass =
-                                m.status === "pending" ? "opacity-75" :
-                                m.status === "error" ? "ring-1 ring-destructive" : ""
-                              return (
-                                <div key={m.id} className={`flex ${m.autor === "aluno" ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[80%] rounded-lg p-3 text-sm ${bubbleBase} ${stateClass}`}>
-                                    <p>{m.texto}</p>
-                                    <p className="mt-1 text-[10px] opacity-70">{m.quando}</p>
-                                    {m.status === "pending" && (
-                                      <p className="mt-1 text-[10px] opacity-70">Enviando...</p>
-                                    )}
-                                    {m.status === "error" && (
-                                      <p className="mt-1 text-[10px] text-destructive">Falha ao enviar</p>
-                                    )}
-                                  </div>
+                            {conversation.map((m) => (
+                              <div key={m.id} className={`flex ${m.senderId === studentId ? "justify-end" : "justify-start"}`}>
+                                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${m.senderId === studentId ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                                  <p>{m.content}</p>
+                                  <p className="mt-1 text-[10px] opacity-70">{new Date(m.sentAt).toLocaleString("pt-BR")}</p>
                                 </div>
-                              )
-                            })}
+                              </div>
+                            ))}
                           </div>
-
                           <div className="flex items-center gap-2 pt-2">
                             <Input
                               placeholder="Digite sua mensagem..."
-                              value={messageText}
-                              onChange={(e) => setMessageText(e.target.value)}
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey) {
                                   e.preventDefault()
-                                  enviarMensagem()
+                                  handleReply()
                                 }
                               }}
                             />
-                            <LiquidGlassButton onClick={enviarMensagem} disabled={sendMessage.isPending || !studentId}>
-                              {sendMessage.isPending ? "Enviando..." : "Enviar"}
+                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()}>
+                              Enviar
                             </LiquidGlassButton>
                           </div>
                         </div>
@@ -212,6 +294,20 @@ export default function AlunoComunicacaoPage() {
               </div>
             </TabsContent>
           </Tabs>
+          <ModalNovaMensagem
+            isOpen={isNovaMensagemOpen}
+            onClose={() => setIsNovaMensagemOpen(false)}
+            currentUserId={studentId}
+            context="student"
+            defaultDestinatarioId={defaultDestinatarioId}
+            onSend={({ destinatarioId }) => {
+              setIsNovaMensagemOpen(false)
+              fetchInbox()
+              if (destinatarioId) {
+                handleSelectInboxItem(destinatarioId)
+              }
+            }}
+          />
         </div>
       </main>
     </div>

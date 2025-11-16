@@ -20,15 +20,16 @@ interface ModalNovaMensagemProps {
   onSend?: (payload: { destinatarioId: string | null; prioridade: string; assunto: string; mensagem: string, role: 'teacher' | 'student' | 'coordinator' }) => void
   currentUserId: string
   apiBaseUrl?: string
-  context?: 'coordinator' | 'teacher'
+  context?: 'coordinator' | 'teacher' | 'student'
+  defaultDestinatarioId?: string | null
 }
 
-export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiBaseUrl, context = 'coordinator' }: ModalNovaMensagemProps) {
+export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiBaseUrl, context = 'coordinator', defaultDestinatarioId = null }: ModalNovaMensagemProps) {
   const [selectedDestinatarioId, setSelectedDestinatarioId] = useState<string | null>(null)
   const [prioridade, setPrioridade] = useState<string>("normal")
   const [assunto, setAssunto] = useState("")
   const [mensagem, setMensagem] = useState("")
-  const [role, setRole] = useState<'teacher' | 'student' | 'coordinator' | ''>('')
+  const [role, setRole] = useState<'teacher' | 'student' | 'coordinator' | ''>(context === 'student' ? 'teacher' : '')
   const [remoteOptions, setRemoteOptions] = useState<DestinatarioOption[]>([])
   const [lastQuery, setLastQuery] = useState("")
 
@@ -40,11 +41,17 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
       setPrioridade("normal")
       setAssunto("")
       setMensagem("")
-      setRole('')
+      setRole(context === 'student' ? 'teacher' : '')
       setRemoteOptions([])
       setLastQuery("")
     }
-  }, [isOpen])
+  }, [isOpen, context])
+
+  useEffect(() => {
+    if (defaultDestinatarioId) {
+      setSelectedDestinatarioId(defaultDestinatarioId)
+    }
+  }, [defaultDestinatarioId])
 
   const handleSearch = useCallback(async (query: string) => {
     setLastQuery(query)
@@ -54,8 +61,10 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
       const params = new URLSearchParams({ role, q, page: '1', limit: '10' })
       if (context === 'teacher') {
         params.set('teacherId', currentUserId)
-      } else {
+      } else if (context === 'coordinator') {
         params.set('coordinatorId', currentUserId)
+      } else if (context === 'student') {
+        params.set('studentId', currentUserId)
       }
       const res = await fetch(`${API_URL}/communications/recipients?${params.toString()}`, {
         headers: {
@@ -110,9 +119,18 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
                   <SelectValue placeholder="Selecione o público" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="teacher">Professores</SelectItem>
-                  <SelectItem value="student">Alunos</SelectItem>
-                  <SelectItem value="coordinator">Coordenadores</SelectItem>
+                  {context === 'student' ? (
+                    <>
+                      <SelectItem value="teacher">Professores</SelectItem>
+                      <SelectItem value="coordinator">Coordenadores</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="teacher">Professores</SelectItem>
+                      <SelectItem value="student">Alunos</SelectItem>
+                      <SelectItem value="coordinator">Coordenadores</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
