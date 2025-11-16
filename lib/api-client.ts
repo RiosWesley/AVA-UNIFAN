@@ -176,79 +176,120 @@ export interface ClassDetail {
 export const apiClient = {
   // Student data
   async getCurrentStudent(): Promise<Student> {
-    // TODO: Replace with actual API call
+    const meResp = await api.get<{ id: string; email: string; roles: string[] }>('/auth/me')
+    const userId = meResp.data.id
+
+    const userResp = await api.get<{ id: string; name: string; email: string }>(`/users/${userId}`)
+    const user = userResp.data
+
     return {
-      id: '1',
-      name: 'João Silva',
-      email: 'joao.silva@email.com',
-      studentId: '2024001',
-      course: 'Ciência da Computação',
-      period: '2024.1'
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      studentId: '',
+      course: '',
+      period: ''
     }
   },
 
   // Schedules
   async getStudentSchedules(studentId: string): Promise<Schedule[]> {
-    // TODO: Replace with actual API call
-    // This should aggregate from enrollments → classes → schedules
-    return [
-      {
-        id: '1',
-        classId: 'class-1',
-        discipline: 'Matemática',
-        professor: 'Prof. Carlos Silva',
-        room: 'A-101',
-        startTime: '08:00',
-        endTime: '09:40',
-        dayOfWeek: 1,
-        type: 'Teórica'
-      },
-      {
-        id: '2',
-        classId: 'class-2',
-        discipline: 'Português',
-        professor: 'Prof. Ana Santos',
-        room: 'B-205',
-        startTime: '10:00',
-        endTime: '11:40',
-        dayOfWeek: 1,
-        type: 'Prática'
-      },
-      {
-        id: '3',
-        classId: 'class-3',
-        discipline: 'História',
-        professor: 'Prof. João Costa',
-        room: 'C-301',
-        startTime: '14:00',
-        endTime: '15:40',
-        dayOfWeek: 1,
-        type: 'Teórica'
-      }
-    ]
+    const { data } = await api.get<Array<{
+      id: string
+      code: string
+      disciplineName: string
+      dayOfWeek: string
+      startTime: string
+      endTime: string
+      room: string | null
+      date: string
+    }>>(`/students/${studentId}/next-classes`)
+
+    return (data || []).map((item) => ({
+      id: item.id,
+      classId: '',
+      discipline: item.disciplineName,
+      professor: '',
+      room: item.room || '',
+      startTime: item.startTime,
+      endTime: item.endTime,
+      dayOfWeek: 0,
+      type: 'Teórica'
+    }))
   },
 
   // Grades
   async getStudentGrades(studentId: string): Promise<Grade[]> {
-    // TODO: Replace with actual API call
-    return [
-      { id: '1', discipline: 'Matemática', value: 8.5, date: '2024-03-15', concept: 'Ótimo', classId: 'class-1' },
-      { id: '2', discipline: 'Português', value: 9.2, date: '2024-03-12', concept: 'Excelente', classId: 'class-2' },
-      { id: '3', discipline: 'Física', value: 7.8, date: '2024-03-10', concept: 'Bom', classId: 'class-3' },
-      { id: '4', discipline: 'Química', value: 8.9, date: '2024-03-08', concept: 'Ótimo', classId: 'class-4' }
-    ]
+    const { data } = await api.get<Array<{
+      id: string
+      activityTitle: string
+      disciplineName: string
+      score: number
+      maxScore: number | null
+      gradedAt: string | null
+    }>>(`/students/${studentId}/recent-grades`, { params: { limit: 10 } })
+
+    const toConcept = (value: number): string => {
+      if (value >= 9) return 'Excelente'
+      if (value >= 8) return 'Ótimo'
+      if (value >= 6) return 'Bom'
+      return 'Regular'
+    }
+
+    return (data || []).map((g) => ({
+      id: g.id,
+      discipline: g.disciplineName || '',
+      value: Number(g.score),
+      date: g.gradedAt || '',
+      concept: toConcept(Number(g.score)),
+      classId: ''
+    }))
   },
 
   // Attendance
   async getStudentAttendance(studentId: string): Promise<Attendance[]> {
-    // TODO: Replace with actual API call
-    return []
+    const { data } = await api.get<Array<{
+      id: string
+      date: string
+      present: boolean
+    }>>(`/attendances/student/${studentId}`)
+
+    return (data || []).map((a) => ({
+      id: a.id,
+      classId: '',
+      date: a.date,
+      status: a.present ? 'present' : 'absent',
+      discipline: ''
+    }))
   },
 
   // Activities
   async getStudentActivities(studentId: string): Promise<Activity[]> {
-    // TODO: Replace with actual API call - should filter by student's enrollments
-    return []
+    const { data } = await api.get<Array<{
+      id: string
+      titulo: string
+      descricao: string | null
+      dataVencimento: string | null
+      disciplina: string
+      status: 'pendente' | 'concluido' | 'avaliado'
+      nota: number | null
+      dataConclusao: string | null
+    }>>(`/activities/students/${studentId}`)
+
+    const mapStatus = (s: 'pendente' | 'concluido' | 'avaliado'): 'pending' | 'completed' => {
+      if (s === 'pendente') return 'pending'
+      return 'completed'
+    }
+
+    return (data || []).map((a) => ({
+      id: a.id,
+      title: a.titulo,
+      description: a.descricao || '',
+      discipline: a.disciplina,
+      dueDate: a.dataVencimento ? String(a.dataVencimento) : '',
+      status: mapStatus(a.status),
+      classId: ''
+    }))
   },
 
   // News
@@ -259,6 +300,17 @@ export const apiClient = {
       { id: '2', title: 'Entrega do Projeto de História', date: '2024-03-25', type: 'Atividade', priority: 'média' },
       { id: '3', title: 'Reunião de Pais', date: '2024-03-30', type: 'Evento', priority: 'baixa' }
     ]
+  },
+
+  async getNewsForStudent(studentId: string): Promise<News[]> {
+    const notices = await this.getNoticesForStudent(studentId)
+    return (notices || []).map((n) => ({
+      id: n.id,
+      title: n.title,
+      date: n.createdAt,
+      type: 'Evento',
+      priority: 'média'
+    }))
   },
 
   // Enrollments

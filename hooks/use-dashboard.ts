@@ -11,7 +11,7 @@ export const queryKeys = {
   grades: (studentId: string) => ['grades', studentId] as const,
   attendance: (studentId: string) => ['attendance', studentId] as const,
   activities: (studentId: string) => ['activities', studentId] as const,
-  news: () => ['news'] as const,
+  news: (studentId: string) => ['news', studentId] as const,
   enrollments: (studentId: string) => ['enrollments', studentId] as const
 }
 
@@ -64,11 +64,12 @@ export function useStudentActivities(studentId: string) {
   })
 }
 
-// Hook to get news/announcements
-export function useNews() {
+// Hook to get news/announcements for student
+export function useNews(studentId: string) {
   return useQuery({
-    queryKey: queryKeys.news(),
-    queryFn: () => apiClient.getNews(),
+    queryKey: queryKeys.news(studentId),
+    queryFn: () => apiClient.getNewsForStudent(studentId),
+    enabled: !!studentId,
     staleTime: 1000 * 60 * 10, // 10 minutes
   })
 }
@@ -90,7 +91,7 @@ export function useDashboardData(studentId: string) {
   const grades = useStudentGrades(studentId)
   const attendance = useStudentAttendance(studentId)
   const activities = useStudentActivities(studentId)
-  const news = useNews()
+  const news = useNews(studentId)
 
   // Computed values
   const attendancePercentage = attendance.data

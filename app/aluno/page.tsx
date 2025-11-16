@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LiquidGlassButton } from "@/components/liquid-glass"
@@ -12,12 +13,12 @@ import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config
 import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Target, Activity, Sparkles } from "lucide-react"
 import Carousel from "@/components/ui/carousel"
 import { useDashboardData } from "@/hooks/use-dashboard"
+import { me } from "@/src/services/auth"
 
 export default function AlunoDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
-
-  // Mock student ID - TODO: Get from authentication context
-  const studentId = "1"
+  const router = useRouter()
+  const [studentId, setStudentId] = useState<string | null>(null)
 
   // Dashboard data with React Query
   const {
@@ -30,7 +31,7 @@ export default function AlunoDashboard() {
     pendingActivitiesCount,
     isLoading,
     error
-  } = useDashboardData(studentId)
+  } = useDashboardData(studentId ?? "")
 
   useEffect(() => {
     const checkTheme = () => {
@@ -48,8 +49,33 @@ export default function AlunoDashboard() {
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
+
   // Loading state
-  if (isLoading) {
+  if (isLoading || !studentId) {
     return (
       <div className="flex h-screen bg-background">
         <Sidebar userRole="aluno" />
@@ -243,8 +269,8 @@ export default function AlunoDashboard() {
             </LiquidGlassCard>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6">
-            <div className="md:col-span-1 xl:col-span-8 space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <div className="xl:col-span-8">
               {/* Próximas Aulas */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}  // Fixed to correct type for max blur
@@ -303,84 +329,9 @@ export default function AlunoDashboard() {
                   </div>
                 </CardContent>
               </LiquidGlassCard>
-
-              {/* Últimas Notas */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <div className="p-2 bg-green-500/20 rounded-lg mr-3">
-                      <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    Últimas Notas
-                  </CardTitle>
-                  <CardDescription className="text-base">Suas avaliações recentes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {recentGrades && recentGrades.length > 0 ? (
-                      recentGrades.map((nota) => (
-                        <div key={nota.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
-                          isLiquidGlass
-                            ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                            : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                        }`}>
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              nota.value >= 9 ? "bg-green-500/20" :
-                              nota.value >= 8 ? "bg-green-500/20" :
-                              nota.value >= 6 ? "bg-yellow-500/20" : "bg-red-500/20"
-                            }`}>
-                              <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
-                                {nota.value}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100">{nota.discipline}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {new Date(nota.date).toLocaleDateString('pt-BR')}
-                              </p>
-                              <Badge
-                                variant="outline"
-                                className={`text-xs mt-1 ${
-                                  nota.value >= 9 ? "border-green-500 text-green-700 dark:text-green-300" :
-                                  nota.value >= 8 ? "border-green-500 text-green-700 dark:text-green-300" :
-                                  nota.value >= 6 ? "border-yellow-500 text-yellow-700 dark:text-yellow-300" :
-                                  "border-red-500 text-red-700 dark:text-red-300"
-                                }`}
-                              >
-                                {nota.concept}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-sm font-semibold ${
-                              nota.value >= 9 ? "text-green-600 dark:text-green-400" :
-                              nota.value >= 8 ? "text-green-600 dark:text-green-400" :
-                              nota.value >= 6 ? "text-yellow-600 dark:text-yellow-400" :
-                              "text-red-600 dark:text-red-400"
-                            }`}>
-                              {nota.value}/10
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500 text-center py-4">Nenhuma nota disponível</p>
-                    )}
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-
             </div>
 
-            <div className="md:col-span-1 xl:col-span-4 space-y-6">
+            <div className="xl:col-span-4">
               {/* Comunicados */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
@@ -458,6 +409,81 @@ export default function AlunoDashboard() {
               </LiquidGlassCard>
             </div>
 
+            <div className="xl:col-span-12">
+              {/* Últimas Notas */}
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className={`${
+                  isLiquidGlass
+                    ? 'bg-black/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                }`}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="p-2 bg-green-500/20 rounded-lg mr-3">
+                      <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    Últimas Notas
+                  </CardTitle>
+                  <CardDescription className="text-base">Suas avaliações recentes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {recentGrades && recentGrades.length > 0 ? (
+                      recentGrades.map((nota) => (
+                        <div key={nota.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+                          isLiquidGlass
+                            ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                            : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                        }`}>
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              nota.value >= 9 ? "bg-green-500/20" :
+                              nota.value >= 8 ? "bg-green-500/20" :
+                              nota.value >= 6 ? "bg-yellow-500/20" : "bg-red-500/20"
+                            }`}>
+                              <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                                {nota.value}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">{nota.discipline}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                                {new Date(nota.date).toLocaleDateString('pt-BR')}
+                              </p>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs mt-1 ${
+                                  nota.value >= 9 ? "border-green-500 text-green-700 dark:text-green-300" :
+                                  nota.value >= 8 ? "border-green-500 text-green-700 dark:text-green-300" :
+                                  nota.value >= 6 ? "border-yellow-500 text-yellow-700 dark:text-yellow-300" :
+                                  "border-red-500 text-red-700 dark:text-red-300"
+                                }`}
+                              >
+                                {nota.concept}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-sm font-semibold ${
+                              nota.value >= 9 ? "text-green-600 dark:text-green-400" :
+                              nota.value >= 8 ? "text-green-600 dark:text-green-400" :
+                              nota.value >= 6 ? "text-yellow-600 dark:text-yellow-400" :
+                              "text-red-600 dark:text-red-400"
+                            }`}>
+                              {nota.value}/10
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">Nenhuma nota disponível</p>
+                    )}
+                  </div>
+                </CardContent>
+              </LiquidGlassCard>
+            </div>
           </div>
         </div>
       </main>
