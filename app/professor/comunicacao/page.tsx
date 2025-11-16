@@ -12,80 +12,165 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sidebar } from "@/components/layout/sidebar"
 import { Send, Plus, Bell, Edit, Trash2 } from "lucide-react"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ModalNovaMensagem, ModalAviso, ModalConfirmacao } from "@/components/modals"
 import type { AvisoData } from "@/components/modals"
 import type { ComboboxOption } from "@/components/ui/combobox"
-import type { DestinatarioOption } from "@/components/modals/modal-nova-mensagem"
 
 export default function ProfessorComunicacaoPage() {
   const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
-  const destinatarios: DestinatarioOption[] = [
-    { id: 'turma-9a', label: '9º Ano A (Toda a turma)' },
-    { id: 'turma-8b', label: '8º Ano B (Toda a turma)' },
-    { id: 'ana-silva', label: 'Ana Silva (9º A)' },
-    { id: 'bruno-santos', label: 'Bruno Santos (8º B)' },
-    { id: 'coordenacao', label: 'Coordenação' },
-  ]
-  const mensagensRecebidas = [
-    {
-      id: 1,
-      remetente: "Ana Silva (9º A)",
-      assunto: "Dúvida sobre exercício",
-      preview: "Professor, não consegui resolver o exercício 15...",
-      data: "Hoje, 15:20",
-      lida: false,
-    },
-    {
-      id: 2,
-      remetente: "Bruno Santos (8º B)",
-      assunto: "Falta na prova",
-      preview: "Professor, faltei na prova por motivo médico...",
-      data: "Ontem, 10:30",
-      lida: true,
-    },
-    {
-      id: 3,
-      remetente: "Coordenação",
-      assunto: "Reunião pedagógica",
-      preview: "Reunião marcada para sexta-feira...",
-      data: "2 dias atrás",
-      lida: true,
-    },
-  ]
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const currentUserId = "3f259c81-4a5c-4ae8-8b81-6d59f5eb3028"
+
+  type InboxItem = {
+    otherUser: { id: string; name: string; email: string }
+    lastMessage: { id: string; content: string; sentAt: string; isRead: boolean }
+    unreadCount: number
+  }
+  const [inbox, setInbox] = useState<InboxItem[]>([])
+  const [selectedOtherUserId, setSelectedOtherUserId] = useState<string | null>(null)
+  const [conversation, setConversation] = useState<Array<{ id: string; content: string; sentAt: string; senderId: string; receiverId?: string }>>([])
+  const [replyText, setReplyText] = useState<string>("")
+
+  const fetchInbox = async () => {
+    if (!API_URL || !currentUserId) return
+    try {
+      const res = await fetch(`${API_URL}/messages/inbox`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar inbox')
+      const data = await res.json()
+      const normalized: InboxItem[] = (Array.isArray(data) ? data : []).map((i: any) => ({
+        ...i,
+        lastMessage: { ...i.lastMessage, sentAt: i.lastMessage?.sentAt ?? new Date().toISOString() },
+      }))
+      setInbox(normalized)
+    } catch {
+      setInbox([])
+    }
+  }
+
+  const fetchConversation = async (otherId: string) => {
+    if (!API_URL || !currentUserId) return
+    try {
+      const res = await fetch(`${API_URL}/messages/conversation/${otherId}`, {
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+      })
+      if (!res.ok) throw new Error('Erro ao carregar conversa')
+      const list = await res.json()
+      const items = (Array.isArray(list) ? list : []).map((m: any) => ({
+        id: m.id as string,
+        content: m.content as string,
+        sentAt: m.sentAt,
+        senderId: m.sender?.id as string,
+        receiverId: m.receiver?.id as string | undefined,
+      }))
+      setConversation(items)
+
+      // marcar como lidas as recebidas não lidas
+      const unreadReceived = (Array.isArray(list) ? list : []).filter((m: any) => m.receiver?.id === currentUserId && !m.isRead)
+      await Promise.all(unreadReceived.map((m: any) => (
+        fetch(`${API_URL}/messages/${m.id}/read`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+          body: JSON.stringify({ read: true }),
+        })
+      )))
+      // atualizar inbox
+      fetchInbox()
+    } catch {
+      setConversation([])
+    }
+  }
+
+  const handleSelectInboxItem = (otherId: string) => {
+    setSelectedOtherUserId(otherId)
+    fetchConversation(otherId)
+  }
+
+  const handleReply = async () => {
+    if (!API_URL || !currentUserId || !selectedOtherUserId || !replyText.trim()) return
+    try {
+      await fetch(`${API_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+        body: JSON.stringify({
+          content: replyText,
+          receiverId: selectedOtherUserId,
+        }),
+      })
+      setReplyText("")
+      await fetchConversation(selectedOtherUserId)
+    } catch {
+      // ignore
+    }
+  }
 
   const [isAvisoOpen, setIsAvisoOpen] = useState(false)
   const [editingAviso, setEditingAviso] = useState<AvisoData | undefined>(undefined)
   const [confirmOpen, setConfirmOpen] = useState(false)
-  const [avisos, setAvisos] = useState([
-    {
-      id: 1,
-      titulo: "Prova de Matemática - 9º Ano A",
-      turma: "9º Ano A",
-      data: "15/03/2024",
-      visualizacoes: 28,
-    },
-    {
-      id: 2,
-      titulo: "Material Complementar Disponível",
-      turma: "8º Ano B",
-      data: "12/03/2024",
-      visualizacoes: 23,
-    },
-  ])
-  const [avisoParaExcluir, setAvisoParaExcluir] = useState<number | null>(null)
+  const [avisos, setAvisos] = useState<Array<{ id: string; titulo: string; turma: string; data: string; visualizacoes: number; conteudo?: string }>>([])
+  const [avisoParaExcluir, setAvisoParaExcluir] = useState<string | null>(null)
   const turmaOptions: ComboboxOption[] = [
-    { id: '9a', label: '9º Ano A' },
-    { id: '8b', label: '8º Ano B' },
-    { id: '7c', label: '7º Ano C' },
+    { id: 'all', label: 'Todos os usuários' },
+    { id: 'student', label: 'Todos os alunos' },
+    { id: 'teacher', label: 'Professores' },
   ]
 
-  const handleSaveAviso = (data: AvisoData) => {
-    if (data.id) {
-      setAvisos(prev => prev.map(a => a.id === data.id ? { ...a, ...data } : a))
-    } else {
-      const newId = Math.max(0, ...avisos.map(a => a.id)) + 1
-      setAvisos(prev => [{ id: newId, titulo: data.titulo, turma: data.turma, data: data.data, visualizacoes: 0 }, ...prev])
+  const mapAudienceToLabel = (audience?: string | null) => {
+    if (audience === 'student') return 'Todos os alunos'
+    if (audience === 'teacher') return 'Professores'
+    return 'Todos os usuários'
+  }
+
+  const refreshAvisos = async () => {
+    if (!API_URL) return
+    try {
+      const res = await fetch(`${API_URL}/notice-board?includeExpired=true`, { headers: { 'Content-Type': 'application/json' } })
+      if (!res.ok) throw new Error('Erro ao listar avisos')
+      const list = await res.json()
+      const items = (Array.isArray(list) ? list : list?.data ?? []).map((n: any) => ({
+        id: n.id as string,
+        titulo: n.title as string,
+        data: new Date(n.createdAt ?? n.publishedAt ?? Date.now()).toLocaleDateString('pt-BR'),
+        visualizacoes: 0,
+        turma: mapAudienceToLabel(n.audience),
+        conteudo: n.content as string,
+      }))
+      setAvisos(items)
+    } catch {
+      setAvisos([])
+    }
+  }
+
+  const handleSaveAviso = async (data: AvisoData) => {
+    const audience = turmaOptions.find(o => o.label === data.turma)?.id as 'all' | 'student' | 'teacher' | undefined
+    const payload: any = {
+      title: data.titulo,
+      content: data.conteudo ?? '',
+      audience: (audience ?? 'all'),
+    }
+    if (data.data) {
+      payload.expiresAt = data.data
+    }
+
+    try {
+      if (data.id) {
+        await fetch(`${API_URL}/notice-board/${data.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      } else {
+        await fetch(`${API_URL}/notice-board`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      }
+      await refreshAvisos()
+    } catch {
+      // ignore
     }
   }
 
@@ -94,25 +179,38 @@ export default function ProfessorComunicacaoPage() {
     setIsAvisoOpen(true)
   }
 
-  const openEditAviso = (avisoId: number) => {
+  const openEditAviso = (avisoId: string) => {
     const found = avisos.find(a => a.id === avisoId)
     if (found) {
-      setEditingAviso({ id: found.id, titulo: found.titulo, turma: found.turma, data: found.data })
+      setEditingAviso({ id: found.id, titulo: found.titulo, turma: found.turma, data: found.data, conteudo: found.conteudo })
       setIsAvisoOpen(true)
     }
   }
 
-  const confirmDelete = (avisoId: number) => {
+  const confirmDelete = (avisoId: string) => {
     setAvisoParaExcluir(avisoId)
     setConfirmOpen(true)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (avisoParaExcluir != null) {
+      try {
+        await fetch(`${API_URL}/notice-board/${avisoParaExcluir}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      } catch {
+        // ignore
+      }
       setAvisos(prev => prev.filter(a => a.id !== avisoParaExcluir))
       setAvisoParaExcluir(null)
     }
   }
+
+  useEffect(() => {
+    fetchInbox()
+    refreshAvisos()
+  }, [])
 
   return (
     <div className="flex h-screen bg-background">
@@ -152,8 +250,15 @@ export default function ProfessorComunicacaoPage() {
                   <ModalNovaMensagem
                     isOpen={isNovaMensagemOpen}
                     onClose={() => setIsNovaMensagemOpen(false)}
-                    destinatarios={destinatarios}
-                    onSend={() => setIsNovaMensagemOpen(false)}
+                    currentUserId={currentUserId}
+                    context="teacher"
+                    onSend={({ destinatarioId }) => {
+                      setIsNovaMensagemOpen(false)
+                      fetchInbox()
+                      if (destinatarioId) {
+                        handleSelectInboxItem(destinatarioId)
+                      }
+                    }}
                   />
                 </Dialog>
               </div>
@@ -162,24 +267,24 @@ export default function ProfessorComunicacaoPage() {
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle>Caixa de Entrada</CardTitle>
-                      <CardDescription>3 mensagens não lidas</CardDescription>
+                      <CardDescription>{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {mensagensRecebidas.map((mensagem) => (
+                        {inbox.map((item) => (
                           <div
-                            key={mensagem.id}
-                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${
-                              !mensagem.lida ? "bg-primary/5 border-primary/20" : ""
-                            }`}
+                            key={item.otherUser.id}
+                            onClick={() => handleSelectInboxItem(item.otherUser.id)}
+                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
                           >
                             <div className="flex items-start justify-between mb-1">
-                              <h5 className="font-medium text-sm">{mensagem.remetente}</h5>
-                              {!mensagem.lida && <div className="w-2 h-2 bg-primary rounded-full" />}
+                              <h5 className="font-medium text-sm">{item.otherUser.name}</h5>
+                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full" />}
                             </div>
-                            <p className="font-medium text-sm mb-1">{mensagem.assunto}</p>
-                            <p className="text-xs text-muted-foreground mb-2">{mensagem.preview}</p>
-                            <p className="text-xs text-muted-foreground">{mensagem.data}</p>
+                            <p className="font-medium text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(item.lastMessage?.sentAt || Date.now()).toLocaleString('pt-BR')}
+                            </p>
                           </div>
                         ))}
                       </div>
@@ -190,26 +295,48 @@ export default function ProfessorComunicacaoPage() {
                 <div className="lg:col-span-2">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
-                      <CardTitle>Dúvida sobre exercício</CardTitle>
-                      <CardDescription>De: Ana Silva (9º A) • Hoje, 15:20</CardDescription>
+                      <CardTitle>
+                        {selectedOtherUserId
+                          ? inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name
+                          : 'Selecione uma conversa'}
+                      </CardTitle>
+                      {selectedOtherUserId && (
+                        <CardDescription>
+                          {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.email}
+                        </CardDescription>
+                      )}
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <p>Professor Carlos,</p>
-                        <p>
-                          Não consegui resolver o exercício 15 da lista. Poderia me ajudar com os passos para encontrar
-                          as raízes da função quadrática?
-                        </p>
-                        <p>Obrigada!</p>
-                        <p>Ana Silva</p>
-                        <div className="border-t pt-4">
-                          <Textarea placeholder="Digite sua resposta..." className="mb-4" />
-                          <LiquidGlassButton>
-                            <Send className="h-4 w-4 mr-2" />
-                            Responder
-                          </LiquidGlassButton>
+                      {selectedOtherUserId ? (
+                        <div className="space-y-4">
+                          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                            {conversation.map((msg) => (
+                              <div key={msg.id} className={`flex ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`rounded-lg px-3 py-2 text-sm ${msg.senderId === currentUserId ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                                  <div className="text-[10px] text-muted-foreground mt-1">
+                                    {new Date(msg.sentAt).toLocaleString('pt-BR')}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="border-t pt-4">
+                            <Textarea
+                              placeholder="Digite sua resposta..."
+                              className="mb-4"
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                            />
+                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()}>
+                              <Send className="h-4 w-4 mr-2" />
+                              Responder
+                            </LiquidGlassButton>
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">Selecione uma conversa na lista ao lado.</div>
+                      )}
                     </CardContent>
                   </LiquidGlassCard>
                 </div>

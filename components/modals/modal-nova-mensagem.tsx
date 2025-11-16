@@ -20,9 +20,10 @@ interface ModalNovaMensagemProps {
   onSend?: (payload: { destinatarioId: string | null; prioridade: string; assunto: string; mensagem: string, role: 'teacher' | 'student' | 'coordinator' }) => void
   currentUserId: string
   apiBaseUrl?: string
+  context?: 'coordinator' | 'teacher'
 }
 
-export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiBaseUrl }: ModalNovaMensagemProps) {
+export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiBaseUrl, context = 'coordinator' }: ModalNovaMensagemProps) {
   const [selectedDestinatarioId, setSelectedDestinatarioId] = useState<string | null>(null)
   const [prioridade, setPrioridade] = useState<string>("normal")
   const [assunto, setAssunto] = useState("")
@@ -50,13 +51,12 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
     if (!role || !API_URL) return
     const q = (query ?? '').trim()
     try {
-      const params = new URLSearchParams({
-        role,
-        coordinatorId: currentUserId,
-        q,
-        page: '1',
-        limit: '10',
-      })
+      const params = new URLSearchParams({ role, q, page: '1', limit: '10' })
+      if (context === 'teacher') {
+        params.set('teacherId', currentUserId)
+      } else {
+        params.set('coordinatorId', currentUserId)
+      }
       const res = await fetch(`${API_URL}/communications/recipients?${params.toString()}`, {
         headers: {
           'Content-Type': 'application/json',
