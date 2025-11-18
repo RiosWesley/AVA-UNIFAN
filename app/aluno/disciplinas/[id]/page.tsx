@@ -47,6 +47,9 @@ export default function DisciplinaDetalhePage() {
     progresso: 0,
   }
 
+  // Obter disciplineId dos detalhes da classe
+  const disciplineId = classDetailsQuery.data?.discipline?.id
+
   // Avisos por turma
   const noticesQuery = useQuery({
     queryKey: ['notice-board', classId],
@@ -199,9 +202,9 @@ export default function DisciplinaDetalhePage() {
 
   // Vídeo-aulas
   const videoLessonsQuery = useQuery({
-    queryKey: ['video-lessons', classId],
-    queryFn: () => apiClient.getVideoLessonsByClass(classId as string),
-    enabled: !!classId,
+    queryKey: ['video-lessons', disciplineId],
+    queryFn: () => apiClient.getVideoLessonsByDiscipline(disciplineId as string),
+    enabled: !!disciplineId,
   })
   const [videoAulas, setVideoAulas] = useState<Array<{ id: number; titulo: string; duracao: string; visto: boolean; url: string; videoLessonId: string; status?: string }>>([])
   useEffect(() => {
@@ -267,13 +270,13 @@ export default function DisciplinaDetalhePage() {
   // Query para buscar stream URL quando necessário
   const videoAulaSelecionadaData = videoAulas.find(v => v.id === videoAulaSelecionadaId)
   const streamUrlQuery = useQuery({
-    queryKey: ['video-lesson-stream', classId, videoAulaSelecionadaData?.videoLessonId],
+    queryKey: ['video-lesson-stream', disciplineId, videoAulaSelecionadaData?.videoLessonId],
     queryFn: () => {
-      if (!videoAulaSelecionadaData?.videoLessonId || !classId) throw new Error('Missing data')
-      return apiClient.getVideoLessonStreamUrl(classId as string, videoAulaSelecionadaData.videoLessonId)
+      if (!videoAulaSelecionadaData?.videoLessonId || !disciplineId) throw new Error('Missing data')
+      return apiClient.getVideoLessonStreamUrlByDiscipline(disciplineId as string, videoAulaSelecionadaData.videoLessonId)
     },
     // Busca stream URL somente quando o modal estiver aberto e ainda não tivermos URL
-    enabled: !!modalVideoAulaAberto && !!videoAulaSelecionadaData?.videoLessonId && !!classId && !videoAulaSelecionadaData?.url,
+    enabled: !!modalVideoAulaAberto && !!videoAulaSelecionadaData?.videoLessonId && !!disciplineId && !videoAulaSelecionadaData?.url,
     staleTime: 9 * 60 * 1000, // 9 minutos (URL expira em 10 minutos)
   })
 

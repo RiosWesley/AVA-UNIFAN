@@ -16,10 +16,20 @@ export default function VideoAulaPage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
 
-  const lessonsQuery = useQuery({
-    queryKey: ["video-lessons", classId],
-    queryFn: () => apiClient.getVideoLessonsByClass(classId),
+  // Detalhes da turma para obter disciplineId
+  const classDetailsQuery = useQuery({
+    queryKey: ['class-details', classId],
+    queryFn: () => apiClient.getClassDetails(classId),
     enabled: !!classId,
+  })
+
+  // Obter disciplineId dos detalhes da classe
+  const disciplineId = classDetailsQuery.data?.discipline?.id
+
+  const lessonsQuery = useQuery({
+    queryKey: ["video-lessons", disciplineId],
+    queryFn: () => apiClient.getVideoLessonsByDiscipline(disciplineId as string),
+    enabled: !!disciplineId,
   })
 
   const details: VideoLesson | undefined = useMemo(() => {
@@ -28,9 +38,9 @@ export default function VideoAulaPage() {
   }, [lessonsQuery.data, videoLessonId])
 
   const streamQuery = useQuery({
-    queryKey: ["video-lesson-stream", classId, videoLessonId],
-    queryFn: () => apiClient.getVideoLessonStreamUrl(classId, videoLessonId),
-    enabled: !!classId && !!videoLessonId,
+    queryKey: ["video-lesson-stream", disciplineId, videoLessonId],
+    queryFn: () => apiClient.getVideoLessonStreamUrlByDiscipline(disciplineId as string, videoLessonId),
+    enabled: !!disciplineId && !!videoLessonId,
     staleTime: 9 * 60 * 1000,
   })
 

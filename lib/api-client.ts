@@ -488,6 +488,11 @@ export const apiClient = {
     }
   },
 
+  async getVideoLessonsByDiscipline(disciplineId: string): Promise<VideoLesson[]> {
+    const { data } = await api.get<VideoLesson[]>(`/video-lessons/disciplines/${disciplineId}/video-lessons`)
+    return data
+  },
+
   async getVideoLessonStreamUrl(classId: string, videoLessonId: string): Promise<{ url: string; expiresInSeconds: number; mimeType: string }> {
     try {
       const { data } = await api.get<{ url: string; expiresInSeconds: number; mimeType: string }>(
@@ -500,8 +505,15 @@ export const apiClient = {
     }
   },
 
+  async getVideoLessonStreamUrlByDiscipline(disciplineId: string, videoLessonId: string): Promise<{ url: string; expiresInSeconds: number; mimeType: string }> {
+    const { data } = await api.get<{ url: string; expiresInSeconds: number; mimeType: string }>(
+      `/video-lessons/disciplines/${disciplineId}/video-lessons/${videoLessonId}/stream-url`
+    )
+    return data
+  },
+
   async markVideoLessonWatched(videoId: string, studentId: string): Promise<void> {
-    await api.patch<void>(`/video-lessons/${videoId}/watched`, undefined, {
+    await api.patch<void>(`/video-lessons/${videoId}/watched`, {}, {
       params: { studentId }
     })
   },
