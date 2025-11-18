@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LiquidGlassButton } from "@/components/liquid-glass"
 import { Save, X, Calendar, Upload, FileText, Trash2, FileImage, FileVideo, File } from "lucide-react"
 import { toast } from "@/components/ui/toast"
@@ -14,7 +13,7 @@ import { toast } from "@/components/ui/toast"
 export interface Material {
   id?: number
   nome: string
-  tipo: string
+  tipo?: string
   data: string
   descricao?: string
   arquivo?: {
@@ -24,6 +23,7 @@ export interface Material {
     url?: string
     file?: File
   }
+  urls?: string[]
 }
 
 interface ModalMaterialProps {
@@ -34,23 +34,7 @@ interface ModalMaterialProps {
   modo: 'criar' | 'editar'
 }
 
-const TIPOS_MATERIAL = [
-  'PDF',
-  'DOC',
-  'DOCX',
-  'XLS',
-  'XLSX',
-  'PPT',
-  'PPTX',
-  'TXT',
-  'JPG',
-  'PNG',
-  'GIF',
-  'MP4',
-  'AVI',
-  'MOV',
-  'Outro'
-]
+// removido: tipos de material (não usamos mais o campo "Tipo" no modal)
 
 export function ModalMaterial({
   isOpen,
@@ -61,10 +45,10 @@ export function ModalMaterial({
 }: ModalMaterialProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [nome, setNome] = useState('')
-  const [tipo, setTipo] = useState('')
   const [data, setData] = useState('')
   const [descricao, setDescricao] = useState('')
   const [arquivoAnexado, setArquivoAnexado] = useState<File | null>(null)
+  const [urlsExistentes, setUrlsExistentes] = useState<string[]>([])
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -90,16 +74,16 @@ export function ModalMaterial({
   useEffect(() => {
     if (modo === 'editar' && material) {
       setNome(material.nome || '')
-      setTipo(material.tipo || '')
       setData(material.data || '')
       setDescricao(material.descricao || '')
+      setUrlsExistentes(material.urls || [])
       setArquivoAnexado(null) // Não carregamos arquivo existente para edição (por enquanto)
     } else {
       // Limpar campos para criação
       setNome('')
-      setTipo('')
       setData('')
       setDescricao('')
+      setUrlsExistentes([])
       setArquivoAnexado(null)
     }
     setErrors({})
@@ -110,10 +94,6 @@ export function ModalMaterial({
 
     if (!nome.trim()) {
       novosErros.nome = 'Nome é obrigatório'
-    }
-
-    if (!tipo) {
-      novosErros.tipo = 'Tipo é obrigatório'
     }
 
     if (!data) {
@@ -233,9 +213,9 @@ export function ModalMaterial({
     const materialData: Material = {
       ...(material?.id && { id: material.id }),
       nome: nome.trim(),
-      tipo,
       data,
       descricao: descricao.trim(),
+      urls: urlsExistentes,
       ...(arquivoAnexado && {
         arquivo: {
           nome: arquivoAnexado.name,
@@ -316,30 +296,9 @@ export function ModalMaterial({
               )}
             </div>
 
-            {/* Tipo e Data */}
+            {/* Data */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="tipo" className="text-sm font-medium">
-                  Tipo *
-                </Label>
-                <Select value={tipo} onValueChange={setTipo}>
-                  <SelectTrigger className={errors.tipo ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIPOS_MATERIAL.map((tipoMaterial) => (
-                      <SelectItem key={tipoMaterial} value={tipoMaterial}>
-                        {tipoMaterial}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.tipo && (
-                  <p className="text-sm text-destructive mt-1">{errors.tipo}</p>
-                )}
-              </div>
-
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <Label htmlFor="data" className="text-sm font-medium">
                   Data *
                 </Label>
@@ -353,6 +312,32 @@ export function ModalMaterial({
                 {errors.data && (
                   <p className="text-sm text-destructive mt-1">{errors.data}</p>
                 )}
+              </div>
+              <div>
+                <Label className="text-sm font-medium">
+                  Anexos existentes
+                </Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {urlsExistentes?.length ? urlsExistentes.map((u, idx) => {
+                    const nome = decodeURIComponent((u.split('/').pop() || '').split('?')[0])
+                    const display = nome.length > 30 ? `${nome.slice(0,18)}...${nome.slice(-8)}` : nome
+                    return (
+                      <a
+                        key={idx}
+                        href={u}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center w-56 px-3 py-2 border rounded-md text-sm hover:bg-accent transition-colors truncate"
+                        title={nome}
+                      >
+                        <FileText className="h-3 w-3 mr-2" />
+                        <span className="truncate">{display || `Anexo ${idx+1}`}</span>
+                      </a>
+                    )
+                  }) : (
+                    <span className="text-sm text-muted-foreground">Nenhum anexo</span>
+                  )}
+                </div>
               </div>
             </div>
 

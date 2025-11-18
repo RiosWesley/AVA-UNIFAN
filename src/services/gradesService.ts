@@ -89,4 +89,34 @@ export async function updateGrade(id: string, payload: Partial<CreateActivityGra
   await api.patch(`/grades/${id}`, payload);
 }
 
+// ===== Student detailed grades =====
+export interface StudentActivityGrade {
+  id: string;
+  title: string;
+  description?: string | null;
+  type: string;
+  due_date?: string | null;
+  max_score?: number | null;
+  grade?: { id: string; score: number; gradedAt: string | null } | null;
+}
+
+export interface DetailedGradeByDiscipline {
+  enrollmentId: string;
+  class: { id: string; code?: string; semester?: string; year?: number; disciplineName: string };
+  average: number;
+  attendancePercentage: number;
+  status: 'approved' | 'reproved' | 'in_progress';
+  gradesByPeriod: { period: string; activities: StudentActivityGrade[] }[];
+}
+
+export interface DetailedStudentGrades {
+  student: { id: string; name: string; email: string };
+  disciplines: DetailedGradeByDiscipline[];
+}
+
+export async function getStudentGradesDetailed(studentId: string): Promise<DetailedStudentGrades> {
+  const { data } = await api.get(`/grades/students/${studentId}/grades-detailed`);
+  return data;
+}
+
 

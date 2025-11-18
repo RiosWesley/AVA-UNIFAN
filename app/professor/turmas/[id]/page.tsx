@@ -19,7 +19,7 @@ import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMat
 import { useParams } from "next/navigation"
 import { getClassById } from "@/src/services/ClassesService"
 import { getEnrollmentsByClass, EnrollmentDTO } from "@/src/services/enrollmentsService"
-import { listActivitiesByClass, createActivity, updateActivity, deleteActivity, listSubmissionsByActivity, ActivityDTO, ActivityUnit } from "@/src/services/activitiesService"
+import { listActivitiesByClass, createActivity, updateActivity, deleteActivity, listSubmissionsByActivity, ActivityDTO, ActivityUnit, completeActivityForStudent } from "@/src/services/activitiesService"
 import { listMaterialsByClass, createMaterial, updateMaterial, deleteMaterial, MaterialDTO } from "@/src/services/materialsService"
 import { listForumsByClass, createForum, updateForum, deleteForum, ForumDTO } from "@/src/services/forumsService"
 import { listPostsByForum, createForumPost, ForumPostDTO } from "@/src/services/forumPostsService"
@@ -74,7 +74,7 @@ export default function TurmaDetalhePage() {
   // Entregas dos alunos (carregadas da API)
   const [entregasAlunos, setEntregasAlunos] = useState<any[]>([])
 
-  const [materiais, setMateriais] = useState<{ id: string; nome: string; tipo: string; data: string }[]>([])
+  const [materiais, setMateriais] = useState<{ id: string; nome: string; tipo: string; data: string; descricao?: string; urls?: string[] }[]>([])
 
   const [forums, setForums] = useState<any[]>([])
 
@@ -185,7 +185,7 @@ export default function TurmaDetalhePage() {
 
         const materiaisMapped = (mats as MaterialDTO[]).map(m => {
           const tipo = (m.fileUrl && m.fileUrl.length > 0) ? (m.fileUrl[0].split('.').pop() || '').toUpperCase() : 'ARQ'
-          return { id: m.id, nome: m.title, tipo, data: new Date(m.uploadedAt).toLocaleDateString('pt-BR') }
+          return { id: m.id, nome: m.title, tipo, data: new Date(m.uploadedAt).toLocaleDateString('pt-BR'), descricao: m.description ?? '', urls: m.fileUrl ?? [] }
         })
         setMateriais(materiaisMapped)
 
@@ -596,23 +596,31 @@ export default function TurmaDetalhePage() {
     const persist = async () => {
       try {
         if (modoModalMaterial === 'criar') {
-          await createMaterial({
+          const created = await createMaterial({
             classId,
             title: material?.nome || 'Material',
             description: material?.descricao,
             fileUrl: material?.fileUrl,
           })
+          if (material?.arquivo?.file) {
+            const { uploadMaterialAttachments } = await import('@/src/services/materialsService')
+            await uploadMaterialAttachments(created.id, [material.arquivo.file])
+          }
         } else if (materialEditando?.id) {
-          await updateMaterial(materialEditando.id, {
+          const updated = await updateMaterial(materialEditando.id, {
             title: material?.nome,
             description: material?.descricao,
             fileUrl: material?.fileUrl,
           })
+          if (material?.arquivo?.file) {
+            const { uploadMaterialAttachments } = await import('@/src/services/materialsService')
+            await uploadMaterialAttachments((updated as any).id ?? materialEditando.id, [material.arquivo.file])
+          }
         }
         const mats = await listMaterialsByClass(classId)
         const materiaisMapped = mats.map((m: MaterialDTO) => {
           const tipo = (m.fileUrl && m.fileUrl.length > 0) ? (m.fileUrl[0].split('.').pop() || '').toUpperCase() : 'ARQ'
-          return { id: m.id, nome: m.title, tipo, data: new Date(m.uploadedAt).toLocaleDateString('pt-BR') }
+          return { id: m.id, nome: m.title, tipo, data: new Date(m.uploadedAt).toLocaleDateString('pt-BR'), descricao: m.description ?? '', urls: m.fileUrl ?? [] }
         })
         setMateriais(materiaisMapped)
         toast({ title: "Material salvo", description: "Operação realizada com sucesso." })
@@ -631,7 +639,16 @@ export default function TurmaDetalhePage() {
   }
 
   const handleVerDetalhesAluno = (aluno: any) => {
-    setAlunoSelecionado(aluno)
+    // Enriquecer com dados reais (studentId, email, telefone) a partir dos enrollments
+    const enr = enrollmentsState.find(e => e.id === aluno.id) || enrollmentsState.find(e => e.student.name === aluno.nome)
+    const alunoDetalhado = {
+      ...aluno,
+      id: String(aluno.id),
+      studentId: enr?.student?.id,
+      email: enr?.student?.email || aluno.email,
+      telefone: (enr as any)?.student?.telefone || aluno.telefone,
+    }
+    setAlunoSelecionado(alunoDetalhado)
     setModalDetalhesAlunoOpen(true)
   }
 
@@ -1278,10 +1295,55 @@ export default function TurmaDetalhePage() {
                             }
                           }),
                         )
+                        // Marcar submissão como COMPLETED (sem anexos) para cada aluno com nota
+                        const enrollmentIdToStudentId = new Map(enrollmentsState.map(e => [e.id, e.student.id]))
+                        const uniqueStudentIds = Array.from(new Set(entries.map(([enrollmentId]) => String(enrollmentIdToStudentId.get(String(enrollmentId)))))).filter(Boolean) as string[]
+                        await Promise.allSettled(uniqueStudentIds.map(studentId => completeActivityForStudent(activityIdToUse!, studentId)))
                         const ok = results.filter(r => r.status === 'fulfilled').length
                         const fail = results.length - ok
                         if (ok > 0) {
                           toast({ title: "Notas salvas", description: `${ok} nota(s) salva(s) com sucesso!${fail > 0 ? ` • ${fail} falhou(aram)` : ""}` })
+                          // Limpar campos do formulário de Lançar Notas
+                          setAvaliacaoTitulo('')
+                          setAvaliacaoPeso('')
+                          setAvaliacaoDescricao('')
+                          setAtividadeSelecionadaId(undefined)
+                          setCriarNovaAtividade(true)
+                          setNotasImportadas({})
+                          setNotasDigitadas({})
+                          // Recarregar lista de atividades para incluir a recém-criada/atualizada
+                          try {
+                            const acts = await listActivitiesByClass(classId)
+                            const totalAlunos = enrollmentsState.length
+                            const submissionsCounts: number[] = await Promise.all(
+                              (acts as ActivityDTO[]).map(async (a) => {
+                                try {
+                                  const subs = await listSubmissionsByActivity(a.id)
+                                  return Array.isArray(subs) ? subs.length : 0
+                                } catch {
+                                  return 0
+                                }
+                              })
+                            )
+                            const atividadesMapped: AtividadeItem[] = (acts as ActivityDTO[]).map((a, idx) => {
+                              const prazo = a.dueDate || null
+                              const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
+                              return {
+                                id: a.id,
+                                titulo: a.title,
+                                tipo: a.type === 'exam' ? 'Avaliação' : a.type === 'project' ? 'Projeto' : 'Exercício',
+                                prazo,
+                                entregues: submissionsCounts[idx] ?? 0,
+                                total: totalAlunos,
+                                status,
+                                peso: a.maxScore ?? null,
+                                descricao: a.description ?? null
+                              }
+                            })
+                            setAtividades(atividadesMapped)
+                          } catch {
+                            // silencioso
+                          }
                         }
                         if (fail > 0 && ok === 0) {
                           const firstError = (results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined)?.reason?.message
@@ -1345,6 +1407,7 @@ export default function TurmaDetalhePage() {
         isOpen={modalDetalhesAlunoOpen}
         onClose={() => setModalDetalhesAlunoOpen(false)}
         aluno={alunoSelecionado}
+        classId={classId}
       />
 
       {/* Modal de Deletar Atividade/Material */}

@@ -42,11 +42,11 @@ interface AlunoEntrega {
 }
 
 interface Atividade {
-  id: number
+  id: number | string
   titulo: string
   tipo: string
-  prazo: string
-  peso: number
+  prazo?: string | null
+  peso?: number | null
   descricao?: string
 }
 
@@ -147,10 +147,11 @@ export function ModalEntregasAtividade({
 
   const handleNotaChange = (alunoId: number, valor: string) => {
     const nota = parseFloat(valor) || 0
-    if (nota > atividade.peso) {
+    const maxPeso = Number(atividade.peso ?? 10)
+    if (nota > maxPeso) {
       toast({
         title: "Nota inválida",
-        description: `A nota não pode ser maior que o peso da atividade (${atividade.peso})`,
+        description: `A nota não pode ser maior que o peso da atividade (${maxPeso})`,
         variant: "error"
       })
       return
@@ -224,19 +225,29 @@ export function ModalEntregasAtividade({
   }
 
   const getPrazoStatus = () => {
-    const hoje = new Date()
-    const prazo = new Date(atividade.prazo.split('/').reverse().join('-'))
-    const diasRestantes = Math.ceil((prazo.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (diasRestantes < 0) {
-      return { texto: "Prazo expirado", cor: "text-red-600", icone: XCircle }
-    } else if (diasRestantes === 0) {
-      return { texto: "Vence hoje", cor: "text-orange-600", icone: AlertCircle }
-    } else if (diasRestantes <= 3) {
-      return { texto: `${diasRestantes} dias restantes`, cor: "text-orange-600", icone: Clock }
-    } else {
-      return { texto: `${diasRestantes} dias restantes`, cor: "text-green-600", icone: Clock }
+    if (!atividade.prazo) {
+      return { texto: "Sem prazo", cor: "text-muted-foreground", icone: Clock }
     }
+    // Aceita formatos DD/MM/YYYY ou ISO YYYY-MM-DD/ISO completo
+    const parsePrazo = (p: string) => {
+      if (!p) return null
+      if (p.includes('/')) {
+        const [dd, mm, yyyy] = p.split('/')
+        return new Date(Number(yyyy), Number(mm) - 1, Number(dd))
+      }
+      return new Date(p)
+    }
+    const hoje = new Date()
+    const prazoDate = parsePrazo(atividade.prazo)
+    if (!prazoDate || isNaN(prazoDate.getTime())) {
+      return { texto: "Sem prazo", cor: "text-muted-foreground", icone: Clock }
+    }
+    const diasRestantes = Math.ceil((prazoDate.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24))
+
+    if (diasRestantes < 0) return { texto: "Prazo expirado", cor: "text-red-600", icone: XCircle }
+    if (diasRestantes === 0) return { texto: "Vence hoje", cor: "text-orange-600", icone: AlertCircle }
+    if (diasRestantes <= 3) return { texto: `${diasRestantes} dias restantes`, cor: "text-orange-600", icone: Clock }
+    return { texto: `${diasRestantes} dias restantes`, cor: "text-green-600", icone: Clock }
   }
 
   const prazoStatus = getPrazoStatus()
@@ -250,7 +261,7 @@ export function ModalEntregasAtividade({
             <div>
               <h2 className="text-xl font-bold">{atividade.titulo}</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {atividade.tipo} • Peso: {atividade.peso} • Prazo: {atividade.prazo}
+                {atividade.tipo} • Peso: {atividade.peso ?? 10} • Prazo: {atividade.prazo ?? '—'}
               </p>
             </div>
             <div className="flex items-center gap-2">

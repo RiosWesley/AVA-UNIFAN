@@ -60,6 +60,10 @@ export async function listSubmissionsByActivity(activityId: string): Promise<Act
   return data;
 }
 
+export async function completeActivityForStudent(activityId: string, studentId: string): Promise<void> {
+  await api.post(`/activities/${activityId}/complete`, {}, { params: { studentId } });
+}
+
 export async function downloadSubmissionFile(submissionId: string, fileUrl: string): Promise<{ blob: Blob; fileName: string }> {
   const response = await api.get(`/activities/submissions/${submissionId}/files/download`, {
     params: { fileUrl },

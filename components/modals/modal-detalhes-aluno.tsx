@@ -21,9 +21,11 @@ import {
   GraduationCap,
   Clock
 } from "lucide-react"
+import { getStudentGradesDetailed, DetailedStudentGrades } from "@/src/services/gradesService"
 
 interface Aluno {
-  id: number
+  id: string
+  studentId?: string
   nome: string
   matricula: string
   media: number
@@ -39,14 +41,17 @@ interface ModalDetalhesAlunoProps {
   isOpen: boolean
   onClose: () => void
   aluno: Aluno | null
+  classId?: string
 }
 
 export function ModalDetalhesAluno({
   isOpen,
   onClose,
-  aluno
+  aluno,
+  classId
 }: ModalDetalhesAlunoProps) {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const [atividadesAluno, setAtividadesAluno] = useState<Array<{ id: string; titulo: string; nota: number; peso: number; data: string }>>([])
 
   // Detectar tema liquid glass
   useEffect(() => {
@@ -66,18 +71,42 @@ export function ModalDetalhesAluno({
     return () => observer.disconnect()
   }, [])
 
-  // Dados mock para atividades do aluno (seria obtido do backend)
-  const atividadesAluno = [
-    { id: 1, titulo: "Lista de Exercícios - Funções", nota: 8.5, peso: 3.0, data: "15/03/2024" },
-    { id: 2, titulo: "Prova Bimestral", nota: 7.2, peso: 4.0, data: "20/03/2024" },
-    { id: 3, titulo: "Trabalho em Grupo", nota: 9.0, peso: 2.0, data: "25/03/2024" },
-    { id: 4, titulo: "Atividade Avaliativa 1", nota: 6.8, peso: 2.5, data: "10/04/2024" },
-  ]
+  // Carregar dados reais do boletim detalhado do aluno
+  useEffect(() => {
+    const fetchDetailed = async () => {
+      try {
+        if (!isOpen || !aluno?.studentId) {
+          setAtividadesAluno([])
+          return
+        }
+        const detailed: DetailedStudentGrades = await getStudentGradesDetailed(aluno.studentId)
+        // Filtra pela turma atual (se informada)
+        const disciplinas = detailed?.disciplines || []
+        const daTurma = classId ? disciplinas.find(d => d.class?.id === classId) : disciplinas[0]
+        const atividades = (daTurma?.gradesByPeriod || []).flatMap(gp => gp.activities || [])
+        const mapped = atividades.map(a => ({
+          id: a.id,
+          titulo: a.title,
+          nota: a.grade?.score != null ? Number(a.grade.score) : 0,
+          peso: a.max_score != null ? Number(a.max_score) : 10,
+          data: a.due_date ? new Date(a.due_date).toLocaleDateString('pt-BR') : '-'
+        }))
+        setAtividadesAluno(mapped)
+      } catch {
+        setAtividadesAluno([])
+      }
+    }
+    fetchDetailed()
+  }, [isOpen, aluno?.studentId, classId])
 
   // Calcular estatísticas
-  const mediaPonderada = atividadesAluno.reduce((acc, atividade) =>
-    acc + (atividade.nota * atividade.peso), 0
-  ) / atividadesAluno.reduce((acc, atividade) => acc + atividade.peso, 0)
+  const mediaPonderada = (() => {
+    if (!atividadesAluno.length) return 0
+    const somaPesos = atividadesAluno.reduce((acc, a) => acc + (a.peso || 0), 0) || 0
+    if (somaPesos === 0) return 0
+    const soma = atividadesAluno.reduce((acc, a) => acc + (a.nota * (a.peso || 0)), 0)
+    return soma / somaPesos
+  })()
 
   const getSituacaoBadge = (situacao: string) => {
     switch (situacao) {
