@@ -6,11 +6,30 @@ import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { BookOpen, Calendar, FileText, Users, TrendingUp, CheckCircle, Star, Award, Clock, GraduationCap, Activity, Target, Sparkles, Bell, ChevronRight, Play } from "lucide-react"
+import { BookOpen, Calendar, FileText, Users, CheckCircle, Star, Award, Clock, GraduationCap, Activity, Target, Sparkles, Bell, ChevronRight, Play } from "lucide-react"
 import Carousel from "@/components/ui/carousel"
+import { useMemo } from "react"
+import { getTeacherClassesWithDetails, getTeacherActivitiesAggregated, getTeacherNotices, buildAgendaSemanalFromClasses, buildProximasAulasFromClasses, buildTurmasData, calculateStats } from "@/src/services/professor-dashboard"
+import api from "@/src/services/api"
 
 export default function ProfessorDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name?: string } | null>(null)
+
+  const [turmas, setTurmas] = useState<any[]>([])
+  const [agendaSemanal, setAgendaSemanal] = useState<any[]>([])
+  const [atividades, setAtividades] = useState<any[]>([])
+  const [proximasAulas, setProximasAulas] = useState<any[]>([])
+  const [comunicados, setComunicados] = useState<any[]>([])
+  const [stats, setStats] = useState({ totalTurmas: 0, totalAlunos: 0, aulasHoje: 0, atividadesPendentes: 0, corrigindo: 0 })
+  const [activitiesPage, setActivitiesPage] = useState(1)
+  const ACTIVITIES_PAGE_SIZE = 5
+  const [turmasPage, setTurmasPage] = useState(1)
+  const TURMAS_PAGE_SIZE = 5
+  const [comunicadosPage, setComunicadosPage] = useState(1)
+  const COMUNICADOS_PAGE_SIZE = 5
 
   useEffect(() => {
     const checkTheme = () => {
@@ -28,105 +47,114 @@ export default function ProfessorDashboard() {
     return () => observer.disconnect()
   }, [])
 
-  const turmas = [
-    {
-      nome: "9º Ano A",
-      disciplina: "Matemática",
-      alunos: 28,
-      proxima: "08:00 - 09:40",
-      sala: "A-101",
-      status: "Em andamento",
-      media: 8.2,
-      destaque: "Melhor turma"
-    },
-    {
-      nome: "8º Ano B",
-      disciplina: "Matemática",
-      alunos: 25,
-      proxima: "10:00 - 11:40",
-      sala: "B-205",
-      status: "Em andamento",
-      media: 7.8,
-      destaque: "Progresso constante"
-    },
-    {
-      nome: "7º Ano C",
-      disciplina: "Matemática",
-      alunos: 30,
-      proxima: "14:00 - 15:40",
-      sala: "C-301",
-      status: "Em andamento",
-      media: 8.5,
-      destaque: "Excelente participação"
-    },
-  ]
+  useEffect(() => {
+    let mounted = true
+    async function loadData() {
+      try {
+        setLoading(true)
+        setError(null)
+        // Mock de usuário solicitador
+        const teacherId = '3f259c81-4a5c-4ae8-8b81-6d59f5eb3028'
+        if (!mounted) return
+        // Busca o nome do professor pelo ID
+        let professorName = 'Professor'
+        try {
+          const { data } = await api.get<{ id: string; name?: string }>(`/users/${teacherId}`)
+          if (data?.name) professorName = data.name
+        } catch {
+          // mantém nome padrão se falhar
+        }
+        setCurrentUser({ id: teacherId, name: professorName })
 
-  const agendaSemanal = [
-    { dia: "Segunda", aulas: 4, turmas: ["9º A", "8º B"], totalHoras: 8 },
-    { dia: "Terça", aulas: 3, turmas: ["7º C", "9º A"], totalHoras: 6 },
-    { dia: "Quarta", aulas: 4, turmas: ["8º B", "7º C"], totalHoras: 8 },
-    { dia: "Quinta", aulas: 3, turmas: ["9º A", "8º B"], totalHoras: 6 },
-    { dia: "Sexta", aulas: 2, turmas: ["7º C"], totalHoras: 4 },
-  ]
+        const classes = await getTeacherClassesWithDetails(teacherId)
+        if (!mounted) return
 
-  const atividades = [
-    {
-      titulo: "Prova de Álgebra",
-      turma: "9º Ano A",
-      prazo: "20/03/2024",
-      status: "Pendente",
-      prioridade: "Alta",
-      tipo: "Prova"
-    },
-    {
-      titulo: "Lista de Exercícios",
-      turma: "8º Ano B",
-      prazo: "18/03/2024",
-      status: "Corrigindo",
-      prioridade: "Média",
-      tipo: "Exercício"
-    },
-    {
-      titulo: "Projeto Geometria",
-      turma: "7º Ano C",
-      prazo: "25/03/2024",
-      status: "Aguardando",
-      prioridade: "Baixa",
-      tipo: "Projeto"
-    },
-  ]
+        const turmasData = buildTurmasData(classes)
+        const agenda = buildAgendaSemanalFromClasses(classes)
+        const proximas = buildProximasAulasFromClasses(classes)
+        setTurmas(turmasData)
+        setTurmasPage(1)
+        setAgendaSemanal(agenda)
+        setProximasAulas(proximas)
 
-  const proximasAulas = [
-    {
-      turma: "9º Ano A - Matemática",
-      horario: "08:00 - 09:40",
-      sala: "A-101",
-      tipo: "Teórica",
-      status: "Próxima"
-    },
-    {
-      turma: "8º Ano B - Matemática",
-      horario: "10:00 - 11:40",
-      sala: "B-205",
-      tipo: "Prática",
-      status: "Em breve"
+        const atividadesAgg = await getTeacherActivitiesAggregated(classes)
+        if (!mounted) return
+        setAtividades(atividadesAgg)
+        setActivitiesPage(1) // reset ao carregar
+
+        const comunicadosData = await getTeacherNotices()
+        if (!mounted) return
+        setComunicados(comunicadosData)
+        setComunicadosPage(1)
+
+        const s = calculateStats(classes, atividadesAgg)
+        setStats(s)
+      } catch (e: any) {
+        setError('Não foi possível carregar os dados do dashboard.')
+      } finally {
+        if (mounted) setLoading(false)
+      }
     }
-  ]
-
-  const comunicados = [
-    {
-      titulo: "Reunião Pedagógica",
-      descricao: "Reunião com coordenação",
-      data: "Hoje, 16:00",
-      prioridade: "Alta"
-    },
-    {
-      titulo: "Nova diretriz escolar",
-      descricao: "Atualização nas normas de avaliação",
-      data: "Amanhã, 14:00",
-      prioridade: "Média"
+    loadData()
+    return () => {
+      mounted = false
     }
-  ]
+  }, [])
+
+  useEffect(() => {
+    // Garante que a página atual seja válida quando o total muda
+    const maxPage = Math.max(1, Math.ceil((atividades?.length || 0) / ACTIVITIES_PAGE_SIZE))
+    if (activitiesPage > maxPage) {
+      setActivitiesPage(maxPage)
+    }
+  }, [atividades, activitiesPage])
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil((turmas?.length || 0) / TURMAS_PAGE_SIZE))
+    if (turmasPage > maxPage) {
+      setTurmasPage(maxPage)
+    }
+  }, [turmas, turmasPage])
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil((comunicados?.length || 0) / COMUNICADOS_PAGE_SIZE))
+    if (comunicadosPage > maxPage) {
+      setComunicadosPage(maxPage)
+    }
+  }, [comunicados, comunicadosPage])
+
+  const paginatedAtividades = useMemo(() => {
+    const start = (activitiesPage - 1) * ACTIVITIES_PAGE_SIZE
+    const end = start + ACTIVITIES_PAGE_SIZE
+    return (atividades || []).slice(start, end)
+  }, [atividades, activitiesPage])
+
+  const totalActivityPages = useMemo(
+    () => Math.max(1, Math.ceil((atividades?.length || 0) / ACTIVITIES_PAGE_SIZE)),
+    [atividades]
+  )
+
+  const paginatedTurmas = useMemo(() => {
+    const start = (turmasPage - 1) * TURMAS_PAGE_SIZE
+    const end = start + TURMAS_PAGE_SIZE
+    return (turmas || []).slice(start, end)
+  }, [turmas, turmasPage])
+
+  const totalTurmasPages = useMemo(
+    () => Math.max(1, Math.ceil((turmas?.length || 0) / TURMAS_PAGE_SIZE)),
+    [turmas]
+  )
+
+  const paginatedComunicados = useMemo(() => {
+    const start = (comunicadosPage - 1) * COMUNICADOS_PAGE_SIZE
+    const end = start + COMUNICADOS_PAGE_SIZE
+    return (comunicados || []).slice(start, end)
+  }, [comunicados, comunicadosPage])
+
+  const totalComunicadosPages = useMemo(
+    () => Math.max(1, Math.ceil((comunicados?.length || 0) / COMUNICADOS_PAGE_SIZE)),
+    [comunicados]
+  )
 
   const carouselImages = [
     { src: "/placeholder.jpg", alt: "Aviso 1" },
@@ -157,7 +185,7 @@ export default function ProfessorDashboard() {
               </div>
               <div>
                 <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
-                  Olá, Prof. Maria!
+                  Olá, {currentUser?.name ? `Prof. ${currentUser.name}` : 'Professor(a)'}!
                 </h1>
                 <p className="text-muted-foreground text-lg mt-1">
                   Gerencie suas turmas e atividades
@@ -204,7 +232,7 @@ export default function ProfessorDashboard() {
           </div>
 
           {/* Cards de estatísticas aprimorados */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
@@ -220,10 +248,10 @@ export default function ProfessorDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">3</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{stats.totalTurmas}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Activity className="h-3 w-3 mr-1" />
-                  83 alunos no total
+                  {stats.totalAlunos} alunos no total
                 </div>
               </CardContent>
             </LiquidGlassCard>
@@ -243,10 +271,11 @@ export default function ProfessorDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">4</div>
+                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">{stats.aulasHoje}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Clock className="h-3 w-3 mr-1" />
-                  16 horas/aula semanais
+                  {/* Indicativo simples baseado em agenda */}
+                  {agendaSemanal.reduce((acc: number, d: any) => acc + (d.totalHoras || 0), 0)} horas/aula semanais
                 </div>
               </CardContent>
             </LiquidGlassCard>
@@ -266,36 +295,14 @@ export default function ProfessorDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">5</div>
+                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">{stats.atividadesPendentes}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Target className="h-3 w-3 mr-1" />
-                  2 para correção
+                  {stats.corrigindo} para correção
                 </div>
               </CardContent>
             </LiquidGlassCard>
 
-            <LiquidGlassCard
-              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40'
-              }`}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm font-semibold text-gray-700 dark:text-gray-300">Média das Turmas</CardTitle>
-                <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors">
-                  <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">8.2</div>
-                <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                  <Award className="h-3 w-3 mr-1" />
-                  +0.2 desde o último bimestre
-                </div>
-              </CardContent>
-            </LiquidGlassCard>
           </div>
 
           {/* Layout principal aprimorado */}
@@ -320,7 +327,7 @@ export default function ProfessorDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {proximasAulas.map((aula, index) => (
+                    {proximasAulas.map((aula: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -371,7 +378,7 @@ export default function ProfessorDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {turmas.map((turma, index) => (
+                    {paginatedTurmas.map((turma: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-center space-x-3">
                           <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -402,76 +409,27 @@ export default function ProfessorDashboard() {
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </LiquidGlassCard>
-
-              {/* Atividades Recentes */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <FileText className="h-5 w-5 mr-2 text-amber-600 dark:text-amber-400" />
-                    Atividades Recentes
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Atividades e avaliações pendentes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {atividades.map((atividade, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className={`${"w-10 h-10 rounded-lg flex items-center justify-center shadow-lg "}
-                            ${atividade.tipo === "Prova" ? "bg-red-500/20" :
-                            atividade.tipo === "Exercício" ? "bg-green-500/20" : "bg-green-500/20"}`}> 
-                            <FileText className={`h-5 w-5 ${
-                              atividade.tipo === "Prova" ? "text-red-600 dark:text-red-400" :
-                              atividade.tipo === "Exercício" ? "text-green-600 dark:text-green-400" : "text-green-600 dark:text-green-400"
-                            }`} />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">{atividade.titulo}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{atividade.turma}</p>
-                            <div className="flex items-center mt-1">
-                              <Badge variant="outline" className="text-xs mr-2">
-                                {atividade.tipo}
-                              </Badge>
-                              <Badge
-                                variant={
-                                  atividade.prioridade === "Alta"
-                                    ? "destructive"
-                                    : atividade.prioridade === "Média"
-                                      ? "secondary"
-                                      : "outline"
-                                }
-                                className="text-xs"
-                              >
-                                {atividade.prioridade}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <Badge
-                            variant={
-                              atividade.status === "Pendente"
-                                ? "destructive"
-                                : atividade.status === "Corrigindo"
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                          >
-                            {atividade.status}
-                          </Badge>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{atividade.prazo}</p>
-                        </div>
-                      </div>
-                    ))}
+                  {/* Paginação Turmas */}
+                  <div className="flex items-center justify-between mt-4">
+                    <LiquidGlassButton
+                      size="sm"
+                      variant="outline"
+                      disabled={turmasPage <= 1}
+                      onClick={() => setTurmasPage((p) => Math.max(1, p - 1))}
+                    >
+                      Anterior
+                    </LiquidGlassButton>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      Página {turmasPage} de {totalTurmasPages}
+                    </span>
+                    <LiquidGlassButton
+                      size="sm"
+                      variant="outline"
+                      disabled={turmasPage >= totalTurmasPages}
+                      onClick={() => setTurmasPage((p) => Math.min(totalTurmasPages, p + 1))}
+                    >
+                      Próxima
+                    </LiquidGlassButton>
                   </div>
                 </CardContent>
               </LiquidGlassCard>
@@ -507,7 +465,7 @@ export default function ProfessorDashboard() {
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          {dia.turmas.map((turma, i) => (
+                          {dia.turmas.map((turma: string, i: number) => (
                             <Badge key={i} variant="secondary" className="text-xs">
                               {turma}
                             </Badge>
@@ -537,7 +495,7 @@ export default function ProfessorDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {comunicados.map((comunicado, index) => (
+                    {paginatedComunicados.map((comunicado: any, index: number) => (
                       <div key={index} className="p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
                         <div className="flex items-start justify-between mb-2">
                           <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1">
@@ -567,10 +525,129 @@ export default function ProfessorDashboard() {
                       </div>
                     ))}
                   </div>
+                  {/* Paginação Comunicados */}
+                  <div className="flex items-center justify-between mt-4">
+                    <LiquidGlassButton
+                      size="sm"
+                      variant="outline"
+                      disabled={comunicadosPage <= 1}
+                      onClick={() => setComunicadosPage((p) => Math.max(1, p - 1))}
+                    >
+                      Anterior
+                    </LiquidGlassButton>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      Página {comunicadosPage} de {totalComunicadosPages}
+                    </span>
+                    <LiquidGlassButton
+                      size="sm"
+                      variant="outline"
+                      disabled={comunicadosPage >= totalComunicadosPages}
+                      onClick={() => setComunicadosPage((p) => Math.min(totalComunicadosPages, p + 1))}
+                    >
+                      Próxima
+                    </LiquidGlassButton>
+                  </div>
                 </CardContent>
               </LiquidGlassCard>
 
             </div>
+          </div>
+
+          {/* Atividades Recentes - full width */}
+          <div className="mt-6">
+            <LiquidGlassCard
+              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+              className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
+                isLiquidGlass
+                  ? 'bg-black/30 dark:bg-gray-800/20'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40'
+              }`}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
+                  <FileText className="h-5 w-5 mr-2 text-amber-600 dark:text-amber-400" />
+                  Atividades Recentes
+                </CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">Atividades e avaliações pendentes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {paginatedAtividades.map((atividade: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <div className={`${"w-10 h-10 rounded-lg flex items-center justify-center shadow-lg "}
+                          ${atividade.tipo === "Prova" ? "bg-red-500/20" :
+                          atividade.tipo === "Exercício" ? "bg-green-500/20" : "bg-green-500/20"}`}> 
+                          <FileText className={`h-5 w-5 ${
+                            atividade.tipo === "Prova" ? "text-red-600 dark:text-red-400" :
+                            atividade.tipo === "Exercício" ? "text-green-600 dark:text-green-400" : "text-green-600 dark:text-green-400"
+                          }`} />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100">{atividade.titulo}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{atividade.turma}</p>
+                          <div className="flex items-center mt-1">
+                            <Badge variant="outline" className="text-xs mr-2">
+                              {atividade.tipo}
+                            </Badge>
+                            <Badge
+                              variant={
+                                atividade.prioridade === "Alta"
+                                  ? "destructive"
+                                  : atividade.prioridade === "Média"
+                                    ? "secondary"
+                                    : "outline"
+                              }
+                              className="text-xs"
+                            >
+                              {atividade.prioridade}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge
+                          variant={
+                            atividade.status === "Pendente"
+                              ? "destructive"
+                              : atividade.status === "Corrigindo"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {atividade.status}
+                        </Badge>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{atividade.prazo}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Paginação */}
+                <div className="flex items-center justify-between mt-4">
+                  <LiquidGlassButton
+                    size="sm"
+                    variant="outline"
+                    disabled={activitiesPage <= 1}
+                    onClick={() => setActivitiesPage((p) => Math.max(1, p - 1))}
+                  >
+                    Anterior
+                  </LiquidGlassButton>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">
+                    Página {activitiesPage} de {totalActivityPages}
+                  </span>
+                  <LiquidGlassButton
+                    size="sm"
+                    variant="outline"
+                    disabled={activitiesPage >= totalActivityPages}
+                    onClick={() =>
+                      setActivitiesPage((p) => Math.min(totalActivityPages, p + 1))
+                    }
+                  >
+                    Próxima
+                  </LiquidGlassButton>
+                </div>
+              </CardContent>
+            </LiquidGlassCard>
           </div>
         </div>
       </main>
