@@ -18,6 +18,13 @@ import { createCourse, getCourses, type BackendCourse } from "@/src/services/cou
 
 const MOCK_COORDINATOR_ID = "5f634e5c-d028-434d-af46-cc9ea23eb77b"
 
+type FormStatus = 'Ativo' | 'Inativo';
+
+const statusApiMap: Record<FormStatus, 'active' | 'inactive'> = {
+  'Ativo': 'active',
+  'Inativo': 'inactive',
+};
+
 type Curso = {
   id: string
   nome: string
@@ -42,6 +49,9 @@ type ModalCursoData = {
 
 export default function CoordenadorCursosPage() {
   const router = useRouter()
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [departamentoFilter, setDepartamentoFilter] = useState<string>("todos");
+  const [statusFilter, setStatusFilter] = useState<"todos" | "Ativo" | "Inativo">("todos");
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -207,7 +217,11 @@ export default function CoordenadorCursosPage() {
   async function carregarCursos(departmentId: string) {
     try {
       setIsLoading(true)
-      const backendCourses = await getCourses(departmentId)
+      const backendCourses = await getCourses({ 
+      search: debouncedSearch, 
+      departmentId: departamentoFilter,
+      status: statusFilter === 'todos' ? 'todos' : statusApiMap[statusFilter]
+    })
       const deptName = department?.name ?? ""
       const mapped = backendCourses.map((c) => mapBackendToCurso(c, deptName))
       setCursos(mapped)
