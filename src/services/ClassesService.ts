@@ -1,15 +1,36 @@
-import { ClassFromAPI, Semestre } from "../types/Classe";
-import api from "./api";
+import api from './api';
 
+export interface ClassDiscipline {
+  id: string;
+  name: string;
+}
+
+export interface TeacherBrief {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface ClassDTO {
+  id: string;
+  code?: string;
+  semester?: string;
+  year?: number;
+  discipline?: ClassDiscipline | null;
+  teacher?: TeacherBrief | null;
+}
+
+export async function getClassById(id: string): Promise<ClassDTO> {
+  const { data } = await api.get(`/classes/${id}`);
+  return data;
+}
+
+// ===== Compatibilidade com página do aluno (disciplinas) =====
+import { ClassFromAPI, Semestre } from "../types/Classe";
 
 export const getDisciplinasPorAluno = async (alunoId: string): Promise<ClassFromAPI[]> => {
-  try {
-    const response = await api.get<ClassFromAPI[]>(`/students/${alunoId}/classes`);
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao buscar disciplinas:", error);
-    throw new Error("Não foi possível carregar as disciplinas.");
-  }
+  const response = await api.get<ClassFromAPI[]>(`/students/${alunoId}/classes`);
+  return response.data;
 };
 
 export const transformarDadosParaComponente = (dadosApi: ClassFromAPI[]): Semestre[] => {
@@ -37,3 +58,5 @@ export const transformarDadosParaComponente = (dadosApi: ClassFromAPI[]): Semest
 
   return Object.values(semestresAgrupados);
 };
+
+ 

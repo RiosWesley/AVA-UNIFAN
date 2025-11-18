@@ -16,10 +16,21 @@ import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
 import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
+import { useParams } from "next/navigation"
+import { getClassById } from "@/src/services/ClassesService"
+import { getEnrollmentsByClass, EnrollmentDTO } from "@/src/services/enrollmentsService"
+import { listActivitiesByClass, createActivity, updateActivity, deleteActivity, listSubmissionsByActivity, ActivityDTO, ActivityUnit } from "@/src/services/activitiesService"
+import { listMaterialsByClass, createMaterial, updateMaterial, deleteMaterial, MaterialDTO } from "@/src/services/materialsService"
+import { listForumsByClass, createForum, updateForum, deleteForum, ForumDTO } from "@/src/services/forumsService"
+import { listPostsByForum, createForumPost, ForumPostDTO } from "@/src/services/forumPostsService"
+import { listLiveSessionsByClass, createLiveSession, LiveSessionDTO } from "@/src/services/liveSessionsService"
+import { getClassGradebook, createGradeForActivity, getActivityGradebook } from "@/src/services/gradesService"
+import { getClassAttendanceTable } from "@/src/services/attendancesService"
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [notasImportadas, setNotasImportadas] = useState<Record<string, string>>({})
+  const [notasDigitadas, setNotasDigitadas] = useState<Record<string, string>>({})
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [modalEntregasOpen, setModalEntregasOpen] = useState(false)
@@ -34,6 +45,8 @@ export default function TurmaDetalhePage() {
   const [modoModalMaterial, setModoModalMaterial] = useState<'criar' | 'editar'>('criar')
   const [modalDetalhesAlunoOpen, setModalDetalhesAlunoOpen] = useState(false)
   const [alunoSelecionado, setAlunoSelecionado] = useState<any>(null)
+  const params = useParams<{ id: string }>()
+  const classId = (params?.id as string) ?? ""
   
   // Estados para fórum
   const [modalForumOpen, setModalForumOpen] = useState(false)
@@ -43,183 +56,169 @@ export default function TurmaDetalhePage() {
   const [forumSelecionado, setForumSelecionado] = useState<any>(null)
 
   // Estados para videochamadas
-  type VideoChamada = { id: number; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
-  const [videoChamadas, setVideoChamadas] = useState<VideoChamada[]>([
-    { id: 1, titulo: 'Aula ao Vivo - Funções Quadráticas', dataHora: '2025-10-30T19:00:00', status: 'agendada', link: '#' },
-    { id: 2, titulo: 'Plantão de Dúvidas', dataHora: '2025-10-25T19:00:00', status: 'encerrada', link: '#' },
-    { id: 3, titulo: 'Revisão para Prova', dataHora: '2025-10-28T20:00:00', status: 'disponivel', link: '#' },
-  ])
+  type VideoChamada = { id: string; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
+  const [videoChamadas, setVideoChamadas] = useState<VideoChamada[]>([])
   const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
   const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
 
-  const turma = {
-    nome: "9º Ano A",
-    disciplina: "Matemática",
-    alunos: 28,
-    mediaGeral: 7.8,
-    frequenciaMedia: 92,
-  }
+  const [turma, setTurma] = useState<{ nome: string; disciplina: string; alunos: number; mediaGeral: number; frequenciaMedia: number; }>(
+    { nome: "Turma", disciplina: "-", alunos: 0, mediaGeral: 0, frequenciaMedia: 0 }
+  )
 
-  const alunos = [
-    { id: 1, nome: "Ana Silva", matricula: "231550652", media: 8.5, frequencia: 95, situacao: "Aprovado" },
-    { id: 2, nome: "Bruno Santos", matricula: "231550653", media: 7.2, frequencia: 88, situacao: "Aprovado" },
-    { id: 3, nome: "Carlos Oliveira", matricula: "231550654", media: 6.8, frequencia: 92, situacao: "Recuperação" },
-    { id: 4, nome: "Diana Costa", matricula: "231550655", media: 9.1, frequencia: 98, situacao: "Aprovado" },
-    { id: 5, nome: "Eduardo Lima", matricula: "231550656", media: 5.5, frequencia: 75, situacao: "Reprovado" },
-  ]
+  type AlunoItem = { id: string; nome: string; matricula: string; media: number; frequencia: number; situacao: string }
+  const [alunos, setAlunos] = useState<AlunoItem[]>([])
 
-  const atividades = [
-    {
-      id: 1,
-      titulo: "Lista de Exercícios - Funções",
-      tipo: "Exercício",
-      prazo: "20/03/2024",
-      entregues: 25,
-      total: 28,
-      status: "Ativa",
-      peso: 3.0,
-      descricao: "Exercícios sobre funções quadráticas e lineares"
-    },
-    {
-      id: 2,
-      titulo: "Prova Bimestral",
-      tipo: "Avaliação",
-      prazo: "15/03/2024",
-      entregues: 28,
-      total: 28,
-      status: "Concluída",
-      peso: 4.0,
-      descricao: "Avaliação bimestral sobre todo o conteúdo"
-    },
-    {
-      id: 3,
-      titulo: "Trabalho em Grupo",
-      tipo: "Projeto",
-      prazo: "25/03/2024",
-      entregues: 12,
-      total: 28,
-      status: "Ativa",
-      peso: 2.0,
-      descricao: "Trabalho em grupo sobre aplicações práticas"
-    },
-  ]
+  type AtividadeItem = { id: string; titulo: string; tipo: string; prazo?: string | null; entregues: number; total: number; status: "Ativa" | "Concluída"; peso?: number | null; descricao?: string | null }
+  const [atividades, setAtividades] = useState<AtividadeItem[]>([])
 
-  // Dados mock para entregas dos alunos
-  const entregasAlunos = [
-    {
-      id: 1,
-      nome: "Ana Silva",
-      matricula: "231550652",
-      entregou: true,
-      dataEntrega: "18/03/2024",
-      arquivo: {
-        nome: "lista_funcoes_ana_silva.pdf",
-        tamanho: "2.3 MB",
-        tipo: "PDF",
-        url: "#"
-      },
-      nota: 8.5
-    },
-    {
-      id: 2,
-      nome: "Bruno Santos",
-      matricula: "231550653",
-      entregou: true,
-      dataEntrega: "19/03/2024",
-      arquivo: {
-        nome: "lista_funcoes_bruno_santos.pdf",
-        tamanho: "1.8 MB",
-        tipo: "PDF",
-        url: "#"
-      },
-      nota: 7.2
-    },
-    {
-      id: 3,
-      nome: "Carlos Oliveira",
-      matricula: "231550654",
-      entregou: false,
-      nota: 0
-    },
-    {
-      id: 4,
-      nome: "Diana Costa",
-      matricula: "231550655",
-      entregou: true,
-      dataEntrega: "17/03/2024",
-      arquivo: {
-        nome: "lista_funcoes_diana_costa.pdf",
-        tamanho: "2.1 MB",
-        tipo: "PDF",
-        url: "#"
-      },
-      nota: 9.1
-    },
-    {
-      id: 5,
-      nome: "Eduardo Lima",
-      matricula: "231550656",
-      entregou: false,
-      nota: 0
-    }
-  ]
+  // Entregas dos alunos (carregadas da API)
+  const [entregasAlunos, setEntregasAlunos] = useState<any[]>([])
 
-  const materiais = [
-    { id: 1, nome: "Apostila - Funções Quadráticas", tipo: "PDF", data: "10/03/2024" },
-    { id: 2, nome: "Lista de Exercícios 03", tipo: "PDF", data: "08/03/2024" },
-    { id: 3, nome: "Vídeo Aula - Sistemas Lineares", tipo: "MP4", data: "05/03/2024" },
-  ]
+  const [materiais, setMateriais] = useState<{ id: string; nome: string; tipo: string; data: string }[]>([])
 
-  const [forums, setForums] = useState<any[]>([
-    {
-      id: 1,
-      titulo: "Dúvidas sobre Funções Quadráticas",
-      descricao: "Vamos discutir as dúvidas sobre funções quadráticas. Alguém tem alguma dificuldade específica?",
-      autor: "Prof. Silva",
-      dataCriacao: "15/03/2024",
-      comentarios: [
-        {
-          id: 1,
-          autor: "Ana Silva",
-          texto: "Estou com dificuldade em encontrar o vértice da função f(x) = x² - 4x + 3",
-          data: "16/03/2024 14:30"
-        },
-        {
-          id: 2,
-          autor: "Prof. Silva",
-          texto: "Olá Ana! Para encontrar o vértice, você pode usar a fórmula x = -b/2a. Neste caso, a = 1 e b = -4, então x = 2. Substituindo na função original, encontramos f(2) = -1. O vértice é (2, -1).",
-          data: "16/03/2024 15:45"
-        },
-        {
-          id: 3,
-          autor: "Bruno Santos",
-          texto: "E se a função for f(x) = 2x² + 8x + 6? Como fica o cálculo?",
-          data: "17/03/2024 09:15"
+  const [forums, setForums] = useState<any[]>([])
+
+  // Estados de Lançar Notas
+  const [criarNovaAtividade, setCriarNovaAtividade] = useState(true)
+  const [atividadeSelecionadaId, setAtividadeSelecionadaId] = useState<string | undefined>(undefined)
+  const [avaliacaoTitulo, setAvaliacaoTitulo] = useState("")
+  const [avaliacaoPeso, setAvaliacaoPeso] = useState<string>("")
+  const [avaliacaoDescricao, setAvaliacaoDescricao] = useState("")
+
+  const [enrollmentsState, setEnrollmentsState] = useState<EnrollmentDTO[]>([])
+
+  // Busca inicial
+  useEffect(() => {
+    const fetchAll = async () => {
+      if (!classId) return
+      try {
+        const [
+          clazz,
+          enrollments,
+          gradebook,
+          attendanceTable,
+          acts,
+          mats,
+          frms,
+          sessions
+        ] = await Promise.all([
+          getClassById(classId),
+          getEnrollmentsByClass(classId),
+          getClassGradebook(classId),
+          getClassAttendanceTable(classId),
+          listActivitiesByClass(classId),
+          listMaterialsByClass(classId),
+          listForumsByClass(classId),
+          listLiveSessionsByClass(classId)
+        ])
+
+        const totalAlunos = enrollments.length
+        setEnrollmentsState(enrollments as EnrollmentDTO[])
+
+        const freqMap = new Map<string, number>()
+        for (const row of attendanceTable || []) {
+          const perc = (row.attendancePercentage ?? row.presentPercentage ?? row.frequency ?? row.percentage ?? 0)
+          freqMap.set(row.enrollmentId, Number(perc))
         }
-      ]
-    },
-    {
-      id: 2,
-      titulo: "Trabalho em Grupo - Aplicações Práticas",
-      descricao: "Discussão sobre o trabalho em grupo que será entregue na próxima semana. Ideias e sugestões são bem-vindas!",
-      autor: "Prof. Silva",
-      dataCriacao: "18/03/2024",
-      comentarios: [
-        {
-          id: 1,
-          autor: "Carlos Oliveira",
-          texto: "Que tal aplicarmos as funções quadráticas em problemas de otimização?",
-          data: "18/03/2024 16:20"
-        },
-        {
-          id: 2,
-          autor: "Diana Costa",
-          texto: "Acho interessante usar exemplos do cotidiano, como calcular a área máxima de um jardim com cerca fixa.",
-          data: "19/03/2024 10:30"
+
+        const gradeMap = new Map<string, number>()
+        const entries = gradebook?.entries || []
+        for (const e of entries) {
+          const grades: { activityId: string; grade: { id: string; score: number; gradedAt: Date | string | null } | null }[] = e.grades || []
+          if (grades.length > 0) {
+            const valid = grades.filter((g) => g.grade?.score !== undefined && g.grade?.score !== null)
+            const avg = valid.length > 0 ? valid.reduce((s: number, g) => s + Number(g.grade!.score), 0) / valid.length : 0
+            gradeMap.set(e.enrollmentId, Number(avg.toFixed(2)))
+          } else {
+            gradeMap.set(e.enrollmentId, 0)
+          }
         }
-      ]
+
+        const alunosMapped: AlunoItem[] = (enrollments as EnrollmentDTO[]).map(en => {
+          const matricula = en.student.usuario || en.student.cpf || en.student.email
+          const media = gradeMap.get(en.id) ?? 0
+          const frequencia = Math.round(freqMap.get(en.id) ?? 0)
+          const situacao = media >= 6 && frequencia >= 75 ? "Aprovado" : media < 6 ? "Recuperação" : "Reprovado"
+          return { id: en.id, nome: en.student.name, matricula, media, frequencia, situacao }
+        })
+
+        const mediaGeral = alunosMapped.length > 0 ? Number((alunosMapped.reduce((s, a) => s + a.media, 0) / alunosMapped.length).toFixed(2)) : 0
+        const frequenciaMedia = alunosMapped.length > 0 ? Math.round(alunosMapped.reduce((s, a) => s + a.frequencia, 0) / alunosMapped.length) : 0
+
+        setTurma({
+          nome: clazz.code || clazz.discipline?.name || "Turma",
+          disciplina: clazz.discipline?.name || "-",
+          alunos: totalAlunos,
+          mediaGeral,
+          frequenciaMedia
+        })
+        setAlunos(alunosMapped)
+
+        // Buscar contagem de entregas por atividade
+        const submissionsCounts: number[] = await Promise.all(
+          (acts as ActivityDTO[]).map(async (a) => {
+            try {
+              const subs = await listSubmissionsByActivity(a.id)
+              return Array.isArray(subs) ? subs.length : 0
+            } catch {
+              return 0
+            }
+          })
+        )
+
+        const atividadesMapped: AtividadeItem[] = (acts as ActivityDTO[]).map((a, idx) => {
+          const prazo = a.dueDate || null
+          const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
+          return {
+            id: a.id,
+            titulo: a.title,
+            tipo: a.type === 'exam' ? 'Avaliação' : a.type === 'project' ? 'Projeto' : 'Exercício',
+            prazo,
+            entregues: submissionsCounts[idx] ?? 0,
+            total: totalAlunos,
+            status,
+            peso: a.maxScore ?? null,
+            descricao: a.description ?? null
+          }
+        })
+        setAtividades(atividadesMapped)
+
+        const materiaisMapped = (mats as MaterialDTO[]).map(m => {
+          const tipo = (m.fileUrl && m.fileUrl.length > 0) ? (m.fileUrl[0].split('.').pop() || '').toUpperCase() : 'ARQ'
+          return { id: m.id, nome: m.title, tipo, data: new Date(m.uploadedAt).toLocaleDateString('pt-BR') }
+        })
+        setMateriais(materiaisMapped)
+
+        // Fóruns: carregar lista e contar comentários sob demanda (quando abrir)
+        const forumsMapped = (frms as ForumDTO[]).map(f => ({
+          id: f.id,
+          titulo: f.title,
+          descricao: f.description ?? '',
+          autor: f.createdBy?.name ?? 'Professor',
+          dataCriacao: f.createdAt ? new Date(f.createdAt).toLocaleDateString('pt-BR') : '',
+          comentarios: [] as any[]
+        }))
+        setForums(forumsMapped)
+
+        const sessionsMapped: VideoChamada[] = (sessions as LiveSessionDTO[]).map(s => {
+          const now = Date.now()
+          const start = new Date(s.startAt).getTime()
+          const end = new Date(s.endAt).getTime()
+          const status: 'agendada' | 'disponivel' | 'encerrada' = now < start ? 'agendada' : (now >= start && now <= end ? 'disponivel' : 'encerrada')
+          return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: s.meetingUrl || '#' }
+        })
+        setVideoChamadas(sessionsMapped)
+      } catch (e: any) {
+        console.error(e)
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar informações da turma."
+        })
+      }
     }
-  ])
+    fetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classId])
 
   const generateExcelModel = () => {
     // Preparar dados para o Excel
@@ -340,6 +339,7 @@ export default function TurmaDetalhePage() {
 
         // Atualizar estado com as notas importadas
         setNotasImportadas(notasProcessadas)
+        setNotasDigitadas({})
 
         const count = Object.keys(notasProcessadas).length
         if (count > 0) {
@@ -377,21 +377,127 @@ export default function TurmaDetalhePage() {
 
   const clearImportedNotes = () => {
     setNotasImportadas({})
+    setNotasDigitadas({})
     toastInfo('Notas limpas', 'Todas as notas importadas foram removidas com sucesso.')
   }
 
   const handleVerEntregas = (atividade: any) => {
     setAtividadeSelecionada(atividade)
-    setModalEntregasOpen(true)
+    // Carregar submissions da atividade e compor lista com todos os alunos da turma
+    const carregar = async () => {
+      try {
+        const [submissions, gradebook] = await Promise.all([
+          listSubmissionsByActivity(String(atividade.id)),
+          getActivityGradebook(String(atividade.id))
+        ])
+        const gradesMap = new Map<string, number>()
+        const entriesGb = gradebook?.entries || []
+        entriesGb.forEach((e: any) => {
+          const score = e?.grade?.score
+          if (e?.enrollmentId && typeof score === 'number') {
+            gradesMap.set(e.enrollmentId, Number(score))
+          }
+        })
+        const subByStudentId = new Map<string, any>()
+        submissions.forEach((s: any) => {
+          const studentId = s?.student?.id
+          if (studentId) subByStudentId.set(studentId, s)
+        })
+        const lista = enrollmentsState.map((en, idx) => {
+          const sub = subByStudentId.get(en.student.id)
+          const urls: string[] = (Array.isArray(sub?.files) && sub.files?.length ? sub.files : (Array.isArray(sub?.fileUrls) ? sub.fileUrls : [])) as string[]
+          const firstFileUrl: string | undefined = urls.length > 0 ? urls[0] : undefined
+          const nomeArquivo = firstFileUrl ? firstFileUrl.split('/').pop() : undefined
+          const ext = nomeArquivo?.split('.').pop()?.toUpperCase()
+          return {
+            // Mantém compatibilidade com o Modal (id sequencial numérico),
+            // e enviaremos o enrollmentId correto no salvamento
+            id: idx + 1,
+            enrollmentId: en.id,
+            submissionId: sub?.id,
+            nome: en.student.name,
+            matricula: en.student.usuario || en.student.cpf || en.student.email,
+            entregou: !!sub,
+            dataEntrega: sub?.submittedAt ? new Date(sub.submittedAt).toLocaleDateString('pt-BR') : undefined,
+            arquivo: firstFileUrl ? {
+              nome: nomeArquivo,
+              tamanho: undefined,
+              tipo: ext || 'ARQ',
+              url: firstFileUrl
+            } : undefined,
+            arquivos: urls?.map((u) => {
+              const n = u.split('/').pop()
+              const e = n?.split('.').pop()?.toUpperCase()
+              return { nome: n || 'arquivo', url: u, tipo: e || 'ARQ' }
+            }) || [],
+            nota: gradesMap.get(en.id) ?? 0
+          }
+        })
+        setEntregasAlunos(lista)
+      } catch (e) {
+        setEntregasAlunos([])
+      } finally {
+        setModalEntregasOpen(true)
+      }
+    }
+    carregar()
   }
 
-  const handleSalvarNotas = (notas: Record<number, number>) => {
-    console.log('Notas salvas:', notas)
-    // Aqui você implementaria a lógica para salvar as notas no backend
-    toast({
-      title: "Notas salvas",
-      description: "As notas foram salvas com sucesso!",
-    })
+  const handleSalvarNotas = async (notas: Record<number, number>) => {
+    try {
+      if (!atividadeSelecionada?.id) {
+        toast({ title: "Selecione uma atividade", description: "Não foi possível identificar a atividade." })
+        return
+      }
+      const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      const entries = Object.entries(notas)
+        .filter(([_, v]) => v !== undefined && v !== null)
+        .map(([rowId, score]) => {
+          const linha = entregasAlunos.find((l) => String(l.id) === String(rowId) || l.enrollmentId === rowId)
+          const finalEnrollmentId = uuidV4.test(String(rowId)) ? String(rowId) : (linha?.enrollmentId || linha?.id)
+          return [String(finalEnrollmentId), Number(score)] as [string, number]
+        })
+        .filter(([enrollmentId]) => !!enrollmentId)
+      if (entries.length === 0) {
+        toastImportWarning('Nenhuma nota informada', 'Preencha notas antes de salvar.')
+        return
+      }
+      // Salvar com upsert (create -> se existir, update)
+      const { findGrades, updateGrade } = await import('@/src/services/gradesService')
+      const results = await Promise.allSettled(
+        entries.map(async ([enrollmentId, score]) => {
+          try {
+            await createGradeForActivity(String(atividadeSelecionada.id), {
+              enrollmentId: String(enrollmentId),
+              score: Number(score),
+            })
+          } catch {
+            const existentes = await findGrades({ enrollmentId: String(enrollmentId), activityId: String(atividadeSelecionada.id) })
+            const existente = Array.isArray(existentes) ? existentes[0] : undefined
+            if (existente?.id) {
+              await updateGrade(existente.id, { score: Number(score) })
+            } else {
+              throw new Error('Falha ao criar/atualizar nota')
+            }
+          }
+        }),
+      )
+      const ok = results.filter(r => r.status === 'fulfilled').length
+      const fail = results.length - ok
+      if (ok > 0) {
+        toast({ title: "Notas salvas", description: `${ok} nota(s) salva(s) com sucesso!${fail > 0 ? ` • ${fail} falhou(aram)` : ""}` })
+        // Fechar modal automaticamente após salvar com sucesso
+        setModalEntregasOpen(false)
+        setAtividadeSelecionada(null)
+      }
+      if (fail > 0 && ok === 0) {
+        const firstError = (results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined)?.reason?.message
+        toast({ title: "Erro ao salvar notas", description: firstError || "Tente novamente." })
+      }
+    } catch (e) {
+      const msg = (e as any)?.message
+      toast({ title: "Erro ao salvar notas", description: msg || "Tente novamente." })
+    }
   }
 
   const handleNovaAtividade = () => {
@@ -407,10 +513,43 @@ export default function TurmaDetalhePage() {
   }
 
   const handleSalvarAtividade = (atividade: any) => {
-    console.log('Atividade salva:', atividade)
-    // Aqui você implementaria a lógica para salvar a atividade no backend
-    // Por enquanto, apenas fecha o modal
-    setModalAtividadeOpen(false)
+    // Persistir criação/edição de atividade
+    const persist = async () => {
+      try {
+        if (modoModalAtividade === 'criar') {
+          await createActivity({
+            classId,
+            title: atividade?.titulo || atividade?.title || 'Atividade',
+            unit: (atividade?.unit as ActivityUnit) || '1ª Unidade',
+            type: atividade?.type || 'homework',
+            description: atividade?.descricao || atividade?.description,
+            dueDate: atividade?.prazo,
+            maxScore: atividade?.peso ? Number(atividade.peso) : undefined,
+          })
+        } else if (atividadeEditando?.id) {
+          await updateActivity(atividadeEditando.id, {
+            title: atividade?.titulo || atividade?.title,
+            description: atividade?.descricao || atividade?.description,
+            dueDate: atividade?.prazo,
+            maxScore: atividade?.peso ? Number(atividade.peso) : undefined,
+          })
+        }
+        const acts = await listActivitiesByClass(classId)
+        const totalAlunos = alunos.length
+        const atividadesMapped: AtividadeItem[] = acts.map((a: ActivityDTO) => {
+          const prazo = a.dueDate || null
+          const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
+          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null }
+        })
+        setAtividades(atividadesMapped)
+        toast({ title: "Atividade salva", description: "A atividade foi salva com sucesso!" })
+      } catch (e: any) {
+        toast({ title: "Erro ao salvar atividade", description: "Tente novamente." })
+      } finally {
+        setModalAtividadeOpen(false)
+      }
+    }
+    persist()
   }
 
   const handleExcluirAtividade = (atividade: any) => {
@@ -419,11 +558,26 @@ export default function TurmaDetalhePage() {
   }
 
   const handleConfirmarExclusao = (itemId: number) => {
-    console.log('Item excluído:', itemId)
-    // Aqui você implementaria a lógica para excluir o item do backend
-    // Por enquanto, apenas fecha o modal
-    setModalDeletarOpen(false)
-    setAtividadeParaDeletar(null)
+    const excluir = async () => {
+      try {
+        await deleteActivity(String(itemId))
+        const acts = await listActivitiesByClass(classId)
+        const totalAlunos = alunos.length
+        const atividadesMapped: AtividadeItem[] = acts.map((a: ActivityDTO) => {
+          const prazo = a.dueDate || null
+          const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
+          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null }
+        })
+        setAtividades(atividadesMapped)
+        toast({ title: "Item excluído", description: "Exclusão realizada com sucesso." })
+      } catch (e: any) {
+        toast({ title: "Erro ao excluir", description: "Não foi possível excluir." })
+      } finally {
+        setModalDeletarOpen(false)
+        setAtividadeParaDeletar(null)
+      }
+    }
+    excluir()
   }
 
   const handleNovoMaterial = () => {
@@ -439,10 +593,36 @@ export default function TurmaDetalhePage() {
   }
 
   const handleSalvarMaterial = (material: any) => {
-    console.log('Material salvo:', material)
-    // Aqui você implementaria a lógica para salvar o material no backend
-    // Por enquanto, apenas fecha o modal
-    setModalMaterialOpen(false)
+    const persist = async () => {
+      try {
+        if (modoModalMaterial === 'criar') {
+          await createMaterial({
+            classId,
+            title: material?.nome || 'Material',
+            description: material?.descricao,
+            fileUrl: material?.fileUrl,
+          })
+        } else if (materialEditando?.id) {
+          await updateMaterial(materialEditando.id, {
+            title: material?.nome,
+            description: material?.descricao,
+            fileUrl: material?.fileUrl,
+          })
+        }
+        const mats = await listMaterialsByClass(classId)
+        const materiaisMapped = mats.map((m: MaterialDTO) => {
+          const tipo = (m.fileUrl && m.fileUrl.length > 0) ? (m.fileUrl[0].split('.').pop() || '').toUpperCase() : 'ARQ'
+          return { id: m.id, nome: m.title, tipo, data: new Date(m.uploadedAt).toLocaleDateString('pt-BR') }
+        })
+        setMateriais(materiaisMapped)
+        toast({ title: "Material salvo", description: "Operação realizada com sucesso." })
+      } catch (e: any) {
+        toast({ title: "Erro ao salvar", description: "Não foi possível salvar o material." })
+      } finally {
+        setModalMaterialOpen(false)
+      }
+    }
+    persist()
   }
 
   const handleExcluirMaterial = (material: any) => {
@@ -469,50 +649,79 @@ export default function TurmaDetalhePage() {
   }
 
   const handleSalvarForum = (forum: any) => {
-    console.log('Fórum salvo:', forum)
-    setForums((prev) => {
-      if (modoModalForum === 'editar' && forumEditando) {
-        return prev.map(f => f.id === forumEditando.id ? { ...f, ...forum } : f)
+    const persist = async () => {
+      try {
+        if (modoModalForum === 'editar' && forumEditando) {
+          await updateForum(forumEditando.id, { title: forum.titulo, description: forum.descricao })
+        } else {
+          await createForum({ classId, title: forum.titulo, description: forum.descricao })
+        }
+        const frs = await listForumsByClass(classId)
+        const forumsMapped = frs.map((f: ForumDTO) => ({
+          id: f.id,
+          titulo: f.title,
+          descricao: f.description ?? '',
+          autor: f.createdBy?.name ?? 'Professor',
+          dataCriacao: f.createdAt ? new Date(f.createdAt).toLocaleDateString('pt-BR') : '',
+          comentarios: [] as any[]
+        }))
+        setForums(forumsMapped)
+        toast({ title: "Fórum salvo", description: "Operação concluída com sucesso." })
+      } catch (e: any) {
+        toast({ title: "Erro ao salvar fórum", description: "Tente novamente." })
+      } finally {
+        setModalForumOpen(false)
       }
-      const novo = { id: Math.max(0, ...prev.map(f => f.id)) + 1, autor: 'Prof. Silva', dataCriacao: new Date().toLocaleDateString('pt-BR'), comentarios: [], ...forum }
-      return [novo, ...prev]
-    })
-    setModalForumOpen(false)
+    }
+    persist()
   }
 
   const handleResponderDiscussao = (texto: string, parentId?: number) => {
     if (!forumSelecionado) return
-    setForums((prev) => {
-      return prev.map(f => {
-        if (f.id !== forumSelecionado.id) return f
-        const novoComentario = {
-          id: Math.max(0, ...f.comentarios.map((c: any) => c.id)) + 1,
-          autor: 'Prof. Silva',
-          texto: parentId ? `@${f.comentarios.find((c: any) => c.id === parentId)?.autor || 'aluno'} ${texto}` : texto,
-          data: new Date().toLocaleString('pt-BR'),
-          ...(parentId ? { parentId } : {})
-        }
-        return { ...f, comentarios: [...f.comentarios, novoComentario] }
-      })
-    })
-    setForumSelecionado((curr: any) => {
-      if (!curr) return curr
-      const novoId = Math.max(0, ...curr.comentarios.map((c: any) => c.id)) + 1
-      const mencionado = parentId ? (curr.comentarios.find((c: any) => c.id === parentId)?.autor || 'aluno') : null
-      const novoComentario = {
-        id: novoId,
-        autor: 'Prof. Silva',
-        texto: mencionado ? `@${mencionado} ${texto}` : texto,
-        data: new Date().toLocaleString('pt-BR'),
-        ...(parentId ? { parentId } : {})
+    const responder = async () => {
+      try {
+        await createForumPost({
+          forumId: forumSelecionado.id,
+          content: parentId ? texto : texto,
+          parentPostId: parentId ? String(parentId) : undefined
+        })
+        const posts: ForumPostDTO[] = await listPostsByForum(forumSelecionado.id)
+        const comentarios = posts.map((p: ForumPostDTO) => ({
+          id: p.id,
+          autor: p.user?.name ?? 'Usuário',
+          texto: p.content,
+          data: new Date(p.postedAt).toLocaleString('pt-BR'),
+          ...(p.parentPostId ? { parentId: p.parentPostId } : {})
+        }))
+        setForums(prev => prev.map(f => f.id === forumSelecionado.id ? { ...f, comentarios } : f))
+        setForumSelecionado((curr: any) => curr ? { ...curr, comentarios } : curr)
+      } catch (e: any) {
+        toast({ title: "Erro ao responder", description: "Não foi possível enviar a resposta." })
       }
-      return { ...curr, comentarios: [...curr.comentarios, novoComentario] }
-    })
+    }
+    responder()
   }
 
   const handleVerDiscussao = (forum: any) => {
-    setForumSelecionado(forum)
-    setModalDiscussaoOpen(true)
+    const open = async () => {
+      setForumSelecionado(forum)
+      setModalDiscussaoOpen(true)
+      try {
+        const posts: ForumPostDTO[] = await listPostsByForum(forum.id)
+        const comentarios = posts.map((p: ForumPostDTO) => ({
+          id: p.id,
+          autor: p.user?.name ?? 'Usuário',
+          texto: p.content,
+          data: new Date(p.postedAt).toLocaleString('pt-BR'),
+          ...(p.parentPostId ? { parentId: p.parentPostId } : {})
+        }))
+        setForums(prev => prev.map(f => f.id === forum.id ? { ...f, comentarios } : f))
+        setForumSelecionado((curr: any) => curr ? { ...curr, comentarios } : curr)
+      } catch (e: any) {
+        // silêncio, manter modal mesmo assim
+      }
+    }
+    open()
   }
 
   // Detectar temas (liquid glass e dark mode)
@@ -821,9 +1030,30 @@ export default function TurmaDetalhePage() {
                     <Video className="h-5 w-5 mr-2" />
                     Aula Online
                   </h3>
-                  <LiquidGlassButton onClick={() => {
-                    // TODO: Implementar criação de nova videochamada
-                    toastInfo('Funcionalidade em desenvolvimento', 'Em breve você poderá criar novas videochamadas')
+                  <LiquidGlassButton onClick={async () => {
+                    try {
+                      const start = new Date()
+                      const end = new Date(start.getTime() + 60 * 60 * 1000)
+                      await createLiveSession({
+                        classId,
+                        title: 'Nova Videochamada',
+                        startAt: start.toISOString(),
+                        endAt: end.toISOString(),
+                        meetingUrl: '#'
+                      })
+                      const sessions = await listLiveSessionsByClass(classId)
+                      const sessionsMapped: VideoChamada[] = (sessions as LiveSessionDTO[]).map(s => {
+                        const now = Date.now()
+                        const startMs = new Date(s.startAt).getTime()
+                        const endMs = new Date(s.endAt).getTime()
+                        const status: 'agendada' | 'disponivel' | 'encerrada' = now < startMs ? 'agendada' : (now >= startMs && now <= endMs ? 'disponivel' : 'encerrada')
+                        return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: s.meetingUrl || '#' }
+                      })
+                      setVideoChamadas(sessionsMapped)
+                      toast({ title: "Sessão criada", description: "Videochamada criada com sucesso." })
+                    } catch (e: any) {
+                      toast({ title: "Erro ao criar sessão", description: "Tente novamente." })
+                    }
                   }}>
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Videochamada
@@ -907,17 +1137,35 @@ export default function TurmaDetalhePage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="avaliacao" className="mb-2">Tipo de Avaliação</Label>
-                        <Input id="avaliacao" placeholder="Ex: Prova Bimestral" />
+                        <Input id="avaliacao" placeholder="Ex: Prova Bimestral" value={avaliacaoTitulo} onChange={e => setAvaliacaoTitulo(e.target.value)} />
                       </div>
                       <div>
                         <Label htmlFor="peso" className="mb-2">Peso</Label>
-                        <Input id="peso" type="number" placeholder="Ex: 4.0" />
+                        <Input id="peso" type="number" placeholder="Ex: 4.0" value={avaliacaoPeso} onChange={e => setAvaliacaoPeso(e.target.value)} />
                       </div>
                     </div>
 
                     <div>
                       <Label htmlFor="descricao" className="mb-2">Descrição</Label>
-                      <Textarea id="descricao" placeholder="Descrição da avaliação..." />
+                      <Textarea id="descricao" placeholder="Descrição da avaliação..." value={avaliacaoDescricao} onChange={e => setAvaliacaoDescricao(e.target.value)} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <input id="criarNova" type="checkbox" checked={criarNovaAtividade} onChange={e => setCriarNovaAtividade(e.target.checked)} />
+                        <Label htmlFor="criarNova">Criar nova atividade (exam)</Label>
+                      </div>
+                      {!criarNovaAtividade && (
+                        <div>
+                          <Label htmlFor="atividadeExistente" className="mb-2">Atividade existente</Label>
+                          <select id="atividadeExistente" className="w-full border rounded px-2 py-2 bg-background" value={atividadeSelecionadaId} onChange={e => setAtividadeSelecionadaId(e.target.value)}>
+                            <option value="">Selecione...</option>
+                            {atividades.map(a => (
+                              <option key={a.id} value={a.id}>{a.titulo}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-3">
@@ -962,6 +1210,10 @@ export default function TurmaDetalhePage() {
                               max="10"
                               step="0.1"
                               defaultValue={notasImportadas[aluno.id] || ''}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                setNotasDigitadas(prev => ({ ...prev, [aluno.id]: value }))
+                              }}
                             />
                             {notasImportadas[aluno.id] && (
                               <CheckCircle className="h-4 w-4 text-accent animate-in fade-in duration-200" />
@@ -971,7 +1223,77 @@ export default function TurmaDetalhePage() {
                       ))}
                     </div>
 
-                    <LiquidGlassButton className="w-full">Salvar Notas</LiquidGlassButton>
+                    <LiquidGlassButton className="w-full" onClick={async () => {
+                      try {
+                        let activityIdToUse: string | null = null
+                        if (criarNovaAtividade) {
+                          if (!avaliacaoTitulo) {
+                            toast({ title: "Título obrigatório", description: "Informe o título da avaliação." })
+                            return
+                          }
+                          const created = await createActivity({
+                            classId,
+                            title: avaliacaoTitulo,
+                            unit: '1ª Unidade',
+                            type: 'exam',
+                            description: avaliacaoDescricao || undefined,
+                            maxScore: avaliacaoPeso ? Number(avaliacaoPeso) : undefined,
+                          })
+                          activityIdToUse = created.id
+                        } else {
+                          if (!atividadeSelecionadaId) {
+                            toast({ title: "Selecione uma atividade", description: "Escolha uma atividade existente ou crie uma nova." })
+                            return
+                          }
+                          activityIdToUse = atividadeSelecionadaId
+                        }
+                        const notasFinais: Record<string, string> = { ...notasImportadas, ...notasDigitadas }
+                        const entries = Object.entries(notasFinais).filter(([_, v]) => v !== '' && v !== undefined && v !== null)
+                        if (entries.length === 0) {
+                          toastImportWarning('Nenhuma nota informada', 'Preencha ou importe notas antes de salvar.')
+                          return
+                        }
+                        const maxAllowed = avaliacaoPeso ? Number(avaliacaoPeso) : 10
+                        for (const [enrollmentId, scoreStr] of entries) {
+                          const score = parseFloat(scoreStr)
+                          if (Number.isNaN(score) || score < 0 || score > maxAllowed) {
+                            toastImportError('Notas inválidas', `Verifique a nota do aluno (matrícula ${alunos.find(a => a.id === enrollmentId)?.matricula ?? enrollmentId}).`)
+                            return
+                          }
+                        }
+                        // Salvar em lote com upsert (create ou update)
+                        const { findGrades, updateGrade } = await import('@/src/services/gradesService')
+                        const results = await Promise.allSettled(
+                          entries.map(async ([enrollmentId, scoreStr]) => {
+                            try {
+                              await createGradeForActivity(activityIdToUse!, { enrollmentId: String(enrollmentId), score: Number(scoreStr) })
+                            } catch {
+                              const existentes = await findGrades({ enrollmentId: String(enrollmentId), activityId: activityIdToUse! })
+                              const existente = Array.isArray(existentes) ? existentes[0] : undefined
+                              if (existente?.id) {
+                                await updateGrade(existente.id, { score: Number(scoreStr) })
+                              } else {
+                                throw new Error('Falha ao criar/atualizar nota')
+                              }
+                            }
+                          }),
+                        )
+                        const ok = results.filter(r => r.status === 'fulfilled').length
+                        const fail = results.length - ok
+                        if (ok > 0) {
+                          toast({ title: "Notas salvas", description: `${ok} nota(s) salva(s) com sucesso!${fail > 0 ? ` • ${fail} falhou(aram)` : ""}` })
+                        }
+                        if (fail > 0 && ok === 0) {
+                          const firstError = (results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined)?.reason?.message
+                          toast({ title: "Erro ao lançar notas", description: firstError || "Tente novamente." })
+                        }
+                        setNotasImportadas({})
+                        setNotasDigitadas({})
+                      } catch (e: any) {
+                        console.error(e)
+                        toast({ title: "Erro ao lançar notas", description: "Tente novamente." })
+                      }
+                    }}>Salvar Notas</LiquidGlassButton>
                   </div>
                 </CardContent>
               </LiquidGlassCard>

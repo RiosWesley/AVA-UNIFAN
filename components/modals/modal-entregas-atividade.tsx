@@ -20,9 +20,12 @@ import {
   AlertCircle
 } from "lucide-react"
 import { toast } from "@/components/ui/toast"
+import { downloadSubmissionFile } from "@/src/services/activitiesService"
 
 interface AlunoEntrega {
   id: number
+  enrollmentId?: string
+  submissionId?: string
   nome: string
   matricula: string
   entregou: boolean
@@ -33,6 +36,7 @@ interface AlunoEntrega {
     tipo: string
     url: string
   }
+  arquivos?: { nome: string; url: string; tamanho?: string; tipo?: string }[]
   nota?: number
   observacoes?: string
 }
@@ -66,6 +70,29 @@ export function ModalEntregasAtividade({
   const [filtroStatus, setFiltroStatus] = useState<"todos" | "entregou" | "nao-entregou">("todos")
   const [notas, setNotas] = useState<Record<number, number>>({})
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+
+  const extractDisplayName = (rawName?: string) => {
+    if (!rawName) return ""
+    try {
+      const decoded = decodeURIComponent(rawName.split('?')[0] || rawName)
+      const base = decoded.split('/').pop() || decoded
+      const parts = base.split('-')
+      if (parts.length >= 3 && /^\d+$/.test(parts[0]) && /^[A-Za-z0-9]+$/.test(parts[1])) {
+        return parts.slice(2).join('-')
+      }
+      return base
+    } catch {
+      return rawName
+    }
+  }
+
+  const truncateMiddle = (text: string, max = 60) => {
+    if (!text) return ""
+    if (text.length <= max) return text
+    const head = Math.max(10, Math.floor(max * 0.55))
+    const tail = Math.max(8, max - head - 3)
+    return `${text.slice(0, head)}...${text.slice(-tail)}`
+  }
 
   // Detectar tema liquid glass
   useEffect(() => {
@@ -131,21 +158,32 @@ export function ModalEntregasAtividade({
     setNotas(prev => ({ ...prev, [alunoId]: nota }))
   }
 
-  const handleDownload = (arquivo: AlunoEntrega['arquivo']) => {
-    if (!arquivo) return
-    
-    // Simular download
-    const link = document.createElement('a')
-    link.href = arquivo.url
-    link.download = arquivo.nome
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    
-    toast({
-      title: "Download iniciado",
-      description: `Baixando ${arquivo.nome}...`
-    })
+  const handleDownload = async (aluno: AlunoEntrega, arquivo: { nome: string; url: string }) => {
+    if (!arquivo || !arquivo.url) return
+    try {
+      if (aluno.submissionId) {
+        const { blob, fileName } = await downloadSubmissionFile(aluno.submissionId, arquivo.url)
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName || arquivo.nome
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      } else {
+        // Fallback: link direto
+        const link = document.createElement('a')
+        link.href = arquivo.url
+        link.download = arquivo.nome
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+      toast({ title: "Download iniciado", description: `Baixando ${arquivo.nome}...` })
+    } catch {
+      toast({ title: "Erro no download", description: "Não foi possível baixar o arquivo." })
+    }
   }
 
   const handleSalvarNotas = () => {
@@ -166,11 +204,6 @@ export function ModalEntregasAtividade({
     })
 
     onSalvarNotas(notasFormatadas)
-    
-    toast({
-      title: "Notas salvas",
-      description: `${notasValidas.length} nota(s) salva(s) com sucesso!`
-    })
   }
 
   const getStatusBadge = (aluno: AlunoEntrega) => {
@@ -284,16 +317,37 @@ export function ModalEntregasAtividade({
                           {getStatusBadge(aluno)}
                         </div>
                         
-                        {aluno.entregou && aluno.arquivo && (
+                        {aluno.entregou && Array.isArray(aluno.arquivos) && aluno.arquivos.length > 0 && (
+                          <div className="flex flex-col gap-2 mb-2">
+                            {aluno.arquivos.map((arq, idx) => (
+                              <div key={idx} className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">
+                                  {truncateMiddle(extractDisplayName(arq.nome))}
+                                </span>
+                                <LiquidGlassButton
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDownload(aluno, { nome: arq.nome, url: arq.url })}
+                                >
+                                  <Download className="h-3 w-3 mr-1" />
+                                  Baixar
+                                </LiquidGlassButton>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {aluno.entregou && !aluno.arquivos?.length && aluno.arquivo && (
                           <div className="flex items-center gap-2 mb-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm text-muted-foreground">
-                              {aluno.arquivo.nome} ({aluno.arquivo.tamanho})
+                              {truncateMiddle(extractDisplayName(aluno.arquivo.nome))} {aluno.arquivo.tamanho ? `(${aluno.arquivo.tamanho})` : ""}
                             </span>
                             <LiquidGlassButton
                               size="sm"
                               variant="outline"
-                              onClick={() => handleDownload(aluno.arquivo)}
+                              onClick={() => handleDownload(aluno, { nome: aluno.arquivo!.nome, url: aluno.arquivo!.url })}
                             >
                               <Download className="h-3 w-3 mr-1" />
                               Baixar
