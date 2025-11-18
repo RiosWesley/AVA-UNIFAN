@@ -15,6 +15,8 @@ import { ModalDetalhesUsuario, type UsuarioDetalhes } from "@/components/modals/
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 import { usuariosService, type Usuario, type Role } from "@/src/services/usuariosService"
 import { getDepartments, addTeachersToDepartment, setDepartmentCoordinator, type Department } from "@/src/services/departmentsService"
+import { getCourses, type BackendCourse } from "@/src/services/coursesService"
+import { linkStudentToCourses } from "@/src/services/studentCoursesService"
 import { toast } from "@/components/ui/toast"
 
 export default function UsuariosAdministradorPage() {
@@ -37,6 +39,12 @@ export default function UsuariosAdministradorPage() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([])
   const [selectedCoordinatorDept, setSelectedCoordinatorDept] = useState<string>("")
+
+  // Cursos (para quando a role selecionada for aluno)
+  const [courses, setCourses] = useState<BackendCourse[]>([])
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([])
+  const [entrySemester, setEntrySemester] = useState<string>("")
+  const [entrySemesterError, setEntrySemesterError] = useState<string | null>(null)
 
   // Resetar página quando filtros mudarem
   useEffect(() => {
@@ -107,6 +115,33 @@ export default function UsuariosAdministradorPage() {
     loadDepartmentsIfNeeded()
   }, [form.role])
 
+  // Carregar cursos e preparar estados quando papel for aluno
+  useEffect(() => {
+    async function loadCoursesIfNeeded() {
+      if (form.role === "aluno") {
+        try {
+          const list = await getCourses({ status: "active" })
+          setCourses(list)
+          setSelectedCourses((prev) => (prev.length ? prev : [""]))
+          // Definir semestre padrão YYYY-1|2 se não definido
+          setEntrySemester((prev) => {
+            if (prev) return prev
+            const now = new Date()
+            const semester = now.getMonth() < 6 ? 1 : 2
+            return `${now.getFullYear()}-${semester}`
+          })
+        } catch (err) {
+          console.error("Erro ao carregar cursos:", err)
+        }
+      } else {
+        setSelectedCourses([])
+        setCourses([])
+        setEntrySemester("")
+      }
+    }
+    loadCoursesIfNeeded()
+  }, [form.role])
+
   // Usar os usuários diretamente, pois o filtro já é feito no backend
   const filtrados = usuarios
 
@@ -136,6 +171,25 @@ export default function UsuariosAdministradorPage() {
       next[index] = departmentId
       return next
     })
+  }
+
+  // Combobox dinâmicos de cursos (para alunos)
+  function addCourseCombo() {
+    setSelectedCourses((prev) => [...prev, ""])
+  }
+  function removeCourseCombo(index: number) {
+    setSelectedCourses((prev) => prev.filter((_, i) => i !== index))
+  }
+  function editCourseCombo(index: number, courseId: string) {
+    setSelectedCourses((prev) => {
+      const next = [...prev]
+      next[index] = courseId
+      return next
+    })
+  }
+
+  function validarEntrySemester(value: string): boolean {
+    return /^\d{4}-(1|2)$/.test(value)
   }
 
   // Função para formatar CPF
@@ -234,6 +288,27 @@ export default function UsuariosAdministradorPage() {
     e.preventDefault()
     if (!form.nome.trim() || !form.email.trim()) return
     
+    // Validações específicas para aluno
+    if (form.role === "aluno") {
+      const toLinkPreview = Array.from(new Set(selectedCourses.filter(Boolean)))
+      if (toLinkPreview.length === 0) {
+        toast({
+          variant: 'error',
+          title: 'Selecione pelo menos um curso',
+          description: 'Alunos precisam estar vinculados a pelo menos um curso.'
+        })
+        return
+      }
+      if (!entrySemester || !validarEntrySemester(entrySemester)) {
+        toast({
+          variant: 'error',
+          title: 'Semestre de ingresso inválido',
+          description: "Informe no formato 'YYYY-1' ou 'YYYY-2'."
+        })
+        return
+      }
+    }
+
     // Validar CPF se preenchido
     if (form.cpf) {
       const cpfLimpo = form.cpf.replace(/\D/g, "")
@@ -292,6 +367,23 @@ export default function UsuariosAdministradorPage() {
         role: form.role,
         status: form.status,
       })
+
+      // Se for aluno, vincular cursos selecionados
+      if (form.role === "aluno") {
+        try {
+          const toLink = Array.from(new Set(selectedCourses.filter(Boolean)))
+          if (toLink.length > 0) {
+            await linkStudentToCourses(novo.id, toLink, entrySemester)
+          }
+        } catch (linkErr: any) {
+          console.error("Erro ao vincular aluno aos cursos:", linkErr)
+          toast({
+            variant: 'error',
+            title: 'Aluno criado, mas houve erro ao vincular cursos',
+            description: linkErr?.message || 'Tente vincular novamente na tela do curso ou aluno.'
+          })
+        }
+      }
 
       // Se for coordenador, exigir seleção de UM departamento e aplicar
       if (form.role === "coordenador") {
@@ -353,6 +445,8 @@ export default function UsuariosAdministradorPage() {
       })
       setSelectedDepartments([])
       setSelectedCoordinatorDept("")
+      setSelectedCourses([])
+      setEntrySemester("")
       setCpfError(null)
       
       // Toast de sucesso
@@ -670,6 +764,69 @@ export default function UsuariosAdministradorPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {form.role === "aluno" && (
+                      <div className="space-y-4 md:col-span-2">
+                        <div className="space-y-2">
+                          <Label>Cursos do aluno (adicione quantos precisar)</Label>
+                          <div className="space-y-2">
+                            {selectedCourses.length === 0 && (
+                              <p className="text-sm text-muted-foreground">Clique em “Adicionar curso”.</p>
+                            )}
+                            {selectedCourses.map((value, index) => {
+                              // Evitar duplicados: opções disponíveis são todas menos as já escolhidas (exceto a do índice atual)
+                              const used = new Set(selectedCourses.filter((_, i) => i !== index && selectedCourses[i]))
+                              const available = courses.filter(c => !used.has(c.id))
+                              return (
+                                <div key={index} className="flex items-center gap-2">
+                                  <Select value={value} onValueChange={(v) => editCourseCombo(index, v)}>
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Selecione o curso" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {available.map((c) => (
+                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {selectedCourses.length > 1 && (
+                                    <Button type="button" variant="outline" onClick={() => removeCourseCombo(index)}>
+                                      Remover
+                                    </Button>
+                                  )}
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button type="button" variant="outline" onClick={addCourseCombo}>
+                              Adicionar curso
+                            </Button>
+                            {selectedCourses.filter(Boolean).length > 0 && (
+                              <p className="text-xs text-muted-foreground self-center">
+                                Selecionados: {Array.from(new Set(selectedCourses.filter(Boolean))).length}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="entrySemester">Semestre de ingresso</Label>
+                          <Input
+                            id="entrySemester"
+                            placeholder="YYYY-1 ou YYYY-2"
+                            value={entrySemester}
+                            onChange={(e) => {
+                              const v = e.target.value
+                              setEntrySemester(v)
+                              setEntrySemesterError(v ? (validarEntrySemester(v) ? null : "Use o formato YYYY-1 ou YYYY-2") : "Semestre é obrigatório")
+                            }}
+                            className={entrySemesterError ? "border-red-500" : ""}
+                          />
+                          {entrySemesterError && (
+                            <p className="text-sm text-red-500">{entrySemesterError}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     {form.role === "professor" && (
                       <div className="space-y-2 md:col-span-2">
                         <Label>Departamentos (adicione quantos precisar)</Label>
