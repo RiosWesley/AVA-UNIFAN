@@ -213,7 +213,21 @@ export default function DisciplinaDetalhePage() {
       return
     }
     console.log('Video lessons data:', videoLessonsQuery.data)
-    const mapped = (Array.isArray(videoLessonsQuery.data) ? videoLessonsQuery.data : []).map((v: any, idx) => {
+    
+    // Ordenar por ordem antes de mapear (garantir que a ordem seja respeitada)
+    const sortedData = [...(Array.isArray(videoLessonsQuery.data) ? videoLessonsQuery.data : [])].sort((a: any, b: any) => {
+      const orderA = a.order ?? 9999 // Se não tiver ordem, vai para o final
+      const orderB = b.order ?? 9999
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+      // Se as ordens forem iguais ou ambas null, ordena por data de criação
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return dateB - dateA // Mais recente primeiro (DESC)
+    })
+    
+    const mapped = sortedData.map((v: any, idx) => {
       // Suporta tanto camelCase quanto snake_case do backend
       const id = v.id
       const title = v.title || 'Sem título'

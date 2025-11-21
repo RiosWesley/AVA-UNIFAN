@@ -32,10 +32,25 @@ export default function VideoAulaPage() {
     enabled: !!disciplineId,
   })
 
+  // Ordenar vídeo-aulas por ordem (garantir que a ordem seja respeitada)
+  const sortedLessons = useMemo(() => {
+    if (!lessonsQuery.data) return []
+    return [...lessonsQuery.data].sort((a: any, b: any) => {
+      const orderA = a.order ?? 9999 // Se não tiver ordem, vai para o final
+      const orderB = b.order ?? 9999
+      if (orderA !== orderB) {
+        return orderA - orderB
+      }
+      // Se as ordens forem iguais ou ambas null, ordena por data de criação
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return dateB - dateA // Mais recente primeiro (DESC)
+    })
+  }, [lessonsQuery.data])
+
   const details: VideoLesson | undefined = useMemo(() => {
-    const list = lessonsQuery.data || []
-    return list.find((v: any) => String(v.id) === String(videoLessonId))
-  }, [lessonsQuery.data, videoLessonId])
+    return sortedLessons.find((v: any) => String(v.id) === String(videoLessonId))
+  }, [sortedLessons, videoLessonId])
 
   const streamQuery = useQuery({
     queryKey: ["video-lesson-stream", disciplineId, videoLessonId],
@@ -103,7 +118,7 @@ export default function VideoAulaPage() {
                 )}
               </div>
               <div className={cn("overflow-y-auto", collapsed ? "p-2 h-[calc(100%-48px)]" : "p-3 space-y-2 h-[calc(100%-64px)]")}>
-                {(lessonsQuery.data || []).map((v: any, idx: number) => {
+                {sortedLessons.map((v: any, idx: number) => {
                   const idStr = String(v.id)
                   const selected = idStr === String(videoLessonId)
                   const titulo = v.title || "Sem título"

@@ -161,6 +161,13 @@ export interface VideoLesson {
   createdAt?: string
   teacher?: { id: string; name?: string }
   attachmentUrls?: string[]
+  discipline?: { id: string; name?: string }
+  order?: number
+}
+
+export interface VideoLessonOrderUpdate {
+  id: string
+  order: number
 }
 
 export interface ClassDetail {
@@ -170,6 +177,14 @@ export interface ClassDetail {
   year: number
   discipline: { id: string; name: string }
   teacher?: { id: string; name: string } | null
+}
+
+export interface Discipline {
+  id: string
+  name: string
+  code?: string
+  credits?: number
+  workLoad?: number
 }
 
 // API client with mock data
@@ -516,6 +531,178 @@ export const apiClient = {
     await api.patch<void>(`/video-lessons/${videoId}/watched`, {}, {
       params: { studentId }
     })
+  },
+
+  // -------- Disciplines --------
+  async getAllDisciplines(): Promise<Discipline[]> {
+    const { data } = await api.get<Discipline[]>('/disciplines')
+    return data
+  },
+
+  async getDisciplinesByCoordinatorDepartment(coordinatorId: string): Promise<Discipline[]> {
+    try {
+      // 1. Obter departamento do coordenador
+      const departmentsResp = await api.get<Array<{ id: string; name: string }>>('/departments', {
+        params: { coordinatorId }
+      })
+      
+      if (!departmentsResp.data || departmentsResp.data.length === 0) {
+        console.warn('[getDisciplinesByCoordinatorDepartment] Nenhum departamento encontrado para o coordenador:', coordinatorId)
+        return []
+      }
+
+      const departmentId = departmentsResp.data[0].id
+      console.log('[getDisciplinesByCoordinatorDepartment] Departamento encontrado:', departmentId)
+
+      // 2. Obter cursos do departamento
+      const coursesResp = await api.get<Array<{ id: string; name: string }>>('/courses', {
+        params: { departmentId }
+      })
+
+      if (!coursesResp.data || coursesResp.data.length === 0) {
+        console.warn('[getDisciplinesByCoordinatorDepartment] Nenhum curso encontrado para o departamento:', departmentId)
+        return []
+      }
+
+      console.log('[getDisciplinesByCoordinatorDepartment] Cursos encontrados:', coursesResp.data.length)
+
+      // 3. Para cada curso, obter detalhes (que incluem courseDisciplines ou disciplines)
+      const courseDetailsPromises = coursesResp.data.map(course =>
+        api.get<{
+          id: string
+          courseDisciplines?: Array<{
+            discipline: Discipline
+            status: string
+          }>
+          disciplines?: Array<Discipline & { status?: string; semester?: number }>
+        }>(`/courses/${course.id}`)
+      )
+
+      const courseDetails = await Promise.all(courseDetailsPromises)
+
+      // 4. Extrair disciplinas únicas de todos os cursos
+      const disciplinesMap = new Map<string, Discipline>()
+      
+      courseDetails.forEach((courseDetail, index) => {
+        const course = coursesResp.data[index]
+        console.log(`[getDisciplinesByCoordinatorDepartment] Processando curso ${course.name}:`, {
+          hasDisciplines: !!courseDetail.data.disciplines?.length,
+          hasCourseDisciplines: !!courseDetail.data.courseDisciplines?.length,
+          disciplinesCount: courseDetail.data.disciplines?.length || 0,
+          courseDisciplinesCount: courseDetail.data.courseDisciplines?.length || 0
+        })
+
+        // O backend retorna 'disciplines' (mapeado) - formato preferido
+        const disciplines = courseDetail.data.disciplines || []
+        
+        // Processar disciplines (formato mapeado pelo backend)
+        disciplines.forEach((disc: Discipline & { status?: string }) => {
+          // O status pode vir como 'active' (enum) ou vazio, vamos normalizar
+          const status = disc.status?.toString().toLowerCase() || ''
+          if (disc && disc.id && disc.name && (status === 'active' || status === '')) {
+            disciplinesMap.set(disc.id, {
+              id: disc.id,
+              name: disc.name,
+              code: disc.code,
+              credits: disc.credits,
+              workLoad: disc.workLoad
+            })
+          }
+        })
+        
+        // Processar courseDisciplines (formato original, caso disciplines não esteja disponível)
+        const courseDisciplines = courseDetail.data.courseDisciplines || []
+        courseDisciplines.forEach(cd => {
+          if (cd.discipline && cd.discipline.id && cd.discipline.name) {
+            const status = cd.status?.toString().toLowerCase() || ''
+            if (status === 'active' || status === '') {
+              disciplinesMap.set(cd.discipline.id, {
+                id: cd.discipline.id,
+                name: cd.discipline.name,
+                code: cd.discipline.code,
+                credits: cd.discipline.credits,
+                workLoad: cd.discipline.workLoad
+              })
+            }
+          }
+        })
+      })
+
+      const result = Array.from(disciplinesMap.values())
+      console.log('[getDisciplinesByCoordinatorDepartment] Disciplinas únicas encontradas:', result.length)
+      return result
+    } catch (error) {
+      console.error('[getDisciplinesByCoordinatorDepartment] Erro ao buscar disciplinas:', error)
+      throw error
+    }
+  },
+
+  // -------- Video Lessons Creation --------
+  async createVideoLessonWithFile(params: {
+    disciplineId: string
+    title: string
+    description?: string
+    file: File
+    order?: number
+  }): Promise<{ id: string; objectKey: string; fileUrl: string; status: string }> {
+    const formData = new FormData()
+    formData.append('title', params.title)
+    if (params.description) formData.append('description', params.description)
+    if (params.order !== undefined) formData.append('order', params.order.toString())
+    formData.append('file', params.file)
+
+    const { data } = await api.post<{ id: string; objectKey: string; fileUrl: string; status: string }>(
+      `/video-lessons/disciplines/${params.disciplineId}/video-lessons`,
+      formData
+    )
+    return data
+  },
+
+  // -------- Video Lessons Update --------
+  async updateVideoLesson(params: {
+    disciplineId: string
+    videoLessonId: string
+    title?: string
+    description?: string
+    visibility?: string
+    durationSeconds?: number
+  }): Promise<VideoLesson> {
+    const body: any = {}
+    if (params.title !== undefined) body.title = params.title
+    if (params.description !== undefined) body.description = params.description
+    if (params.visibility !== undefined) body.visibility = params.visibility
+    if (params.durationSeconds !== undefined) body.durationSeconds = params.durationSeconds
+
+    const { data } = await api.patch<VideoLesson>(
+      `/video-lessons/disciplines/${params.disciplineId}/video-lessons/${params.videoLessonId}`,
+      body
+    )
+    return data
+  },
+
+  async uploadVideoLessonFile(params: {
+    videoLessonId: string
+    file: File
+  }): Promise<{ id: string; objectKey: string; fileUrl: string }> {
+    const formData = new FormData()
+    formData.append('file', params.file)
+
+    const { data } = await api.post<{ id: string; objectKey: string; fileUrl: string }>(
+      `/video-lessons/${params.videoLessonId}/upload`,
+      formData
+    )
+    return data
+  },
+
+  async updateVideoLessonsOrder(
+    disciplineId: string,
+    updates: VideoLessonOrderUpdate[]
+  ): Promise<VideoLesson[]> {
+    const { data } = await api.patch<VideoLesson[]>(
+      `/video-lessons/disciplines/${disciplineId}/reorder`,
+      { updates }
+    )
+    return data
   },
 
   // -------- Classes --------

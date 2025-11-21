@@ -10,18 +10,26 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2 } from "lucide-react"
 import { toast } from "@/components/ui/toast"
+import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 import {
   getCourseById,
   getCourseClasses,
   getCourseDisciplines,
   getCourseStudents,
+  createClass,
+  createDiscipline,
+  updateClass,
+  updateDiscipline,
   type BackendClass,
   type BackendCourse,
   type BackendDiscipline,
   type BackendCourseStudent
 } from "@/src/services/coursesService"
+import { Combobox } from "@/components/ui/combobox"
 
 type Disciplina = {
   id: string
@@ -137,7 +145,25 @@ export default function CursoDetalhePage() {
   const [searchTurmas, setSearchTurmas] = useState("")
   const [searchAlunos, setSearchAlunos] = useState("")
   const [filtroTipoDisciplina, setFiltroTipoDisciplina] = useState<"todas" | "obrigatoria" | "optativa">("todas")
+  const [filtroStatusDisciplina, setFiltroStatusDisciplina] = useState<"todas" | "ativa" | "inativa">("todas")
   const [filtroStatusTurma, setFiltroStatusTurma] = useState<"todas" | "ativa" | "inativa">("todas")
+  const [isDisciplinaModalOpen, setIsDisciplinaModalOpen] = useState(false)
+  const [isTurmaModalOpen, setIsTurmaModalOpen] = useState(false)
+  const [isSavingDisciplina, setIsSavingDisciplina] = useState(false)
+  const [isSavingTurma, setIsSavingTurma] = useState(false)
+  const [disciplinaEditandoId, setDisciplinaEditandoId] = useState<string | null>(null)
+  const [turmaEditandoId, setTurmaEditandoId] = useState<string | null>(null)
+  const [novaDisciplina, setNovaDisciplina] = useState({
+    nome: "",
+    creditos: "",
+    cargaHoraria: ""
+  })
+  const [novaTurma, setNovaTurma] = useState({
+    codigo: "",
+    semestre: "",
+    ano: new Date().getFullYear().toString(),
+    disciplinaId: ""
+  })
 
   useEffect(() => {
     const checkTheme = () => {
@@ -155,47 +181,56 @@ export default function CursoDetalhePage() {
     return () => observer.disconnect()
   }, [])
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true)
-        const [courseData, disciplinesData, classesData, studentsData] = await Promise.all([
-          getCourseById(cursoId),
-          getCourseDisciplines(cursoId),
-          getCourseClasses(cursoId),
-          getCourseStudents(cursoId)
-        ])
-        const mappedStudents = studentsData.map(mapStudent)
-        setCurso({
-          ...mapCourse(courseData),
-          alunos: mappedStudents.length, // garante que o card usa a mesma contagem exibida na aba
-        })
-        setDisciplinas(
-          disciplinesData
-            .map(mapDiscipline)
-            .filter((d) => d.status === "ativa")
-            .filter((d) => !d.courseId || d.courseId === cursoId) // garante pertencer ao curso quando informado
-        )
-        setTurmas(
-          classesData
-            .map(mapClass)
-            .filter((t) => t.status === "ativa")
-            .filter((t) => !t.courseId || t.courseId === cursoId)
-        )
-        setAlunos(mappedStudents)
-      } catch (error: any) {
-        const message = error?.response?.data?.message || error?.message || "Nao foi possivel carregar o curso"
-        toast({
-          variant: "error",
-          title: "Erro ao carregar",
-          description: Array.isArray(message) ? message.join(", ") : message
-        })
-      } finally {
-        setIsLoading(false)
-      }
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const [courseData, disciplinesData, classesData, studentsData] = await Promise.all([
+        getCourseById(cursoId),
+        getCourseDisciplines(cursoId),
+        getCourseClasses(cursoId),
+        getCourseStudents(cursoId)
+      ])
+
+      const mappedStudents = studentsData.map(mapStudent)
+      const mappedClasses = classesData
+        .map((classe) => mapClass(classe, cursoId))
+        .filter((t) => t.status === "ativa")
+      const mappedDisciplines = disciplinesData
+        .map((disciplina) => mapDiscipline(disciplina, cursoId))
+        .filter((d) => d.status === "ativa")
+
+      setCurso({
+        ...mapCourse(courseData),
+        alunos: mappedStudents.length,
+        turmas: mappedClasses.length,
+      })
+      setDisciplinas(mappedDisciplines)
+      setTurmas(mappedClasses)
+      setAlunos(mappedStudents)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Nao foi possivel carregar o curso"
+      toast({
+        variant: "error",
+        title: "Erro ao carregar",
+        description: Array.isArray(message) ? message.join(", ") : message
+      })
+    } finally {
+      setIsLoading(false)
     }
-    loadData()
   }, [cursoId])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
+
+  useEffect(() => {
+    if (!novaTurma.disciplinaId && disciplinas.length > 0) {
+      setNovaTurma((prev) => ({
+        ...prev,
+        disciplinaId: prev.disciplinaId || disciplinas[0].id
+      }))
+    }
+  }, [disciplinas, novaTurma.disciplinaId])
 
   const disciplinasFiltradas = useMemo(() => {
     return disciplinas.filter((d) => {
@@ -203,9 +238,10 @@ export default function CursoDetalhePage() {
         d.nome.toLowerCase().includes(searchDisciplinas.toLowerCase()) ||
         d.codigo.toLowerCase().includes(searchDisciplinas.toLowerCase())
       const matchesTipo = filtroTipoDisciplina === "todas" || d.tipo === filtroTipoDisciplina
-      return matchesSearch && matchesTipo
+      const matchesStatus = filtroStatusDisciplina === "todas" || d.status === filtroStatusDisciplina
+      return matchesSearch && matchesTipo && matchesStatus
     })
-  }, [disciplinas, searchDisciplinas, filtroTipoDisciplina])
+  }, [disciplinas, searchDisciplinas, filtroTipoDisciplina, filtroStatusDisciplina])
 
   const turmasFiltradas = useMemo(() => {
     return turmas.filter((t) => {
@@ -229,6 +265,165 @@ export default function CursoDetalhePage() {
       return matchesSearch
     })
   }, [alunos, searchAlunos])
+
+  const resetDisciplinaForm = () => {
+    setDisciplinaEditandoId(null)
+    setNovaDisciplina({
+      nome: "",
+      creditos: "",
+      cargaHoraria: "",
+    })
+  }
+
+  const resetTurmaForm = () => {
+    setTurmaEditandoId(null)
+    setNovaTurma({
+      codigo: "",
+      semestre: "",
+      ano: new Date().getFullYear().toString(),
+      disciplinaId: disciplinas[0]?.id ?? "",
+    })
+  }
+
+  const handleCreateDisciplina = async () => {
+    if (!novaDisciplina.nome.trim() || !novaDisciplina.creditos || !novaDisciplina.cargaHoraria) {
+      toast({
+        variant: "error",
+        title: "Dados incompletos",
+        description: "Preencha nome, creditos e carga horaria para salvar a disciplina.",
+      })
+      return
+    }
+
+    try {
+      setIsSavingDisciplina(true)
+      if (disciplinaEditandoId) {
+        const updated = await updateDiscipline(disciplinaEditandoId, {
+          name: novaDisciplina.nome.trim(),
+          credits: Number(novaDisciplina.creditos),
+          workload: Number(novaDisciplina.cargaHoraria),
+        })
+        setDisciplinas((prev) =>
+          prev.map((d) => (d.id === disciplinaEditandoId ? mapDiscipline(updated, cursoId) : d))
+        )
+        toast({
+          variant: "success",
+          title: "Disciplina atualizada",
+          description: `"${novaDisciplina.nome}" atualizada com sucesso.`,
+        })
+      } else {
+        const created = await createDiscipline({
+          name: novaDisciplina.nome.trim(),
+          credits: Number(novaDisciplina.creditos),
+          workload: Number(novaDisciplina.cargaHoraria),
+          courseId: cursoId,
+        })
+
+        setDisciplinas((prev) => [...prev, mapDiscipline(created, cursoId)])
+        toast({
+          variant: "success",
+          title: "Disciplina adicionada",
+          description: `"${novaDisciplina.nome}" vinculada ao curso.`,
+        })
+      }
+      resetDisciplinaForm()
+      setDisciplinaEditandoId(null)
+      setIsDisciplinaModalOpen(false)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Nao foi possivel criar a disciplina"
+      toast({
+        variant: "error",
+        title: "Erro ao salvar disciplina",
+        description: Array.isArray(message) ? message.join(", ") : message,
+      })
+    } finally {
+      setIsSavingDisciplina(false)
+    }
+  }
+
+  const handleCreateTurma = async () => {
+    if (!novaTurma.codigo.trim() || !novaTurma.disciplinaId) {
+      toast({
+        variant: "error",
+        title: "Dados incompletos",
+        description: "Informe o codigo da turma e selecione uma disciplina.",
+      })
+      return
+    }
+
+    try {
+      setIsSavingTurma(true)
+      if (turmaEditandoId) {
+        const updated = await updateClass(turmaEditandoId, {
+          code: novaTurma.codigo.trim(),
+          semester: novaTurma.semestre.trim() || `${new Date().getFullYear()}-1`,
+          year: Number(novaTurma.ano || new Date().getFullYear()),
+          disciplineId: novaTurma.disciplinaId,
+        })
+        const mapped = mapClass(updated, cursoId)
+        setTurmas((prev) => prev.map((t) => (t.id === turmaEditandoId ? mapped : t)))
+      toast({
+        variant: "success",
+        title: "Turma atualizada",
+        description: "Turma atualizada com sucesso.",
+      })
+      } else {
+        const created = await createClass({
+          code: novaTurma.codigo.trim(),
+          semester: novaTurma.semestre.trim() || `${new Date().getFullYear()}-1`,
+          year: Number(novaTurma.ano || new Date().getFullYear()),
+          disciplineId: novaTurma.disciplinaId,
+        })
+
+        const mapped = mapClass(created, cursoId)
+        setTurmas((prev) => {
+          const updated = [...prev, mapped]
+          setCurso((current) => (current ? { ...current, turmas: updated.length } : current))
+          return updated
+        })
+
+        toast({
+          variant: "success",
+          title: "Turma criada",
+          description: "Turma vinculada ao curso com sucesso.",
+        })
+      }
+      resetTurmaForm()
+      setTurmaEditandoId(null)
+      setIsTurmaModalOpen(false)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Nao foi possivel criar a turma"
+      toast({
+        variant: "error",
+        title: "Erro ao criar turma",
+        description: Array.isArray(message) ? message.join(", ") : message,
+      })
+    } finally {
+      setIsSavingTurma(false)
+    }
+  }
+
+  const handleEditarDisciplina = (disciplina: Disciplina) => {
+    setDisciplinaEditandoId(disciplina.id)
+    setNovaDisciplina({
+      nome: disciplina.nome,
+      creditos: String(disciplina.creditos || ""),
+      cargaHoraria: String(disciplina.cargaHoraria || ""),
+    })
+    setIsDisciplinaModalOpen(true)
+  }
+
+  const handleEditarTurma = (turma: Turma) => {
+    const [semestreParte, anoParte] = (turma.periodo || "").split("/") as [string, string?]
+    setTurmaEditandoId(turma.id)
+    setNovaTurma({
+      codigo: turma.codigo,
+      semestre: semestreParte || "",
+      ano: anoParte || new Date().getFullYear().toString(),
+      disciplinaId: disciplinas.find((d) => d.nome === turma.disciplina)?.id ?? disciplinas[0]?.id ?? "",
+    })
+    setIsTurmaModalOpen(true)
+  }
 
   const isEmpty = !isLoading && !curso
 
@@ -399,6 +594,15 @@ export default function CursoDetalhePage() {
                           <option value="obrigatoria">Obrigatorias</option>
                           <option value="optativa">Optativas</option>
                         </select>
+                        <select
+                          value={filtroStatusDisciplina}
+                          onChange={(e) => setFiltroStatusDisciplina(e.target.value as typeof filtroStatusDisciplina)}
+                          className="px-3 py-2 border rounded-md bg-background"
+                        >
+                          <option value="todas">Todas</option>
+                          <option value="ativa">Ativas</option>
+                          <option value="inativa">Inativas</option>
+                        </select>
                       </div>
 
                       <div className="space-y-2">
@@ -406,6 +610,8 @@ export default function CursoDetalhePage() {
                           <div
                             key={disciplina.id}
                             className={`p-4 border rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors ${
+                              disciplina.status === "inativa" ? "opacity-60" : ""
+                            } ${
                               isLiquidGlass
                                 ? "border-gray-200/30 dark:border-gray-700/50"
                                 : "border-gray-200 dark:border-gray-700"
@@ -444,6 +650,18 @@ export default function CursoDetalhePage() {
                               <div className="flex gap-2">
                                 <Button variant="outline" size="sm">
                                   <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant={disciplina.status === "ativa" ? "destructive" : "default"}
+                                  size="sm"
+                                  onClick={() => handleToggleDisciplineStatusClick(disciplina)}
+                                  title={disciplina.status === "ativa" ? "Inativar disciplina" : "Ativar disciplina"}
+                                >
+                                  {disciplina.status === "ativa" ? (
+                                    <PowerOff className="h-4 w-4" />
+                                  ) : (
+                                    <Power className="h-4 w-4" />
+                                  )}
                                 </Button>
                               </div>
                             </div>
@@ -639,6 +857,166 @@ export default function CursoDetalhePage() {
           )}
         </div>
       </main>
+
+      <Dialog
+        open={isDisciplinaModalOpen}
+        onOpenChange={(open) => {
+          setIsDisciplinaModalOpen(open)
+          if (!open) {
+            resetDisciplinaForm()
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{disciplinaEditandoId ? "Editar disciplina" : "Nova disciplina"}</DialogTitle>
+            <DialogDescription>
+              {disciplinaEditandoId ? "Atualize os dados da disciplina vinculada ao curso." : "Vincule uma disciplina a este curso."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="nome-disciplina">Nome</Label>
+              <Input
+                id="nome-disciplina"
+                value={novaDisciplina.nome}
+                onChange={(e) => setNovaDisciplina({ ...novaDisciplina, nome: e.target.value })}
+                placeholder="Ex: Algoritmos"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="creditos-disciplina">Creditos</Label>
+                <Input
+                  id="creditos-disciplina"
+                  type="number"
+                  value={novaDisciplina.creditos}
+                  onChange={(e) => setNovaDisciplina({ ...novaDisciplina, creditos: e.target.value })}
+                  min="0"
+                  placeholder="Ex: 4"
+                />
+              </div>
+              <div>
+                <Label htmlFor="carga-disciplina">Carga horaria (h)</Label>
+                <Input
+                  id="carga-disciplina"
+                  type="number"
+                  value={novaDisciplina.cargaHoraria}
+                  onChange={(e) => setNovaDisciplina({ ...novaDisciplina, cargaHoraria: e.target.value })}
+                  min="0"
+                  placeholder="Ex: 60"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetDisciplinaForm()
+                setIsDisciplinaModalOpen(false)
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateDisciplina} disabled={isSavingDisciplina}>
+              {isSavingDisciplina && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {disciplinaEditandoId ? "Salvar alterações" : "Salvar disciplina"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isTurmaModalOpen}
+        onOpenChange={(open) => {
+          setIsTurmaModalOpen(open)
+          if (!open) {
+            resetTurmaForm()
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{turmaEditandoId ? "Editar turma" : "Nova turma"}</DialogTitle>
+            <DialogDescription>Cadastre ou edite uma turma vinculada a uma disciplina deste curso.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="codigo-turma">Codigo da turma</Label>
+              <Input
+                id="codigo-turma"
+                value={novaTurma.codigo}
+                onChange={(e) => setNovaTurma({ ...novaTurma, codigo: e.target.value })}
+                placeholder="Ex: TURMA-01"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="semestre-turma">Semestre</Label>
+                <Input
+                  id="semestre-turma"
+                  value={novaTurma.semestre}
+                  onChange={(e) => setNovaTurma({ ...novaTurma, semestre: e.target.value })}
+                  placeholder="Ex: 2025-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="ano-turma">Ano</Label>
+                <Input
+                  id="ano-turma"
+                  type="number"
+                  value={novaTurma.ano}
+                  onChange={(e) => setNovaTurma({ ...novaTurma, ano: e.target.value })}
+                  placeholder={new Date().getFullYear().toString()}
+                  min="2000"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="disciplina-turma">Disciplina</Label>
+              <select
+                id="disciplina-turma"
+                className="w-full border rounded-md px-3 py-2 bg-background"
+                value={novaTurma.disciplinaId}
+                onChange={(e) => setNovaTurma({ ...novaTurma, disciplinaId: e.target.value })}
+                disabled={disciplinas.length === 0}
+              >
+                {disciplinas.map((disciplina) => (
+                  <option key={disciplina.id} value={disciplina.id}>
+                    {disciplina.nome}
+                  </option>
+                ))}
+                {disciplinas.length === 0 && <option value="">Cadastre uma disciplina primeiro</option>}
+              </select>
+              {disciplinas.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Cadastre uma disciplina antes de criar turmas para este curso.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetTurmaForm()
+                setIsTurmaModalOpen(false)
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateTurma} disabled={isSavingTurma || disciplinas.length === 0}>
+              {isSavingTurma && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {turmaEditandoId ? "Salvar alterações" : "Criar turma"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

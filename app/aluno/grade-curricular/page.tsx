@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
@@ -11,6 +12,10 @@ import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ModalGradeSemestre } from "@/components/modals"
 import { BookOpen, Calendar, GraduationCap, Layers, ListChecks, Sparkles, Table as TableIcon, Filter } from "lucide-react"
+import { getStudentCurriculum } from "@/src/services/gradeCurricularService"
+import { StudentCurriculum, CurriculumDiscipline } from "@/src/types/Curriculo"
+import { me } from "@/src/services/auth"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 type Disciplina = {
   semestre: string
@@ -32,12 +37,17 @@ type Semestre = {
 }
 
 export default function AlunoGradeCurricularPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [semestreSelecionado, setSemestreSelecionado] = useState<Semestre | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filtroTodas, setFiltroTodas] = useState("todas")
   const [filtroObrigatorias, setFiltroObrigatorias] = useState("todas")
   const [filtroOptativas, setFiltroOptativas] = useState("todas")
+  const [curriculum, setCurriculum] = useState<StudentCurriculum | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [studentId, setStudentId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -49,28 +59,81 @@ export default function AlunoGradeCurricularPage() {
     return () => observer.disconnect()
   }, [])
 
-  const semestres: Semestre[] = useMemo(() => {
-    const base: Disciplina[] = [
-      { semestre: "1°", periodoLetivo: "2024.1", codigo: "MAT101", nome: "Cálculo I", situacao: "Cursando", nota: 8.2, faltas: 2, creditos: 4, cargaHoraria: 80, tipo: "obrigatoria" },
-      { semestre: "1°", periodoLetivo: "2024.1", codigo: "PROG100", nome: "Introdução à Programação", situacao: "Cursando", nota: 8.9, faltas: 1, creditos: 4, cargaHoraria: 80, tipo: "obrigatoria" },
-      { semestre: "1°", periodoLetivo: "2024.1", codigo: "ING001", nome: "Inglês Instrumental", situacao: "Cursando", nota: 9.1, faltas: 0, creditos: 2, cargaHoraria: 40, tipo: "optativa" },
+  useEffect(() => {
+    // ID mockado para desenvolvimento - exibir dados do usuário específico
+    const MOCK_STUDENT_ID = "29bc17a4-0b68-492b-adef-82718898d9eb"
+    
+    // Usa o ID mockado diretamente
+    setStudentId(MOCK_STUDENT_ID)
+    
+    // Código original comentado caso precise reativar:
+    // const init = async () => {
+    //   const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+    //   if (!token) {
+    //     router.push("/")
+    //     return
+    //   }
+    //   const storedUserId = localStorage.getItem("ava:userId")
+    //   if (storedUserId) {
+    //     setStudentId(storedUserId)
+    //     return
+    //   }
+    //   try {
+    //     const current = await me()
+    //     if (current?.id) {
+    //       localStorage.setItem("ava:userId", current.id)
+    //       setStudentId(current.id)
+    //     }
+    //   } catch {
+    //     router.push("/")
+    //   }
+    // }
+    // init()
+  }, [router])
 
-      { semestre: "2°", periodoLetivo: "2024.2", codigo: "MAT102", nome: "Cálculo II", situacao: "Pendente", creditos: 4, cargaHoraria: 80, tipo: "obrigatoria" },
-      { semestre: "2°", periodoLetivo: "2024.2", codigo: "ALG200", nome: "Estruturas de Dados", situacao: "Pendente", creditos: 4, cargaHoraria: 80, tipo: "obrigatoria" },
-      { semestre: "2°", periodoLetivo: "2024.2", codigo: "HUM110", nome: "Ética e Cidadania", situacao: "Pendente", creditos: 2, cargaHoraria: 40, tipo: "optativa" },
-
-      { semestre: "3°", periodoLetivo: "2023.2", codigo: "EST300", nome: "Probabilidade e Estatística", situacao: "Aprovado", nota: 8.0, faltas: 3, creditos: 4, cargaHoraria: 80, tipo: "obrigatoria" },
-      { semestre: "3°", periodoLetivo: "2023.2", codigo: "BD300", nome: "Banco de Dados", situacao: "Aprovado", nota: 8.5, faltas: 1, creditos: 4, cargaHoraria: 80, tipo: "obrigatoria" },
-      { semestre: "3°", periodoLetivo: "2023.2", codigo: "ART050", nome: "História da Arte", situacao: "Aprovado", nota: 9.0, faltas: 0, creditos: 2, cargaHoraria: 40, tipo: "optativa" },
-    ]
-
-    const bySem: Record<string, Disciplina[]> = {}
-    for (const d of base) {
-      bySem[d.semestre] = bySem[d.semestre] || []
-      bySem[d.semestre].push(d)
+  useEffect(() => {
+    const loadCurriculum = async () => {
+      if (!studentId) return
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await getStudentCurriculum(studentId)
+        setCurriculum(data)
+      } catch (err) {
+        console.error("Erro ao carregar grade curricular:", err)
+        setError("Não foi possível carregar a grade curricular.")
+      } finally {
+        setIsLoading(false)
+      }
     }
-    return Object.entries(bySem).map(([sem, disciplinas]) => ({ id: sem, nome: sem, disciplinas }))
-  }, [])
+    loadCurriculum()
+  }, [studentId])
+
+  // Mapeia os dados do backend para o formato esperado pela UI
+  const semestres: Semestre[] = useMemo(() => {
+    if (!curriculum) return []
+    
+    return curriculum.semesters.map((semesterGroup) => {
+      const disciplinas: Disciplina[] = semesterGroup.disciplines.map((d: CurriculumDiscipline) => ({
+        semestre: String(semesterGroup.semester),
+        periodoLetivo: d.academicPeriod || "-",
+        codigo: d.code || d.id.substring(0, 8).toUpperCase(),
+        nome: d.name,
+        situacao: d.status,
+        nota: d.finalGrade,
+        faltas: d.absences,
+        creditos: d.credits,
+        cargaHoraria: d.workload,
+        tipo: d.type === "required" ? "obrigatoria" : "optativa",
+      }))
+      
+      return {
+        id: String(semesterGroup.semester),
+        nome: String(semesterGroup.semester),
+        disciplinas,
+      }
+    })
+  }, [curriculum])
 
   const todasDisciplinas = useMemo(() => semestres.flatMap(s => s.disciplinas), [semestres])
   const obrigatorias = useMemo(() => todasDisciplinas.filter(d => d.tipo === "obrigatoria"), [todasDisciplinas])
@@ -93,14 +156,12 @@ export default function AlunoGradeCurricularPage() {
   const disciplinasFiltradasObrigatorias = useMemo(() => filtrarDisciplinas(obrigatorias, filtroObrigatorias), [obrigatorias, filtroObrigatorias])
   const disciplinasFiltradasOptativas = useMemo(() => filtrarDisciplinas(optativas, filtroOptativas), [optativas, filtroOptativas])
 
-  const chCurso = useMemo(() => todasDisciplinas.reduce((acc, d) => acc + d.cargaHoraria, 0), [todasDisciplinas])
-  const chCumprida = useMemo(() => todasDisciplinas
-    .filter(d => d.situacao === "Aprovado")
-    .reduce((acc, d) => acc + d.cargaHoraria, 0), [todasDisciplinas])
-  const totalObrigatorias = obrigatorias.length
-  const totalObrigatoriasConcluidas = obrigatorias.filter(d => d.situacao === "Aprovado").length
-  const totalOptativas = optativas.length
-  const totalOptativasConcluidas = optativas.filter(d => d.situacao === "Aprovado").length
+  const chCurso = useMemo(() => curriculum?.summary.totalHours || 0, [curriculum])
+  const chCumprida = useMemo(() => curriculum?.summary.completedHours || 0, [curriculum])
+  const totalObrigatorias = curriculum?.summary.requiredDisciplines.total || 0
+  const totalObrigatoriasConcluidas = curriculum?.summary.requiredDisciplines.completed || 0
+  const totalOptativas = curriculum?.summary.optionalDisciplines.total || 0
+  const totalOptativasConcluidas = curriculum?.summary.optionalDisciplines.completed || 0
 
   const openModalSemestre = (sem: Semestre) => {
     setSemestreSelecionado(sem)
@@ -159,6 +220,32 @@ export default function AlunoGradeCurricularPage() {
             </tr>
           </tfoot>
         </table>
+      </div>
+    )
+  }
+
+  // Loading state
+  if (isLoading || !studentId) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            <div className="text-center text-red-500">{error}</div>
+          </div>
+        </main>
       </div>
     )
   }
@@ -279,7 +366,7 @@ export default function AlunoGradeCurricularPage() {
                       <LiquidGlassCard key={sem.id} intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
                         <CardHeader>
                         <CardTitle className="flex items-center justify-between text-lg">
-                          <span>{sem.nome} Semestre</span>
+                          <span>{sem.nome}° Semestre</span>
                           <Badge variant="secondary">{disciplinasFiltradas.length} disciplinas</Badge>
                         </CardTitle>
                           <CardDescription>CH: {totalCH}h • {concluidas} concluídas</CardDescription>
