@@ -3,15 +3,18 @@ import api from './api';
 export type BackendDiscipline = {
   id: string;
   name: string;
-  code: string;
+  code?: string;
+  workLoad?: number;
+  workload?: number;
   workloadHours?: number;
   credits?: number;
-  semester?: number;
-  type?: 'mandatory' | 'optional';
-  status?: 'active' | 'inactive';
   courseId?: string;
-  course?: { id: string; name: string } | null;
+  course?: { id: string; name?: string } | null;
   teacher?: { id: string; name: string } | null;
+  courses?: { id: string; name: string }[];
+  classes?: BackendClass[];
+  status?: 'active' | 'inactive';
+  type?: 'mandatory' | 'optional';
 };
 
 export type BackendCourse = {
@@ -22,9 +25,9 @@ export type BackendCourse = {
   durationSemesters: number;
   description?: string;
   status: 'active' | 'inactive';
-  studentsCount: number;
-  disciplinesCount: number;
-  classesCount: number;
+  studentsCount?: number;
+  disciplinesCount?: number;
+  classesCount?: number;
   department?: { id: string; name: string };
   disciplines?: BackendDiscipline[];
 };
@@ -32,6 +35,8 @@ export type BackendCourse = {
 export type BackendClass = {
   id: string;
   code: string;
+  semester?: string;
+  year?: number;
   period?: string;
   schedule?: string;
   room?: string;
@@ -64,6 +69,29 @@ export interface CreateCoursePayload {
 
 export type UpdateCoursePayload = Partial<CreateCoursePayload>;
 
+export interface CreateDisciplinePayload {
+  name: string;
+  courseId: string;
+  credits: number;
+  workload: number;
+}
+
+export interface CreateClassPayload {
+  code: string;
+  semester: string;
+  year: number;
+  disciplineId: string;
+  teacherId?: string;
+}
+
+export type UpdateClassPayload = Partial<CreateClassPayload>;
+
+export interface UpdateDisciplinePayload {
+  name?: string;
+  credits?: number;
+  workload?: number;
+}
+
 export async function getCourses(filters: {
   departmentId?: string;
   status?: 'active' | 'inactive' | 'todos';
@@ -86,7 +114,6 @@ export async function getCourses(filters: {
 
   try {
     const { data } = await api.get<BackendCourse[]>('/courses', { params });
-    console.log(data)
     return data;
   } catch (error) {
     console.error("Erro ao buscar cursos:", error);
@@ -96,33 +123,25 @@ export async function getCourses(filters: {
 
 export async function getCourseById(courseId: string): Promise<BackendCourse> {
   const { data } = await api.get<BackendCourse>(`/courses/${courseId}`);
+  // Garante compatibilidade se a API retornar classesCount somente no endpoint de listagem
+  if (data && typeof (data as any).course_classesCount !== 'undefined') {
+    (data as any).classesCount = Number((data as any).course_classesCount) || 0;
+  }
   return data;
 }
 
 export async function getCourseDisciplines(courseId: string): Promise<BackendDiscipline[]> {
   const { data } = await api.get<BackendCourse>(`/courses/${courseId}`);
+  // normaliza classesCount caso venha na mesma resposta
+  if (data && typeof (data as any).course_classesCount !== 'undefined') {
+    (data as any).classesCount = Number((data as any).course_classesCount) || 0;
+  }
   return data?.disciplines ?? [];
 }
 
 export async function getCourseClasses(courseId: string): Promise<BackendClass[]> {
-  const endpoints = [
-    `/courses/${courseId}/classes`,
-    `/classes?courseId=${courseId}`,
-  ];
-
-  let lastError: unknown;
-  for (const endpoint of endpoints) {
-    try {
-      const { data } = await api.get<BackendClass[]>(endpoint);
-      return data;
-    } catch (error: any) {
-      lastError = error;
-      if (error?.response?.status !== 404) {
-        throw error;
-      }
-    }
-  }
-  throw lastError;
+  const { data } = await api.get<BackendClass[]>(`/courses/${courseId}/classes`);
+  return data;
 }
 
 export async function getCourseStudents(courseId: string): Promise<BackendCourseStudent[]> {
@@ -141,6 +160,32 @@ export async function createCourse(payload: {
 }): Promise<BackendCourse> {
   const body = { ...payload, code: payload.code.toUpperCase() };
   const { data } = await api.post<BackendCourse>('/courses', body);
+  return data;
+}
+
+export async function createDiscipline(payload: CreateDisciplinePayload): Promise<BackendDiscipline> {
+  const body = {
+    name: payload.name,
+    credits: payload.credits,
+    workload: payload.workload,
+    courseIds: [payload.courseId],
+  };
+  const { data } = await api.post<BackendDiscipline>('/disciplines', body);
+  return data;
+}
+
+export async function updateDiscipline(id: string, payload: UpdateDisciplinePayload): Promise<BackendDiscipline> {
+  const { data } = await api.patch<BackendDiscipline>(`/disciplines/${id}`, payload);
+  return data;
+}
+
+export async function createClass(payload: CreateClassPayload): Promise<BackendClass> {
+  const { data } = await api.post<BackendClass>('/classes', payload);
+  return data;
+}
+
+export async function updateClass(id: string, payload: UpdateClassPayload): Promise<BackendClass> {
+  const { data } = await api.patch<BackendClass>(`/classes/${id}`, payload);
   return data;
 }
 

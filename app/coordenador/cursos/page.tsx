@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { BookOpen, Plus, Search, Users, Eye, X, Loader2, GraduationCap } from "lucide-react"
 import { toast } from "@/components/ui/toast"
 import { getDepartments, type Department } from "@/src/services/departmentsService"
-import { createCourse, getCourses, type BackendCourse } from "@/src/services/coursesService"
+import { createCourse, getCourses, getCourseClasses, type BackendCourse } from "@/src/services/coursesService"
 
 const MOCK_COORDINATOR_ID = "5f634e5c-d028-434d-af46-cc9ea23eb77b"
 
@@ -225,6 +225,22 @@ export default function CoordenadorCursosPage() {
       const deptName = department?.name ?? ""
       const mapped = backendCourses.map((c) => mapBackendToCurso(c, deptName))
       setCursos(mapped)
+
+      const counts = await Promise.all(mapped.map(async (course) => {
+        try {
+          const classes = await getCourseClasses(course.id)
+          return { id: course.id, count: classes.length }
+        } catch {
+          return { id: course.id, count: course.turmas }
+        }
+      }))
+
+      setCursos((prev) =>
+        prev.map((curso) => {
+          const found = counts.find((c) => c.id === curso.id)
+          return found ? { ...curso, turmas: found.count } : curso
+        })
+      )
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.message || "Não foi possível carregar os cursos"
       toast({
@@ -537,4 +553,5 @@ export default function CoordenadorCursosPage() {
     </div>
   )
 }
+
 
