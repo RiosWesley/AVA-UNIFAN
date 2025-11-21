@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { logout } from "@/src/services/auth"
 import {
   Home,
   BookOpen,
@@ -37,6 +38,7 @@ import {
   ChevronRight,
   FileText,
   Video,
+  LogOut,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -133,6 +135,7 @@ export function Sidebar({ userRole }: SidebarProps) {
   const [mounted, setMounted] = useState(false)
   const { theme } = useTheme()
   const pathname = usePathname()
+  const router = useRouter()
   const items = menuItems[userRole]
   
   // Sempre lê o tema de forma síncrona do localStorage durante o render
@@ -508,6 +511,58 @@ export function Sidebar({ userRole }: SidebarProps) {
             </div>
           )}
         </div>
+
+        {isCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  logout()
+                  router.push("/")
+                }}
+                className={cn(
+                  "w-full justify-center text-sidebar-foreground hover:bg-red-500/10 hover:text-red-600 transition-all duration-300 cursor-pointer px-2",
+                  isLightMode ? "border-0" : "border border-transparent hover:border-red-500/50"
+                )}
+                style={{
+                  borderColor: isLightMode ? 'transparent' : 'transparent',
+                  borderWidth: isLightMode ? '0' : undefined,
+                  boxShadow: 'none'
+                }}
+              >
+                <div className="flex items-center justify-center w-8 h-8 relative">
+                  <LogOut className="h-5 w-5 transition-all duration-300" />
+                </div>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="ml-2">
+              <span className="font-medium">Sair</span>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              logout()
+              router.push("/")
+            }}
+            className={cn(
+              "w-full justify-start text-sidebar-foreground hover:bg-red-500/10 hover:text-red-600 transition-all duration-300 cursor-pointer h-12 px-6",
+              isLightMode ? "border-0" : "border border-transparent hover:border-red-500/50"
+            )}
+            style={{
+              borderColor: isLightMode ? 'transparent' : 'transparent',
+              borderWidth: isLightMode ? '0' : undefined,
+              boxShadow: 'none'
+            }}
+          >
+            <div className="flex items-center justify-center w-8 h-8 relative">
+              <LogOut className="h-5 w-5 transition-all duration-300 mr-3" />
+            </div>
+            <span className="font-medium flex-1 text-left">Sair</span>
+          </Button>
+        )}
       </div>
       </LiquidGlassSidebar>
     </TooltipProvider>

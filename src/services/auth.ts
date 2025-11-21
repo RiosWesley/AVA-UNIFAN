@@ -13,4 +13,11 @@ export async function me(): Promise<AuthUser> {
   return data;
 }
 
+export function logout(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('ava:token');
+    localStorage.removeItem('ava:userId');
+    localStorage.removeItem('ava:userRole');
+  }
+}
 
