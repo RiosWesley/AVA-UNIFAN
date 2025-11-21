@@ -26,6 +26,7 @@ import { listPostsByForum, createForumPost, ForumPostDTO } from "@/src/services/
 import { listLiveSessionsByClass, createLiveSession, LiveSessionDTO } from "@/src/services/liveSessionsService"
 import { getClassGradebook, createGradeForActivity, getActivityGradebook } from "@/src/services/gradesService"
 import { getClassAttendanceTable } from "@/src/services/attendancesService"
+import { useLiveSession } from "@/src/hooks/useLiveSession"
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -735,13 +736,36 @@ export default function TurmaDetalhePage() {
         setForums(prev => prev.map(f => f.id === forum.id ? { ...f, comentarios } : f))
         setForumSelecionado((curr: any) => curr ? { ...curr, comentarios } : curr)
       } catch (e: any) {
-        // silêncio, manter modal mesmo assim
       }
     }
     open()
   }
 
-  // Detectar temas (liquid glass e dark mode)
+  const { 
+    joinSession, 
+    leaveSession, 
+    isConnected, 
+    participants,
+    localVideoRef,
+    remoteVideoRef
+  } = useLiveSession();
+
+  const entrarNaVideoChamada = (reuniao: VideoChamada) => {
+    if (reuniao.status !== 'disponivel') return;
+    
+    // UUID DO PROFESSOR ESTA MOCKADO POR ENQUANTO
+    const teacherId = '3f259c81-4a5c-4ae8-8b81-6d59f5eb3028';
+    joinSession(classId, teacherId); 
+    
+    setVideoChamadaSelecionada(reuniao);
+    setModalVideoChamadaAberto(true);
+  };
+  
+  const handleLeaveLiveSession = () => {
+      leaveSession(); 
+      setModalVideoChamadaAberto(false);
+  };
+
   useEffect(() => {
     const checkThemes = () => {
       if (typeof document !== 'undefined') {
@@ -752,7 +776,6 @@ export default function TurmaDetalhePage() {
 
     checkThemes()
 
-    // Observar mudanças no tema
     const observer = new MutationObserver(checkThemes)
     observer.observe(document.documentElement, {
       attributes: true,
@@ -1099,10 +1122,7 @@ export default function TurmaDetalhePage() {
                               size="sm" 
                               variant={podeEntrar ? 'default' : 'outline'} 
                               disabled={!podeEntrar} 
-                              onClick={() => {
-                                setVideoChamadaSelecionada(reuniao)
-                                setModalVideoChamadaAberto(true)
-                              }}
+                              onClick={() => entrarNaVideoChamada(reuniao)}
                             >
                               <Video className="h-4 w-4 mr-2"/>
                               Entrar
@@ -1439,10 +1459,23 @@ export default function TurmaDetalhePage() {
       {/* Modal de Videochamada */}
       <ModalVideoChamada
         isOpen={modalVideoChamadaAberto}
-        onClose={setModalVideoChamadaAberto}
+        onClose={handleLeaveLiveSession}
         titulo={videoChamadaSelecionada?.titulo}
         dataHora={videoChamadaSelecionada?.dataHora}
-      />
+      >
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h3 className="font-bold">Sua Câmera</h3>
+            <video ref={localVideoRef} autoPlay muted playsInline className="w-full rounded-md bg-black"></video>
+          </div>
+          <div>
+            <h3 className="font-bold">Participantes ({participants.length})</h3>
+            <video ref={remoteVideoRef} autoPlay playsInline className="w-full rounded-md bg-black"></video>
+            {/* Em um sistema de grupo, precisa renderizar múltiplos vídeos aqui */}
+          </div>
+        </div>
+      </ModalVideoChamada>
     </div>
   )
 }
