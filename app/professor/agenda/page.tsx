@@ -8,6 +8,9 @@ import { Calendar, Clock, MapPin, Users, Edit3, Trash2, Plus, Filter, Bell, Book
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PageSpinner } from "@/components/ui/page-spinner"
+import { getTurmasProfessor, type Turma } from "@/src/services/ProfessorTurmasService"
+import { toastError } from "@/components/ui/toast"
 
 interface Evento {
   hora: string
@@ -29,11 +32,79 @@ interface DayInfo {
 
 type EventosPorDia = Record<string, Evento[]>
 
+const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as const
+const WEEK_DAYS_HEADER = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'] as const
+
+const MOCK_TEACHER_ID = '3f259c81-4a5c-4ae8-8b81-6d59f5eb3028'
+
+function buildEventosFromTurmas(turmas: Turma[]): EventosPorDia {
+  const base: EventosPorDia = {
+    Seg: [],
+    Ter: [],
+    Qua: [],
+    Qui: [],
+    Sex: [],
+    Sáb: [],
+    Dom: [],
+  }
+
+  const parseHoraInicio = (hora: string): number => {
+    if (!hora) return 0
+    const [start] = hora.split(' - ')
+    const [h, m] = start.split(':').map((v) => parseInt(v, 10))
+    if (Number.isNaN(h) || Number.isNaN(m)) return 0
+    return h * 60 + m
+  }
+
+  turmas.forEach((turma) => {
+    ;(turma.aulas || []).forEach((aula) => {
+      const data = aula.data instanceof Date ? aula.data : new Date(aula.data as any)
+      if (Number.isNaN(data.getTime())) return
+      const dayIndex = data.getDay()
+      const dayAbbrev = DAY_LABELS[dayIndex] || 'Seg'
+
+      const evento: Evento = {
+        hora: aula.horario,
+        titulo: `${turma.disciplina} - ${turma.nome}`,
+        tipo: 'Aula',
+        sala: aula.sala || turma.sala || '—',
+        turma: turma.nome,
+        participantes: turma.alunos ?? 0,
+        descricao: '',
+        prioridade: 'média',
+        cor: 'blue',
+      }
+
+      if (!base[dayAbbrev]) {
+        base[dayAbbrev] = []
+      }
+      base[dayAbbrev].push(evento)
+    })
+  })
+
+  Object.keys(base).forEach((dia) => {
+    base[dia] = base[dia].sort((a, b) => parseHoraInicio(a.hora) - parseHoraInicio(b.hora))
+  })
+
+  return base
+}
+
 export default function AgendaPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
-  const [selectedDay, setSelectedDay] = useState('Ter')
+  const [selectedDay, setSelectedDay] = useState<string>(() => DAY_LABELS[new Date().getDay()] || 'Seg')
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+  const [eventosPorDia, setEventosPorDia] = useState<EventosPorDia>({
+    Seg: [],
+    Ter: [],
+    Qua: [],
+    Qui: [],
+    Sex: [],
+    Sáb: [],
+    Dom: [],
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -51,133 +122,46 @@ export default function AgendaPage() {
     return () => observer.disconnect()
   }, [])
 
-  const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+  useEffect(() => {
+    let mounted = true
 
-  const eventosPorDia: EventosPorDia = {
-    Seg: [
-      {
-        hora: '08:00 - 09:40',
-        titulo: 'Matemática - 9º Ano A',
-        tipo: 'Aula',
-        sala: 'A-101',
-        turma: '9º Ano A',
-        participantes: 25,
-        descricao: 'Cálculo diferencial e integral aplicado a problemas reais',
-        prioridade: 'alta',
-        cor: 'blue'
-      },
-      {
-        hora: '10:00 - 11:40',
-        titulo: 'Matemática - 8º Ano B',
-        tipo: 'Aula',
-        sala: 'B-205',
-        turma: '8º Ano B',
-        participantes: 20,
-        descricao: 'Álgebra e equações do primeiro grau',
-        prioridade: 'alta',
-        cor: 'green'
-      },
-    ],
-    Ter: [
-      {
-        hora: '14:00 - 15:40',
-        titulo: 'Matemática - 7º Ano C',
-        tipo: 'Aula',
-        sala: 'C-301',
-        turma: '7º Ano C',
-        participantes: 28,
-        descricao: 'Geometria plana e espacial',
-        prioridade: 'alta',
-        cor: 'purple'
-      },
-      {
-        hora: '16:00 - 17:40',
-        titulo: 'Reunião Pedagógica',
-        tipo: 'Reunião',
-        sala: 'Sala 301',
-        turma: '',
-        participantes: 8,
-        descricao: 'Planejamento do projeto final de semestre',
-        prioridade: 'alta',
-        cor: 'orange'
-      },
-    ],
-    Qua: [
-      {
-        hora: '08:00 - 09:40',
-        titulo: 'Matemática - 9º Ano A',
-        tipo: 'Aula',
-        sala: 'A-101',
-        turma: '9º Ano A',
-        participantes: 25,
-        descricao: 'Trigonometria e funções',
-        prioridade: 'média',
-        cor: 'yellow'
-      },
-      {
-        hora: '16:00 - 17:30',
-        titulo: 'Plantão de Dúvidas',
-        tipo: 'Atendimento',
-        sala: 'Sala de Estudos',
-        turma: '',
-        participantes: 15,
-        descricao: 'Horário para esclarecimento de dúvidas',
-        prioridade: 'baixa',
-        cor: 'red'
-      },
-    ],
-    Qui: [
-      {
-        hora: '10:00 - 11:40',
-        titulo: 'Matemática - 8º Ano B',
-        tipo: 'Aula',
-        sala: 'B-205',
-        turma: '8º Ano B',
-        participantes: 20,
-        descricao: 'Geometria analítica',
-        prioridade: 'alta',
-        cor: 'teal'
-      },
-    ],
-    Sex: [
-      {
-        hora: '08:00 - 09:40',
-        titulo: 'Matemática - 7º Ano C',
-        tipo: 'Aula',
-        sala: 'C-301',
-        turma: '7º Ano C',
-        participantes: 28,
-        descricao: 'Estatística e probabilidade',
-        prioridade: 'média',
-        cor: 'cyan'
-      },
-      {
-        hora: '14:00 - 15:40',
-        titulo: 'Correção de Provas',
-        tipo: 'Atividade',
-        sala: 'Sala dos Professores',
-        turma: '',
-        participantes: 1,
-        descricao: 'Correção de avaliações do 9º Ano A',
-        prioridade: 'alta',
-        cor: 'pink'
-      },
-    ],
-    Sáb: [
-      {
-        hora: '09:00 - 11:00',
-        titulo: 'Preparação de Material',
-        tipo: 'Atividade',
-        sala: 'Sala dos Professores',
-        turma: '',
-        participantes: 1,
-        descricao: 'Preparação de material didático para próxima semana',
-        prioridade: 'média',
-        cor: 'indigo'
-      },
-    ],
-    Dom: [],
-  }
+    async function loadAgenda() {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const turmasData = await getTurmasProfessor(MOCK_TEACHER_ID)
+        if (!mounted) return
+
+        const eventos = buildEventosFromTurmas(turmasData)
+        setEventosPorDia(eventos)
+
+        const diasComEventos = WEEK_DAYS_HEADER.filter((dia) => (eventos[dia] || []).length > 0)
+        if (diasComEventos.length > 0) {
+          setSelectedDay((prev) => diasComEventos.includes(prev) ? prev : diasComEventos[0])
+        }
+      } catch (err: any) {
+        if (!mounted) return
+        console.error("Erro ao carregar agenda do professor:", err)
+        const rawMessage = err?.response?.data?.message || err?.message || "Não foi possível carregar a agenda."
+        const description = Array.isArray(rawMessage) ? rawMessage.join(", ") : String(rawMessage)
+        setError(description)
+        toastError("Erro ao carregar agenda", description)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadAgenda()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const diasSemana = WEEK_DAYS_HEADER as readonly string[]
 
   const getTipoConfig = (tipo: string) => {
     switch (tipo) {
@@ -250,7 +234,7 @@ export default function AgendaPage() {
     }
 
     return days
-  }, [currentYear, currentMonth])
+  }, [currentYear, currentMonth, eventosPorDia])
 
   const eventosHoje = eventosPorDia[selectedDay] || []
 
@@ -258,6 +242,31 @@ export default function AgendaPage() {
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ]
+
+  if (loading) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="professor" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="professor" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">Erro ao carregar agenda</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
