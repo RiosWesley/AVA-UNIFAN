@@ -12,8 +12,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2 } from "lucide-react"
+import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2, Power, PowerOff } from "lucide-react"
 import { toast } from "@/components/ui/toast"
+import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 import {
   getCourseById,
   getCourseClasses,
@@ -23,11 +24,16 @@ import {
   createDiscipline,
   updateClass,
   updateDiscipline,
+  toggleDisciplineStatus,
+  getAllDisciplines,
+  associateDisciplineToCourse,
+  updateDisciplineSemester,
   type BackendClass,
   type BackendCourse,
   type BackendDiscipline,
   type BackendCourseStudent
 } from "@/src/services/coursesService"
+import { Combobox } from "@/components/ui/combobox"
 
 type Disciplina = {
   id: string
@@ -98,6 +104,7 @@ const mapDiscipline = (d: BackendDiscipline, fallbackCourseId?: string): Discipl
   codigo: d.code ?? d.id.slice(0, 6).toUpperCase(),
   cargaHoraria: d.workLoad ?? d.workload ?? d.workloadHours ?? 0,
   creditos: d.credits ?? 0,
+  semestre: d.semester,
   tipo: d.type === "optional" ? "optativa" : "obrigatoria",
   professor: d.teacher?.name,
   status: d.status === "inactive" ? "inativa" : "ativa",
@@ -147,9 +154,12 @@ export default function CursoDetalhePage() {
   const [searchTurmas, setSearchTurmas] = useState("")
   const [searchAlunos, setSearchAlunos] = useState("")
   const [filtroTipoDisciplina, setFiltroTipoDisciplina] = useState<"todas" | "obrigatoria" | "optativa">("todas")
+  const [filtroStatusDisciplina, setFiltroStatusDisciplina] = useState<"todas" | "ativa" | "inativa">("todas")
   const [filtroStatusTurma, setFiltroStatusTurma] = useState<"todas" | "ativa" | "inativa">("todas")
   const [isDisciplinaModalOpen, setIsDisciplinaModalOpen] = useState(false)
   const [isTurmaModalOpen, setIsTurmaModalOpen] = useState(false)
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+  const [disciplinaParaToggle, setDisciplinaParaToggle] = useState<Disciplina | null>(null)
   const [isSavingDisciplina, setIsSavingDisciplina] = useState(false)
   const [isSavingTurma, setIsSavingTurma] = useState(false)
   const [disciplinaEditandoId, setDisciplinaEditandoId] = useState<string | null>(null)
@@ -157,8 +167,12 @@ export default function CursoDetalhePage() {
   const [novaDisciplina, setNovaDisciplina] = useState({
     nome: "",
     creditos: "",
-    cargaHoraria: ""
+    cargaHoraria: "",
+    semestre: ""
   })
+  const [disciplinaSelecionadaId, setDisciplinaSelecionadaId] = useState<string | null>(null)
+  const [disciplinasOptions, setDisciplinasOptions] = useState<{ id: string; label: string }[]>([])
+  const [isLoadingDisciplines, setIsLoadingDisciplines] = useState(false)
   const [novaTurma, setNovaTurma] = useState({
     codigo: "",
     semestre: "",
@@ -198,7 +212,6 @@ export default function CursoDetalhePage() {
         .filter((t) => t.status === "ativa")
       const mappedDisciplines = disciplinesData
         .map((disciplina) => mapDiscipline(disciplina, cursoId))
-        .filter((d) => d.status === "ativa")
 
       setCurso({
         ...mapCourse(courseData),
@@ -217,6 +230,21 @@ export default function CursoDetalhePage() {
       })
     } finally {
       setIsLoading(false)
+    }
+  }, [cursoId])
+
+  const loadDisciplines = useCallback(async () => {
+    try {
+      const disciplinesData = await getCourseDisciplines(cursoId)
+      const mappedDisciplines = disciplinesData.map((disciplina) => mapDiscipline(disciplina, cursoId))
+      setDisciplinas(mappedDisciplines)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Nao foi possivel carregar as disciplinas"
+      toast({
+        variant: "error",
+        title: "Erro ao carregar disciplinas",
+        description: Array.isArray(message) ? message.join(", ") : message
+      })
     }
   }, [cursoId])
 
@@ -239,9 +267,10 @@ export default function CursoDetalhePage() {
         d.nome.toLowerCase().includes(searchDisciplinas.toLowerCase()) ||
         d.codigo.toLowerCase().includes(searchDisciplinas.toLowerCase())
       const matchesTipo = filtroTipoDisciplina === "todas" || d.tipo === filtroTipoDisciplina
-      return matchesSearch && matchesTipo
+      const matchesStatus = filtroStatusDisciplina === "todas" || d.status === filtroStatusDisciplina
+      return matchesSearch && matchesTipo && matchesStatus
     })
-  }, [disciplinas, searchDisciplinas, filtroTipoDisciplina])
+  }, [disciplinas, searchDisciplinas, filtroTipoDisciplina, filtroStatusDisciplina])
 
   const turmasFiltradas = useMemo(() => {
     return turmas.filter((t) => {
@@ -268,12 +297,42 @@ export default function CursoDetalhePage() {
 
   const resetDisciplinaForm = () => {
     setDisciplinaEditandoId(null)
+    setDisciplinaSelecionadaId(null)
     setNovaDisciplina({
       nome: "",
       creditos: "",
       cargaHoraria: "",
+      semestre: "",
     })
+    setDisciplinasOptions([])
   }
+
+  const handleSearchDisciplines = useCallback(
+    async (query: string) => {
+      if (!query.trim()) {
+        setDisciplinasOptions([])
+        return
+      }
+
+      try {
+        setIsLoadingDisciplines(true)
+        const allDisciplines = await getAllDisciplines()
+        const filtered = allDisciplines
+          .filter((d) => d.name.toLowerCase().includes(query.toLowerCase()))
+          .map((d) => ({
+            id: d.id,
+            label: d.name,
+          }))
+        setDisciplinasOptions(filtered)
+      } catch (error) {
+        console.error("Erro ao buscar disciplinas:", error)
+        setDisciplinasOptions([])
+      } finally {
+        setIsLoadingDisciplines(false)
+      }
+    },
+    []
+  )
 
   const resetTurmaForm = () => {
     setTurmaEditandoId(null)
@@ -286,11 +345,11 @@ export default function CursoDetalhePage() {
   }
 
   const handleCreateDisciplina = async () => {
-    if (!novaDisciplina.nome.trim() || !novaDisciplina.creditos || !novaDisciplina.cargaHoraria) {
+    if (!novaDisciplina.nome.trim()) {
       toast({
         variant: "error",
         title: "Dados incompletos",
-        description: "Preencha nome, creditos e carga horaria para salvar a disciplina.",
+        description: "Preencha o nome da disciplina.",
       })
       return
     }
@@ -298,33 +357,72 @@ export default function CursoDetalhePage() {
     try {
       setIsSavingDisciplina(true)
       if (disciplinaEditandoId) {
+        // Modo edição - atualizar disciplina existente
+        if (!novaDisciplina.creditos || !novaDisciplina.cargaHoraria) {
+          toast({
+            variant: "error",
+            title: "Dados incompletos",
+            description: "Preencha creditos e carga horaria para atualizar a disciplina.",
+          })
+          return
+        }
         const updated = await updateDiscipline(disciplinaEditandoId, {
           name: novaDisciplina.nome.trim(),
           credits: Number(novaDisciplina.creditos),
           workload: Number(novaDisciplina.cargaHoraria),
         })
-        setDisciplinas((prev) =>
-          prev.map((d) => (d.id === disciplinaEditandoId ? mapDiscipline(updated, cursoId) : d))
-        )
+        // Atualizar semestre da relação CourseDiscipline
+        const semester = novaDisciplina.semestre ? Number(novaDisciplina.semestre) : undefined
+        if (semester !== undefined) {
+          await updateDisciplineSemester(cursoId, disciplinaEditandoId, semester)
+        }
+        // Recarregar disciplinas para obter dados atualizados
+        await loadDisciplines()
         toast({
           variant: "success",
           title: "Disciplina atualizada",
           description: `"${novaDisciplina.nome}" atualizada com sucesso.`,
         })
       } else {
-        const created = await createDiscipline({
-          name: novaDisciplina.nome.trim(),
-          credits: Number(novaDisciplina.creditos),
-          workload: Number(novaDisciplina.cargaHoraria),
-          courseId: cursoId,
-        })
-
-        setDisciplinas((prev) => [...prev, mapDiscipline(created, cursoId)])
-        toast({
-          variant: "success",
-          title: "Disciplina adicionada",
-          description: `"${novaDisciplina.nome}" vinculada ao curso.`,
-        })
+        // Modo criação
+        const semester = novaDisciplina.semestre ? Number(novaDisciplina.semestre) : undefined
+        
+        if (disciplinaSelecionadaId) {
+          // Disciplina existente selecionada - apenas associar ao curso
+          await associateDisciplineToCourse(cursoId, disciplinaSelecionadaId, semester)
+          await loadDisciplines()
+          toast({
+            variant: "success",
+            title: "Disciplina vinculada",
+            description: `"${novaDisciplina.nome}" vinculada ao curso com sucesso.`,
+          })
+        } else {
+          // Nova disciplina - criar e associar
+          if (!novaDisciplina.creditos || !novaDisciplina.cargaHoraria) {
+            toast({
+              variant: "error",
+              title: "Dados incompletos",
+              description: "Preencha creditos e carga horaria para criar a disciplina.",
+            })
+            return
+          }
+          const created = await createDiscipline({
+            name: novaDisciplina.nome.trim(),
+            credits: Number(novaDisciplina.creditos),
+            workload: Number(novaDisciplina.cargaHoraria),
+            courseId: cursoId,
+          })
+          // Se houver semestre, atualizar a relação CourseDiscipline
+          if (semester) {
+            await updateDisciplineSemester(cursoId, created.id, semester)
+          }
+          await loadDisciplines()
+          toast({
+            variant: "success",
+            title: "Disciplina criada",
+            description: `"${novaDisciplina.nome}" criada e vinculada ao curso.`,
+          })
+        }
       }
       resetDisciplinaForm()
       setDisciplinaEditandoId(null)
@@ -409,8 +507,46 @@ export default function CursoDetalhePage() {
       nome: disciplina.nome,
       creditos: String(disciplina.creditos || ""),
       cargaHoraria: String(disciplina.cargaHoraria || ""),
+      semestre: String(disciplina.semestre || ""),
     })
     setIsDisciplinaModalOpen(true)
+  }
+
+  const handleToggleDisciplineStatusClick = (disciplina: Disciplina) => {
+    setDisciplinaParaToggle(disciplina)
+    setIsConfirmModalOpen(true)
+  }
+
+  const handleToggleDisciplineStatus = async () => {
+    if (!cursoId || !disciplinaParaToggle?.id) return
+
+    const novoStatus = disciplinaParaToggle.status === "ativa" ? "inactive" : "active"
+    
+    try {
+      await toggleDisciplineStatus(cursoId, disciplinaParaToggle.id, novoStatus)
+      // Atualizar apenas o status da disciplina na lista
+      setDisciplinas((prev) =>
+        prev.map((d) =>
+          d.id === disciplinaParaToggle.id
+            ? { ...d, status: novoStatus === "active" ? "ativa" : "inativa" }
+            : d
+        )
+      )
+      toast({
+        variant: "success",
+        title: "Status atualizado",
+        description: `Disciplina "${disciplinaParaToggle.nome}" ${novoStatus === "active" ? "ativada" : "inativada"} com sucesso.`,
+      })
+      setIsConfirmModalOpen(false)
+      setDisciplinaParaToggle(null)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Nao foi possivel atualizar o status"
+      toast({
+        variant: "error",
+        title: "Erro ao atualizar status",
+        description: Array.isArray(message) ? message.join(", ") : message,
+      })
+    }
   }
 
   const handleEditarTurma = (turma: Turma) => {
@@ -605,6 +741,15 @@ export default function CursoDetalhePage() {
                           <option value="obrigatoria">Obrigatorias</option>
                           <option value="optativa">Optativas</option>
                         </select>
+                        <select
+                          value={filtroStatusDisciplina}
+                          onChange={(e) => setFiltroStatusDisciplina(e.target.value as typeof filtroStatusDisciplina)}
+                          className="px-3 py-2 border rounded-md bg-background"
+                        >
+                          <option value="todas">Todas</option>
+                          <option value="ativa">Ativas</option>
+                          <option value="inativa">Inativas</option>
+                        </select>
                       </div>
 
                       <div className="space-y-2">
@@ -612,6 +757,8 @@ export default function CursoDetalhePage() {
                           <div
                             key={disciplina.id}
                             className={`p-4 border rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors ${
+                              disciplina.status === "inativa" ? "opacity-60" : ""
+                            } ${
                               isLiquidGlass
                                 ? "border-gray-200/30 dark:border-gray-700/50"
                                 : "border-gray-200 dark:border-gray-700"
@@ -650,6 +797,18 @@ export default function CursoDetalhePage() {
                               <div className="flex gap-2">
                                 <Button variant="outline" size="sm" onClick={() => handleEditarDisciplina(disciplina)}>
                                   <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant={disciplina.status === "ativa" ? "destructive" : "default"}
+                                  size="sm"
+                                  onClick={() => handleToggleDisciplineStatusClick(disciplina)}
+                                  title={disciplina.status === "ativa" ? "Inativar disciplina" : "Ativar disciplina"}
+                                >
+                                  {disciplina.status === "ativa" ? (
+                                    <PowerOff className="h-4 w-4" />
+                                  ) : (
+                                    <Power className="h-4 w-4" />
+                                  )}
                                 </Button>
                               </div>
                             </div>
@@ -873,14 +1032,53 @@ export default function CursoDetalhePage() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="nome-disciplina">Nome</Label>
-              <Input
-                id="nome-disciplina"
-                value={novaDisciplina.nome}
-                onChange={(e) => setNovaDisciplina({ ...novaDisciplina, nome: e.target.value })}
-                placeholder="Ex: Algoritmos"
-              />
+              {disciplinaEditandoId ? (
+                <Input
+                  id="nome-disciplina"
+                  value={novaDisciplina.nome}
+                  onChange={(e) => setNovaDisciplina({ ...novaDisciplina, nome: e.target.value })}
+                  placeholder="Ex: Algoritmos"
+                />
+              ) : (
+                <Combobox
+                  placeholder="Digite para buscar ou criar nova disciplina..."
+                  options={disciplinasOptions}
+                  value={disciplinaSelecionadaId}
+                  onChange={async (selectedId) => {
+                    setDisciplinaSelecionadaId(selectedId)
+                    if (selectedId) {
+                      // Carregar dados da disciplina selecionada
+                      try {
+                        const allDisciplines = await getAllDisciplines()
+                        const selected = allDisciplines.find((d) => d.id === selectedId)
+                        if (selected) {
+                          setNovaDisciplina({
+                            nome: selected.name,
+                            creditos: String(selected.credits ?? ""),
+                            cargaHoraria: String(selected.workLoad ?? selected.workload ?? ""),
+                            semestre: "",
+                          })
+                        }
+                      } catch (error) {
+                        console.error("Erro ao carregar disciplina:", error)
+                      }
+                    }
+                  }}
+                  onSearch={(query) => {
+                    // Atualizar nome quando usuário digita (modo custom input)
+                    if (!disciplinaSelecionadaId) {
+                      setNovaDisciplina((prev) => ({
+                        ...prev,
+                        nome: query,
+                      }))
+                    }
+                    handleSearchDisciplines(query)
+                  }}
+                  allowCustomInput={true}
+                />
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="creditos-disciplina">Creditos</Label>
                 <Input
@@ -901,6 +1099,18 @@ export default function CursoDetalhePage() {
                   onChange={(e) => setNovaDisciplina({ ...novaDisciplina, cargaHoraria: e.target.value })}
                   min="0"
                   placeholder="Ex: 60"
+                />
+              </div>
+              <div>
+                <Label htmlFor="semestre-disciplina">Semestre</Label>
+                <Input
+                  id="semestre-disciplina"
+                  type="number"
+                  value={novaDisciplina.semestre}
+                  onChange={(e) => setNovaDisciplina({ ...novaDisciplina, semestre: e.target.value })}
+                  min="1"
+                  max="20"
+                  placeholder="Ex: 1"
                 />
               </div>
             </div>
@@ -1012,6 +1222,23 @@ export default function CursoDetalhePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ModalConfirmacao
+        isOpen={isConfirmModalOpen}
+        onClose={() => {
+          setIsConfirmModalOpen(false)
+          setDisciplinaParaToggle(null)
+        }}
+        onConfirm={handleToggleDisciplineStatus}
+        title={disciplinaParaToggle?.status === "ativa" ? "Inativar disciplina" : "Ativar disciplina"}
+        description={
+          disciplinaParaToggle
+            ? `Tem certeza que deseja ${disciplinaParaToggle.status === "ativa" ? "inativar" : "ativar"} a disciplina "${disciplinaParaToggle.nome}"?`
+            : ""
+        }
+        confirmLabel={disciplinaParaToggle?.status === "ativa" ? "Inativar" : "Ativar"}
+        cancelLabel="Cancelar"
+      />
     </div>
   )
 }

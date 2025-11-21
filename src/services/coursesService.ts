@@ -15,6 +15,7 @@ export type BackendDiscipline = {
   classes?: BackendClass[];
   status?: 'active' | 'inactive';
   type?: 'mandatory' | 'optional';
+  semester?: number;
 };
 
 export type BackendCourse = {
@@ -179,6 +180,30 @@ export async function updateDiscipline(id: string, payload: UpdateDisciplinePayl
   return data;
 }
 
+export async function toggleDisciplineStatus(
+  courseId: string,
+  disciplineId: string,
+  status: 'active' | 'inactive',
+): Promise<BackendCourse> {
+  const { data } = await api.patch<BackendCourse>(
+    `/courses/${courseId}/disciplines/${disciplineId}/status`,
+    { status },
+  );
+  return data;
+}
+
+export async function updateDisciplineSemester(
+  courseId: string,
+  disciplineId: string,
+  semester?: number,
+): Promise<BackendCourse> {
+  const { data } = await api.patch<BackendCourse>(
+    `/courses/${courseId}/disciplines/${disciplineId}/semester`,
+    { semester },
+  );
+  return data;
+}
+
 export async function createClass(payload: CreateClassPayload): Promise<BackendClass> {
   const { data } = await api.post<BackendClass>('/classes', payload);
   return data;
@@ -196,6 +221,28 @@ export async function updateCourse(id: string, payload: UpdateCoursePayload): Pr
 
 export async function deleteCourse(id: string): Promise<void> {
   await api.delete(`/courses/${id}`);
+}
+
+export interface Department {
+  id: string;
+  name: string;
+}
+
+export async function getAllDisciplines(): Promise<BackendDiscipline[]> {
+  const { data } = await api.get<BackendDiscipline[]>('/disciplines');
+  return data;
+}
+
+export async function associateDisciplineToCourse(
+  courseId: string,
+  disciplineId: string,
+  semester?: number,
+): Promise<BackendCourse> {
+  const { data } = await api.post<BackendCourse>(
+    `/courses/${courseId}/disciplines`,
+    { disciplineId, semester },
+  );
+  return data;
 }
 
 export interface Department {
