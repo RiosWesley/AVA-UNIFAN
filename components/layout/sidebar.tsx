@@ -60,12 +60,9 @@ const menuItems = {
       ]
     },
     { icon: BookOpen, label: "Grade Curricular", href: "/aluno/grade-curricular" },
-    { icon: BarChart3, label: "Relatórios", href: "/aluno/relatorios" },
-    { icon: FileText, label: "Requerimentos", href: "/aluno/requerimentos" },
     { icon: MessageSquare, label: "Comunicação", href: "/aluno/comunicacao", badge: "1" },
     { icon: CreditCard, label: "Financeiro", href: "/aluno/financeiro" },
     { icon: Calendar, label: "Agenda", href: "/aluno/agenda" },
-    { icon: Settings, label: "Configurações", href: "/aluno/configuracoes" },
   ],
   professor: [
     { icon: Home, label: "Início", href: "/professor" },
