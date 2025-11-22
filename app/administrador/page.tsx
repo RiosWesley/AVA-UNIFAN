@@ -164,19 +164,25 @@ export default function AdministradorDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
-                isLiquidGlass
+              <LiquidGlassButton
+                variant="outline"
+                size="lg"
+                className={`backdrop-blur-sm ${isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-              }`}>
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60 hover:text-green-600'
+                }`}
+              >
                 <Database className="h-5 w-5 mr-2" />
                 Backup
               </LiquidGlassButton>
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
-                isLiquidGlass
+              <LiquidGlassButton
+                variant="outline"
+                size="lg"
+                className={`backdrop-blur-sm ${isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-              }`}>
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60 hover:text-green-600'
+                }`}
+              >
                 <Settings className="h-5 w-5 mr-2" />
                 Configurações
               </LiquidGlassButton>
