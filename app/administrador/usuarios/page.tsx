@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, Search, Edit, Mail, Eye, Ban, ChevronLeft, ChevronRight } from "lucide-react"
+import { Users, Plus, Search, Edit, Mail, Eye, EyeOff, Ban, ChevronLeft, ChevronRight } from "lucide-react"
 import { ModalEditarUsuario, type Usuario as UsuarioType } from "@/components/modals/modal-editar-usuario"
 import { ModalDetalhesUsuario, type UsuarioDetalhes } from "@/components/modals/modal-detalhes-usuario"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
@@ -238,6 +238,10 @@ export default function UsuariosAdministradorPage() {
   // Estado para erro de CPF
   const [cpfError, setCpfError] = useState<string | null>(null)
 
+  // Estados para mostrar/ocultar senhas
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
   // Handler para mudança no campo CPF
   function handleCpfChange(value: string) {
     const formatted = formatarCPF(value)
@@ -287,6 +291,22 @@ export default function UsuariosAdministradorPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!form.nome.trim() || !form.email.trim()) return
+    
+    // Validar email único antes de prosseguir
+    try {
+      const emailExiste = await usuariosService.verificarEmailExistente(form.email.trim())
+      if (emailExiste) {
+        toast({
+          variant: 'error',
+          title: 'Email já cadastrado',
+          description: 'Já existe um usuário com este email no sistema. Por favor, use outro email.',
+        })
+        return
+      }
+    } catch (err: any) {
+      console.error("Erro ao verificar email:", err)
+      // Continuar mesmo se houver erro na verificação, pois o backend também validará
+    }
     
     // Validações específicas para aluno
     if (form.role === "aluno") {
@@ -385,16 +405,8 @@ export default function UsuariosAdministradorPage() {
         }
       }
 
-      // Se for coordenador, exigir seleção de UM departamento e aplicar
-      if (form.role === "coordenador") {
-        if (!selectedCoordinatorDept) {
-          toast({
-            variant: 'error',
-            title: 'Selecione o departamento',
-            description: 'Coordenadores precisam estar vinculados a um departamento.',
-          })
-          return
-        }
+      // Se for coordenador e houver departamento selecionado, aplicar vinculação (opcional)
+      if (form.role === "coordenador" && selectedCoordinatorDept) {
         try {
           await setDepartmentCoordinator(selectedCoordinatorDept, novo.id)
         } catch (linkErr: any) {
@@ -900,11 +912,53 @@ export default function UsuariosAdministradorPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="senha">Senha</Label>
-                      <Input id="senha" type="password" value={form.senha} onChange={(e) => setForm({ ...form, senha: e.target.value })} />
+                      <div className="relative">
+                        <Input 
+                          id="senha" 
+                          type={showPassword ? "text" : "password"} 
+                          value={form.senha} 
+                          onChange={(e) => setForm({ ...form, senha: e.target.value })} 
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirmarSenha">Confirmar Senha</Label>
-                      <Input id="confirmarSenha" type="password" value={form.confirmarSenha} onChange={(e) => setForm({ ...form, confirmarSenha: e.target.value })} />
+                      <div className="relative">
+                        <Input 
+                          id="confirmarSenha" 
+                          type={showConfirmPassword ? "text" : "password"} 
+                          value={form.confirmarSenha} 
+                          onChange={(e) => setForm({ ...form, confirmarSenha: e.target.value })} 
+                          className="pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                     <div className="md:col-span-2 flex justify-end gap-2">
                       <Button

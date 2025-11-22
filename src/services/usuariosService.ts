@@ -264,5 +264,21 @@ export const usuariosService = {
       throw new Error("Não foi possível carregar os detalhes do usuário.");
     }
   },
+
+  // Verificar se um email já existe no sistema
+  async verificarEmailExistente(email: string): Promise<boolean> {
+    try {
+      const response = await api.get<{ exists: boolean }>(`/users/check-email/${encodeURIComponent(email)}`);
+      return response.data.exists;
+    } catch (error: any) {
+      console.error("Erro ao verificar email:", error);
+      // Se o endpoint não existir ainda ou houver erro, retornar false para não bloquear
+      // O backend validará de qualquer forma
+      if (error.response?.status === 404) {
+        return false;
+      }
+      throw new Error("Não foi possível verificar se o email já existe.");
+    }
+  },
 };
 
