@@ -1,16 +1,24 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
-import { BookOpen, Users, Calendar, TrendingUp, GraduationCap, Star, Award, Activity, Target, Sparkles, Bell, ChevronRight, Settings, AlertCircle, CheckCircle, Clock } from "lucide-react"
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import { BookOpen, Users, Calendar, TrendingUp, GraduationCap, Star, Award, Activity, Sparkles, Bell, ChevronRight, Settings, CheckCircle, Clock, Loader2, AlertCircle, ChevronLeft } from "lucide-react"
+import { getCoordinatorDashboardData, type CoordenadorDashboardData } from "@/src/services/coordenador-dashboard"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 
 export default function CoordenadorDashboard() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [dashboardData, setDashboardData] = useState<CoordenadorDashboardData | null>(null)
+  const [cursosPage, setCursosPage] = useState(1)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -28,118 +36,108 @@ export default function CoordenadorDashboard() {
     return () => observer.disconnect()
   }, [])
 
-  const cursos = [
-    {
-      nome: "Ensino Fundamental I",
-      turmas: 8,
-      alunos: 240,
-      professores: 12,
-      media: 8.2,
-      status: "Excelente",
-      cor: "emerald"
-    },
-    {
-      nome: "Ensino Fundamental II",
-      turmas: 12,
-      alunos: 360,
-      professores: 18,
-      media: 7.8,
-      status: "Bom",
-      cor: "green"
-    },
-    {
-      nome: "Ensino Médio",
-      turmas: 9,
-      alunos: 270,
-      professores: 15,
-      media: 7.5,
-      status: "Atenção",
-      cor: "orange"
-    },
-  ]
+  useEffect(() => {
+    let mounted = true
 
-  const desempenhoData = [
-    { curso: "Fund. I", media: 8.2, frequencia: 95 },
-    { curso: "Fund. II", media: 7.8, frequencia: 92 },
-    { curso: "Médio", media: 7.5, frequencia: 89 },
-  ]
+    async function loadDashboardData() {
+      try {
+        setLoading(true)
+        setError(null)
 
-  const professoresDisponibilidade = [
-    {
-      nome: "Prof. Ana Santos",
-      disciplina: "Português",
-      disponivel: true,
-      carga: "20h/sem",
-      especialidade: "Linguística",
-      avaliacao: 4.8
-    },
-    {
-      nome: "Prof. Carlos Silva",
-      disciplina: "Matemática",
-      disponivel: false,
-      carga: "24h/sem",
-      especialidade: "Álgebra",
-      avaliacao: 4.9
-    },
-    {
-      nome: "Prof. Maria Costa",
-      disciplina: "História",
-      disponivel: true,
-      carga: "18h/sem",
-      especialidade: "História Antiga",
-      avaliacao: 4.6
-    },
-    {
-      nome: "Prof. João Oliveira",
-      disciplina: "Física",
-      disponivel: true,
-      carga: "22h/sem",
-      especialidade: "Mecânica",
-      avaliacao: 4.7
-    },
-  ]
+        const user = await getCurrentUser()
+        if (!mounted) return
 
-  const pieData = [
-    { name: "Fund. I", value: 240, color: "#15803d" },
-    { name: "Fund. II", value: 360, color: "#84cc16" },
-    { name: "Médio", value: 270, color: "#f97316" },
-  ]
+        if (!user?.id) {
+          throw new Error('Usuário não autenticado')
+        }
 
-  const eventosProximos = [
-    {
-      titulo: "Reunião Pedagógica",
-      data: "Hoje, 14:00",
-      tipo: "Reunião",
-      prioridade: "Alta"
-    },
-    {
-      titulo: "Entrega de Notas",
-      data: "Amanhã, 17:00",
-      tipo: "Prazo",
-      prioridade: "Média"
-    },
-    {
-      titulo: "Planejamento Anual",
-      data: "15/01/2025",
-      tipo: "Planejamento",
-      prioridade: "Baixa"
+        const data = await getCoordinatorDashboardData(user.id)
+        if (!mounted) return
+
+        setDashboardData(data)
+      } catch (err: any) {
+        console.error('Erro ao carregar dados do dashboard:', err)
+        setError(err?.message || 'Não foi possível carregar os dados do dashboard.')
+      } finally {
+        if (mounted) setLoading(false)
+      }
     }
-  ]
 
-  const comunicados = [
-    {
-      titulo: "Nova diretriz do MEC",
-      descricao: "Atualização nas normas de avaliação",
-      data: "Hoje, 09:00",
-      prioridade: "Alta"
-    },
-    {
-      titulo: "Manutenção no sistema",
-      descricao: "Sistema indisponível das 22h às 06h",
-      data: "Sábado, 22:00",
-      prioridade: "Média"
+    loadDashboardData()
+
+    return () => {
+      mounted = false
     }
-  ]
+  }, [])
+
+  // Resetar página quando os cursos mudarem ou ajustar se necessário
+  useEffect(() => {
+    if (dashboardData?.cursos) {
+      const totalPaginas = Math.max(1, Math.ceil(dashboardData.cursos.length / 5))
+      if (cursosPage > totalPaginas) {
+        setCursosPage(totalPaginas)
+      } else if (cursosPage < 1) {
+        setCursosPage(1)
+      }
+    } else {
+      setCursosPage(1)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardData?.cursos?.length])
+
+  // Preparar dados para renderização
+  const cursos = dashboardData?.cursos || []
+  const comunicados = dashboardData?.comunicados || []
+
+  // Preparar dados do gráfico de pizza
+  const pieData = cursos.map((curso, index) => {
+    const colors = ["#15803d", "#84cc16", "#f97316", "#3b82f6", "#8b5cf6", "#ec4899"]
+    return {
+      name: curso.nome,
+      value: curso.alunos,
+      color: colors[index % colors.length]
+    }
+  })
+
+  // Paginação dos cursos
+  const cursosPorPagina = 5
+  const totalPaginas = Math.max(1, Math.ceil(cursos.length / cursosPorPagina))
+  const currentPage = Math.max(1, Math.min(cursosPage, totalPaginas))
+  const cursosPaginados = cursos.slice((currentPage - 1) * cursosPorPagina, currentPage * cursosPorPagina)
+
+  if (loading) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="coordenador" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            <p className="text-muted-foreground">Carregando dados do dashboard...</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="coordenador" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4 p-8">
+            <AlertCircle className="h-8 w-8 text-red-600" />
+            <p className="text-red-600 font-medium">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
@@ -172,31 +170,28 @@ export default function CoordenadorDashboard() {
                 <div className="flex items-center mt-2 space-x-2">
                   <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                     <Star className="h-3 w-3 mr-1" />
-                    {cursos.length} cursos ativos
+                    {dashboardData?.totalCursos || 0} cursos ativos
                   </Badge>
                   <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
                     <Award className="h-3 w-3 mr-1" />
-                    870 alunos
+                    {dashboardData?.totalAlunos || 0} alunos
                   </Badge>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-              }`}>
+              <LiquidGlassButton 
+                variant="outline" 
+                size="lg" 
+                onClick={() => router.push('/coordenador/grade')}
+                className={`backdrop-blur-sm ${
+                  isLiquidGlass
+                    ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
+                }`}
+              >
                 <Calendar className="h-5 w-5 mr-2" />
                 Montagem de Grade
-              </LiquidGlassButton>
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-              }`}>
-                <Settings className="h-5 w-5 mr-2" />
-                Configurações
               </LiquidGlassButton>
             </div>
           </div>
@@ -218,10 +213,10 @@ export default function CoordenadorDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">3</div>
+                <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">{dashboardData?.totalCursos || 0}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Activity className="h-3 w-3 mr-1" />
-                  29 turmas ativas
+                  {dashboardData?.totalTurmas || 0} turmas ativas
                 </div>
               </CardContent>
             </LiquidGlassCard>
@@ -241,10 +236,10 @@ export default function CoordenadorDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">870</div>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{dashboardData?.totalAlunos || 0}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <TrendingUp className="h-3 w-3 mr-1" />
-                  +15 novos este mês
+                  {dashboardData?.totalCursos || 0} cursos ativos
                 </div>
               </CardContent>
             </LiquidGlassCard>
@@ -264,10 +259,10 @@ export default function CoordenadorDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">45</div>
+                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">{dashboardData?.totalProfessores || 0}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <CheckCircle className="h-3 w-3 mr-1" />
-                  3 disponíveis para novas turmas
+                  Professores ativos
                 </div>
               </CardContent>
             </LiquidGlassCard>
@@ -287,50 +282,20 @@ export default function CoordenadorDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">7.8</div>
+                <div className="text-3xl font-bold text-amber-600 dark:text-amber-400 mb-2">{(dashboardData?.mediaGeral ?? 0).toFixed(1)}</div>
                 <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                   <Award className="h-3 w-3 mr-1" />
-                  +0.1 desde o último bimestre
+                  Média geral dos cursos
                 </div>
               </CardContent>
             </LiquidGlassCard>
           </div>
 
           {/* Layout principal aprimorado */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6">
-            {/* Conteúdo principal - ocupa 8 colunas no xl */}
-            <div className="xl:col-span-8 space-y-6">
-              {/* Gráficos de desempenho */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <LiquidGlassCard
-                  intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                  className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                    isLiquidGlass
-                      ? 'bg-black/30 dark:bg-gray-800/20'
-                      : 'bg-gray-50/60 dark:bg-gray-800/40'
-                  }`}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                      <TrendingUp className="h-5 w-5 mr-2 text-emerald-600 dark:text-emerald-400" />
-                      Desempenho por Curso
-                    </CardTitle>
-                    <CardDescription className="text-gray-600 dark:text-gray-400">Média e frequência dos cursos</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={desempenhoData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="curso" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="media" fill="#15803d" name="Média" />
-                        <Bar dataKey="frequencia" fill="#84cc16" name="Frequência %" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </LiquidGlassCard>
-
+          <div className="space-y-6">
+            {/* Gráficos - Grid de 12 colunas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 items-stretch">
+              <div className="xl:col-span-8 space-y-6">
                 <LiquidGlassCard
                   intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                   className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
@@ -347,6 +312,8 @@ export default function CoordenadorDashboard() {
                     <CardDescription className="text-gray-600 dark:text-gray-400">Por nível de ensino</CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {pieData.length > 0 ? (
+                      <>
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
                         <Pie
@@ -376,11 +343,83 @@ export default function CoordenadorDashboard() {
                         </div>
                       ))}
                     </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                        Nenhum dado disponível
+                      </div>
+                    )}
                   </CardContent>
                 </LiquidGlassCard>
               </div>
 
-              {/* Resumo dos Cursos */}
+              {/* Conteúdo lateral - ocupa 4 colunas no xl */}
+              <div className="xl:col-span-4 flex flex-col">
+                {/* Comunicados */}
+                <LiquidGlassCard
+                  intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                  className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 flex-1 flex flex-col ${
+                    isLiquidGlass
+                      ? 'bg-black/30 dark:bg-gray-800/20'
+                      : 'bg-gray-50/60 dark:bg-gray-800/40'
+                  }`}
+                >
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
+                      <Bell className="h-5 w-5 mr-2 text-orange-600 dark:text-orange-400" />
+                      Comunicados
+                    </CardTitle>
+                    <CardDescription className="text-gray-600 dark:text-gray-400">Avisos importantes</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-1 flex flex-col">
+                    {comunicados.length > 0 ? (
+                      <div className="space-y-3 flex-1 overflow-y-auto">
+                        {comunicados.map((comunicado, index) => (
+                          <div key={index} className="p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1">
+                                {comunicado.titulo}
+                              </h4>
+                              <div className="flex items-center space-x-2">
+                                <Badge
+                                  variant={comunicado.prioridade === "Alta" ? "destructive" : "secondary"}
+                                  className="text-xs"
+                                >
+                                  {comunicado.prioridade}
+                                </Badge>
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              {comunicado.descricao}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {comunicado.data}
+                              </p>
+                              <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
+                                Ver mais
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                        <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4">
+                          <Bell className="h-8 w-8 text-orange-600 dark:text-orange-400 opacity-50" />
+                        </div>
+                        <p className="text-muted-foreground font-medium mb-2">Nenhum comunicado disponível</p>
+                        <p className="text-sm text-muted-foreground/70">Novos avisos aparecerão aqui quando disponíveis</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </LiquidGlassCard>
+              </div>
+            </div>
+
+            {/* Resumo dos Cursos - Largura total */}
+            <div className="w-full">
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
@@ -397,265 +436,94 @@ export default function CoordenadorDashboard() {
                   <CardDescription className="text-gray-600 dark:text-gray-400">Informações gerais por curso</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {cursos.map((curso, index) => (
-                      <div key={index} className="p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
-                              curso.cor === "emerald" ? "bg-emerald-600" :
-                              curso.cor === "green" ? "bg-green-600" : "bg-orange-600"
-                            }`}>
-                              <BookOpen className="h-6 w-6 text-white" />
+                  {cursos.length > 0 ? (
+                    <>
+                      <div className="space-y-4">
+                        {cursosPaginados.map((curso) => (
+                          <div key={curso.id} className="p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                                  curso.cor === "emerald" ? "bg-emerald-600" :
+                                  curso.cor === "green" ? "bg-green-600" : "bg-orange-600"
+                                }`}>
+                                  <BookOpen className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{curso.nome}</h4>
+                                  <div className="flex items-center mt-1">
+                                    <Badge
+                                      variant={curso.status === "Excelente" ? "default" : curso.status === "Bom" ? "secondary" : "outline"}
+                                      className="text-xs mr-2"
+                                    >
+                                      {curso.status}
+                                    </Badge>
+                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                      Média: {curso.media}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <LiquidGlassButton size="sm" variant="outline">
+                                Gerenciar
+                                <ChevronRight className="h-4 w-4 ml-2" />
+                              </LiquidGlassButton>
                             </div>
-                            <div>
-                              <h4 className="font-semibold text-gray-900 dark:text-gray-100">{curso.nome}</h4>
-                              <div className="flex items-center mt-1">
-                                <Badge
-                                  variant={curso.status === "Excelente" ? "default" : curso.status === "Bom" ? "secondary" : "outline"}
-                                  className="text-xs mr-2"
-                                >
-                                  {curso.status}
-                                </Badge>
-                                <span className="text-xs text-green-600 dark:text-green-400">
-                                  Média: {curso.media}
-                                </span>
+                            <div className="grid grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-600 dark:text-gray-400">Turmas</p>
+                                <p className="font-semibold text-gray-900 dark:text-gray-100">{curso.turmas}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600 dark:text-gray-400">Alunos</p>
+                                <p className="font-semibold text-gray-900 dark:text-gray-100">{curso.alunos}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600 dark:text-gray-400">Professores</p>
+                                <p className="font-semibold text-gray-900 dark:text-gray-100">{curso.professores}</p>
                               </div>
                             </div>
                           </div>
-                          <LiquidGlassButton size="sm" variant="outline">
-                            Gerenciar
-                            <ChevronRight className="h-4 w-4 ml-2" />
-                          </LiquidGlassButton>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-600 dark:text-gray-400">Turmas</p>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{curso.turmas}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600 dark:text-gray-400">Alunos</p>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{curso.alunos}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-600 dark:text-gray-400">Professores</p>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{curso.professores}</p>
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-
-              {/* Eventos Próximos */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <Calendar className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
-                    Eventos Próximos
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Compromissos e prazos importantes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {eventosProximos.map((evento, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shadow-lg ${
-                            evento.tipo === "Reunião" ? "bg-green-500/20" :
-                            evento.tipo === "Prazo" ? "bg-amber-500/20" : "bg-green-500/20"
-                          }`}>
-                            <Clock className={`h-5 w-5 ${
-                              evento.tipo === "Reunião" ? "text-green-600 dark:text-green-400" :
-                              evento.tipo === "Prazo" ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"
-                            }`} />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">{evento.titulo}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{evento.tipo}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <Badge
-                            variant={
-                              evento.prioridade === "Alta"
-                                ? "destructive"
-                                : evento.prioridade === "Média"
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                            className="mb-1"
-                          >
-                            {evento.prioridade}
-                          </Badge>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">{evento.data}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-            </div>
-
-            {/* Conteúdo lateral - ocupa 4 colunas no xl */}
-            <div className="xl:col-span-4 space-y-6">
-              {/* Disponibilidade dos Professores */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <Users className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
-                    Disponibilidade dos Professores
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Status atual da equipe docente</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {professoresDisponibilidade.map((professor, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-lg">
-                            <Users className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">{professor.nome}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{professor.disciplina}</p>
-                            <div className="flex items-center mt-1">
-                              <span className="text-xs text-gray-600 dark:text-gray-400">{professor.especialidade}</span>
-                              <span className="text-xs text-yellow-600 dark:text-yellow-400 ml-2">
-                                ⭐ {professor.avaliacao}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant={professor.disponivel ? "default" : "secondary"} className="mb-1">
-                            {professor.disponivel ? "Disponível" : "Ocupado"}
-                          </Badge>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">{professor.carga}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-
-              {/* Comunicados */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <Bell className="h-5 w-5 mr-2 text-orange-600 dark:text-orange-400" />
-                    Comunicados
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Avisos importantes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {comunicados.map((comunicado, index) => (
-                      <div key={index} className="p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 flex-1">
-                            {comunicado.titulo}
-                          </h4>
+                      {totalPaginas > 1 && (
+                        <div key={`pagination-${currentPage}`} className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
                           <div className="flex items-center space-x-2">
-                            <Badge
-                              variant={comunicado.prioridade === "Alta" ? "destructive" : "secondary"}
-                              className="text-xs"
+                            <LiquidGlassButton
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCursosPage(prev => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                              className={currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}
                             >
-                              {comunicado.prioridade}
-                            </Badge>
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              Anterior
+                            </LiquidGlassButton>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              Página {currentPage} de {totalPaginas}
+                            </span>
+                            <LiquidGlassButton
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCursosPage(prev => Math.min(totalPaginas, prev + 1))}
+                              disabled={currentPage === totalPaginas}
+                              className={currentPage === totalPaginas ? 'opacity-50 cursor-not-allowed' : ''}
+                            >
+                              Próxima
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </LiquidGlassButton>
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Mostrando {cursosPaginados.length} de {cursos.length} cursos
                           </div>
                         </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          {comunicado.descricao}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {comunicado.data}
-                          </p>
-                          <button className="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 font-medium transition-colors">
-                            Ver mais
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </LiquidGlassCard>
-
-              {/* Ações Rápidas */}
-              <LiquidGlassCard
-                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-                className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
-                  isLiquidGlass
-                    ? 'bg-black/30 dark:bg-gray-800/20'
-                    : 'bg-gray-50/60 dark:bg-gray-800/40'
-                }`}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
-                    <Target className="h-5 w-5 mr-2 text-emerald-600 dark:text-emerald-400" />
-                    Ações Rápidas
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">Ferramentas de uso frequente</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      Novo Curso
-                    </LiquidGlassButton>
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <Users className="h-4 w-4 mr-2" />
-                      Alocar Professor
-                    </LiquidGlassButton>
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Reunião
-                    </LiquidGlassButton>
-                    <LiquidGlassButton variant="outline" className={`justify-start ${
-                      isLiquidGlass
-                        ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
-                        : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
-                    }`}>
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Relatórios
-                    </LiquidGlassButton>
-                  </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center h-32 text-muted-foreground">
+                      Nenhum curso encontrado
+                    </div>
+                  )}
                 </CardContent>
               </LiquidGlassCard>
             </div>
