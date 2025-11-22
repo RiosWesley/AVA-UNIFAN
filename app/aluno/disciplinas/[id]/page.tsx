@@ -8,14 +8,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from 'react'
 import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
+import { ModalRealizarProva, ModalResultadoProva } from '@/components/modals'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient, type Forum, type VideoLesson, type MaterialItem, type Notice, type ClassActivity, type ActivitySubmissionStatus } from '@/lib/api-client'
+import { listExams, listAttemptsByStudent, getExamById, ExamDTO, ExamAttemptDTO } from '@/src/services/examsService'
 
 export default function DisciplinaDetalhePage() {
   const params = useParams() as { id: string }
@@ -342,6 +344,29 @@ export default function DisciplinaDetalhePage() {
   const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
   const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
 
+  // Provas Online
+  const examsQuery = useQuery({
+    queryKey: ['exams-class', classId],
+    queryFn: () => listExams(),
+    enabled: !!classId,
+  })
+
+  const attemptsQuery = useQuery({
+    queryKey: ['exam-attempts-student', studentId],
+    queryFn: () => listAttemptsByStudent(studentId),
+    enabled: !!studentId,
+  })
+
+  const [modalRealizarProvaOpen, setModalRealizarProvaOpen] = useState(false)
+  const [examSelecionado, setExamSelecionado] = useState<ExamDTO | null>(null)
+  const [attemptAtual, setAttemptAtual] = useState<ExamAttemptDTO | null>(null)
+
+  const [modalResultadoProvaOpen, setModalResultadoProvaOpen] = useState(false)
+  const [attemptIdParaResultado, setAttemptIdParaResultado] = useState<string | null>(null)
+
+  // Estado para controlar aba ativa
+  const [activeTab, setActiveTab] = useState<string>('avisos')
+
   const entrarNaVideoChamada = (reuniao: VideoChamada) => {
     if (reuniao.status !== 'disponivel') return
     setVideoChamadaSelecionada(reuniao)
@@ -490,14 +515,15 @@ export default function DisciplinaDetalhePage() {
             </div>
           </div>
 
-          <Tabs defaultValue="avisos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="avisos">Avisos</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
               <TabsTrigger value="forum">Fórum</TabsTrigger>
               <TabsTrigger value="videoaulas">Vídeo-aulas</TabsTrigger>
               <TabsTrigger value="videochamadas">Vídeo-chamadas</TabsTrigger>
+              <TabsTrigger value="provas-online">Provas Online</TabsTrigger>
             </TabsList>
 
             <TabsContent value="avisos">
@@ -650,83 +676,211 @@ export default function DisciplinaDetalhePage() {
                     </CardHeader>
                   </Card>
                 )}
-                {(activitiesQuery.data || []).map((atividade: ClassActivity) => {
-                  const status = submissionStatusByActivity[String(atividade.id)]
-                  const normalized = (status?.status || '').toString().toLowerCase()
-                  const isCompleted = normalized === 'submitted' || normalized === 'graded' || normalized === 'completed'
-                  const badgeLabel = isCompleted ? "Concluída" : "Pendente"
-                  const badgeVariant = isCompleted ? "default" : "destructive"
-                  return (
-                  <Card key={atividade.id}>
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{atividade.title}</CardTitle>
-                          <CardDescription>Prazo: {new Date(atividade.dueDate).toLocaleDateString('pt-BR')}</CardDescription>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {typeof status?.grade === 'number' && <Badge variant="default">Nota: {status.grade}</Badge>}
-                          <Badge
-                            variant={badgeVariant as any}
-                          >
-                            {isCompleted ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
-                            {badgeLabel}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm mb-4">{atividade.description}</p>
-                      {!isCompleted && (
-                        <div className="space-y-4 border-t pt-4">
-                          <div>
-                            <Label htmlFor={`arquivo-${atividade.id}`}>Enviar Arquivo</Label>
-                            <Input
-                              id={`arquivo-${atividade.id}`}
-                              type="file"
-                              className="mt-1"
-                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
-                              onChange={(e) => handleFileChange(String(atividade.id), e.target.files?.[0] || null)}
-                            />
-                            {uploadFiles[String(atividade.id)] && (
-                              <p className="text-sm text-green-600 mt-1 flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                {uploadFiles[String(atividade.id)]?.name} ({(uploadFiles[String(atividade.id)]?.size! / 1024).toFixed(1)} KB)
-                              </p>
+                {(() => {
+                  // Mapear tentativas por activityId
+                  const attemptsByActivityId = new Map<string, ExamAttemptDTO>()
+                  ;(attemptsQuery.data || []).forEach((attempt) => {
+                    const activityId = attempt.exam?.activity?.id
+                    if (activityId) {
+                      attemptsByActivityId.set(activityId, attempt)
+                    }
+                  })
+
+                  // Filtrar provas virtuais da turma
+                  const virtualExams = (examsQuery.data || []).filter(
+                    (exam) => exam.activity?.class?.id === classId && exam.activity?.type === 'virtual_exam'
+                  )
+
+                  // Combinar atividades normais e provas virtuais
+                  const allActivities: Array<ClassActivity & { type?: string; examId?: string; exam?: ExamDTO }> = [
+                    ...(activitiesQuery.data || []),
+                    ...virtualExams.map((exam) => ({
+                      id: exam.activity.id,
+                      title: exam.activity.title || 'Prova',
+                      description: exam.activity.description || exam.instructions || '',
+                      dueDate: exam.activity.dueDate || '',
+                      type: exam.activity.type,
+                      maxScore: exam.activity.maxScore || null,
+                      examId: exam.id,
+                      exam: exam,
+                    } as ClassActivity & { type: string; examId: string; exam: ExamDTO })),
+                  ]
+
+                  return allActivities.map((atividade: ClassActivity & { type?: string; examId?: string; exam?: ExamDTO }) => {
+                    const isVirtualExam = atividade.type === 'virtual_exam'
+                    const attempt = isVirtualExam ? attemptsByActivityId.get(atividade.id) : undefined
+                    const isFinalized = attempt && (attempt.status === 'submitted' || attempt.status === 'graded')
+                    
+                    // Para atividades normais, usar lógica existente
+                    if (!isVirtualExam) {
+                      const status = submissionStatusByActivity[String(atividade.id)]
+                      const normalized = (status?.status || '').toString().toLowerCase()
+                      const isCompleted = normalized === 'submitted' || normalized === 'graded' || normalized === 'completed'
+                      const badgeLabel = isCompleted ? "Concluída" : "Pendente"
+                      const badgeVariant = isCompleted ? "default" : "destructive"
+                      
+                      return (
+                        <Card key={atividade.id}>
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle className="text-lg">{atividade.title}</CardTitle>
+                                <CardDescription>Prazo: {new Date(atividade.dueDate).toLocaleDateString('pt-BR')}</CardDescription>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {typeof status?.grade === 'number' && <Badge variant="default">Nota: {status.grade}</Badge>}
+                                <Badge variant={badgeVariant as any}>
+                                  {isCompleted ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
+                                  {badgeLabel}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm mb-4">{atividade.description}</p>
+                            {!isCompleted && (
+                              <div className="space-y-4 border-t pt-4">
+                                <div>
+                                  <Label htmlFor={`arquivo-${atividade.id}`}>Enviar Arquivo</Label>
+                                  <Input
+                                    id={`arquivo-${atividade.id}`}
+                                    type="file"
+                                    className="mt-1"
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                                    onChange={(e) => handleFileChange(String(atividade.id), e.target.files?.[0] || null)}
+                                  />
+                                  {uploadFiles[String(atividade.id)] && (
+                                    <p className="text-sm text-green-600 mt-1 flex items-center gap-2">
+                                      <CheckCircle className="h-4 w-4" />
+                                      {uploadFiles[String(atividade.id)]?.name} ({(uploadFiles[String(atividade.id)]?.size! / 1024).toFixed(1)} KB)
+                                    </p>
+                                  )}
+                                </div>
+                                <div>
+                                  <Label htmlFor={`comentario-${atividade.id}`}>Comentário (opcional)</Label>
+                                  <Textarea
+                                    id={`comentario-${atividade.id}`}
+                                    placeholder="Adicione um comentário..."
+                                    className="mt-1"
+                                    value={uploadComments[String(atividade.id)] || ''}
+                                    onChange={(e) => setUploadComments(prev => ({ ...prev, [String(atividade.id)]: e.target.value }))}
+                                  />
+                                </div>
+                                <Button
+                                  onClick={() => handleSubmitActivity({ id: String(atividade.id) })}
+                                  disabled={uploadActivityMutation.isPending}
+                                  className="w-full"
+                                >
+                                  {uploadActivityMutation.isPending ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                      Enviando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="h-4 w-4 mr-2" />
+                                      Enviar Atividade
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             )}
+                          </CardContent>
+                        </Card>
+                      )
+                    }
+
+                    // Para provas virtuais
+                    const startDate = atividade.exam?.activity?.startDate ? new Date(atividade.exam.activity.startDate) : null
+                    const dueDate = atividade.exam?.activity?.dueDate ? new Date(atividade.exam.activity.dueDate) : null
+                    const now = new Date()
+                    const isNotStarted = startDate && startDate > now
+                    const isPastDue = dueDate && dueDate < now
+
+                    return (
+                      <Card key={atividade.id}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-lg">{atividade.title}</CardTitle>
+                              <CardDescription>
+                                {startDate && (
+                                  <>Disponível a partir de: {startDate.toLocaleString('pt-BR')} • </>
+                                )}
+                                {dueDate ? `Prazo final: ${dueDate.toLocaleString('pt-BR')}` : 'Sem prazo definido'}
+                                {atividade.exam?.timeLimitMinutes && ` • Tempo limite: ${atividade.exam.timeLimitMinutes} minutos`}
+                                {atividade.exam?.questions && ` • ${atividade.exam.questions.length} questão(ões)`}
+                              </CardDescription>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {isFinalized && attempt?.score !== null && attempt?.score !== undefined && (
+                                <Badge variant="default">
+                                  Nota: {attempt.score.toFixed(2)} / {atividade.exam?.activity?.maxScore || atividade.exam?.questions?.reduce((sum, q) => sum + q.points, 0) || 0}
+                                </Badge>
+                              )}
+                              <Badge variant={isFinalized ? "default" : "secondary"}>
+                                {isFinalized ? (
+                                  <>
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Feito
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    Pendente
+                                  </>
+                                )}
+                              </Badge>
+                            </div>
                           </div>
-                          <div>
-                            <Label htmlFor={`comentario-${atividade.id}`}>Comentário (opcional)</Label>
-                            <Textarea
-                              id={`comentario-${atividade.id}`}
-                              placeholder="Adicione um comentário..."
-                              className="mt-1"
-                              value={uploadComments[String(atividade.id)] || ''}
-                              onChange={(e) => setUploadComments(prev => ({ ...prev, [String(atividade.id)]: e.target.value }))}
-                            />
-                          </div>
-                          <Button
-                            onClick={() => handleSubmitActivity({ id: String(atividade.id) })}
-                            disabled={uploadActivityMutation.isPending}
-                            className="w-full"
-                          >
-                            {uploadActivityMutation.isPending ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Enviando...
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-4 w-4 mr-2" />
-                                Enviar Atividade
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )})}
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm mb-4">{atividade.description}</p>
+                          {atividade.exam?.instructions && (
+                            <div className="mb-4 p-3 bg-muted rounded-lg">
+                              <p className="text-sm font-medium mb-1">Instruções:</p>
+                              <p className="text-sm">{atividade.exam.instructions}</p>
+                            </div>
+                          )}
+                          {isFinalized && (
+                            <div className="mb-4 space-y-2">
+                              <div className="p-3 bg-primary/10 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-medium">Nota:</p>
+                                  <p className="text-sm font-semibold">
+                                    {attempt?.score !== null && attempt?.score !== undefined
+                                      ? `${attempt.score.toFixed(2)}`
+                                      : 'Aguardando correção'} / {atividade.exam?.activity?.maxScore || atividade.exam?.questions?.reduce((sum, q) => sum + q.points, 0) || 0}
+                                  </p>
+                                </div>
+                              </div>
+                              {atividade.exam?.activity?.maxScore && (
+                                <div className="p-3 bg-muted rounded-lg">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium">Peso:</p>
+                                    <p className="text-sm font-semibold">{atividade.exam?.activity?.maxScore} pontos</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {!isFinalized && (
+                            <div className="border-t pt-4">
+                              <Button
+                                onClick={() => setActiveTab('provas-online')}
+                                className="w-full"
+                                variant="default"
+                              >
+                                <FileCheck className="h-4 w-4 mr-2" />
+                                Fazer Prova
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })
+                })()}
               </div>
             </TabsContent>
 
@@ -891,20 +1045,278 @@ export default function DisciplinaDetalhePage() {
               </div>
             </TabsContent>
 
+            <TabsContent value="provas-online">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <FileCheck className="h-5 w-5 mr-2" />
+                  Provas Online
+                </h3>
+                {examsQuery.isLoading && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Carregando provas...</CardTitle>
+                    </CardHeader>
+                  </Card>
+                )}
+                {(() => {
+                  // Filtrar provas da turma atual
+                  const classExams = (examsQuery.data || []).filter(
+                    (exam) => exam.activity?.class?.id === classId && exam.activity?.type === 'virtual_exam'
+                  )
+
+                  // Mapear tentativas por examId
+                  const attemptsByExamId = new Map<string, ExamAttemptDTO>()
+                  ;(attemptsQuery.data || []).forEach((attempt) => {
+                    // Tentar obter examId de diferentes formas
+                    const examId = attempt.examId || attempt.exam?.id
+                    if (examId) {
+                      // Se já existe uma tentativa para este exam, manter apenas a mais recente
+                      const existing = attemptsByExamId.get(examId)
+                      if (!existing || new Date(attempt.createdAt) > new Date(existing.createdAt)) {
+                        attemptsByExamId.set(examId, attempt)
+                      }
+                    }
+                  })
+
+                  if (classExams.length === 0 && !examsQuery.isLoading) {
+                    return (
+                      <Card>
+                        <CardContent className="p-8 text-center">
+                          <p className="text-muted-foreground">Nenhuma prova online disponível no momento.</p>
+                        </CardContent>
+                      </Card>
+                    )
+                  }
+
+                  return classExams.map((exam) => {
+                    const attempt = attemptsByExamId.get(exam.id)
+                    const startDate = exam.activity?.startDate ? new Date(exam.activity.startDate) : null
+                    const dueDate = exam.activity?.dueDate ? new Date(exam.activity.dueDate) : null
+                    const now = new Date()
+                    const isNotStarted = startDate && startDate > now
+                    const isPastDue = dueDate && dueDate < now
+                    const isAvailable = (!startDate || startDate <= now) && (!dueDate || dueDate >= now)
+                    const isFinalized = attempt && (attempt.status === 'submitted' || attempt.status === 'graded')
+                    const canStart = isAvailable && (!attempt || attempt.status === 'in_progress') && !isFinalized
+                    const canViewResult = isFinalized
+
+                    let statusLabel = 'Disponível'
+                    let statusVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default'
+                    let actionLabel = 'Iniciar Prova'
+                    let ActionIconComponent: React.ComponentType<{ className?: string }> = FileCheck
+
+                    if (isNotStarted) {
+                      statusLabel = 'Ainda Não Disponível'
+                      statusVariant = 'secondary'
+                      actionLabel = 'Aguardando Início'
+                    } else if (attempt) {
+                      if (attempt.status === 'in_progress') {
+                        statusLabel = 'Em Andamento'
+                        statusVariant = 'secondary'
+                        actionLabel = 'Continuar Prova'
+                        ActionIconComponent = Clock
+                      } else if (attempt.status === 'submitted') {
+                        statusLabel = 'Feito'
+                        statusVariant = 'default'
+                        actionLabel = exam.autoGrade ? 'Ver Resultado' : 'Aguardando Correção'
+                        ActionIconComponent = CheckCircle
+                      } else if (attempt.status === 'graded') {
+                        statusLabel = 'Feito'
+                        statusVariant = 'default'
+                        actionLabel = 'Ver Resultado'
+                        ActionIconComponent = CheckCircle
+                      }
+                    } else if (isPastDue) {
+                      statusLabel = 'Prazo Expirado'
+                      statusVariant = 'destructive'
+                      actionLabel = 'Prazo Expirado'
+                    }
+
+                    return (
+                      <Card key={exam.id}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-lg">{exam.activity?.title || 'Prova'}</CardTitle>
+                              <CardDescription>
+                                {startDate && (
+                                  <>Disponível a partir de: {startDate.toLocaleString('pt-BR')} • </>
+                                )}
+                                {dueDate ? `Prazo final: ${dueDate.toLocaleString('pt-BR')}` : 'Sem prazo definido'}
+                                {exam.timeLimitMinutes && ` • Tempo limite: ${exam.timeLimitMinutes} minutos`}
+                                {exam.questions && ` • ${exam.questions.length} questão(ões)`}
+                              </CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={statusVariant}>{statusLabel}</Badge>
+                              {exam.autoGrade ? (
+                                <Badge variant="outline">Auto-Correção</Badge>
+                              ) : (
+                                <Badge variant="outline">Correção Manual</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {exam.activity?.description && (
+                            <p className="text-sm text-muted-foreground mb-4">{exam.activity.description}</p>
+                          )}
+                          {exam.instructions && (
+                            <div className="mb-4 p-3 bg-muted rounded-lg">
+                              <p className="text-sm font-medium mb-1">Instruções:</p>
+                              <p className="text-sm">{exam.instructions}</p>
+                            </div>
+                          )}
+                          {isFinalized && (
+                            <div className="mb-4 space-y-2">
+                              <div className="p-3 bg-primary/10 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-medium">Nota:</p>
+                                  <p className="text-sm font-semibold">
+                                    {attempt?.score !== null && attempt?.score !== undefined
+                                      ? `${attempt.score.toFixed(2)}`
+                                      : 'Aguardando correção'} / {exam.activity?.maxScore || exam.questions?.reduce((sum, q) => sum + q.points, 0) || 0}
+                                  </p>
+                                </div>
+                              </div>
+                              {exam.activity?.maxScore && (
+                                <div className="p-3 bg-muted rounded-lg">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-sm font-medium">Peso:</p>
+                                    <p className="text-sm font-semibold">{exam.activity.maxScore} pontos</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Botão de iniciar/continuar - só aparece se não estiver finalizada E pode iniciar */}
+                            {!isFinalized && canStart && attempt?.status !== 'submitted' && attempt?.status !== 'graded' && (
+                              <Button
+                                onClick={async () => {
+                                  try {
+                                    // Verificar novamente se não há tentativa finalizada antes de abrir
+                                    const currentAttempts = await listAttemptsByStudent(studentId)
+                                    const currentAttempt = currentAttempts.find(a => a.examId === exam.id)
+                                    
+                                    if (currentAttempt && (currentAttempt.status === 'submitted' || currentAttempt.status === 'graded')) {
+                                      toast({
+                                        title: "Prova já finalizada",
+                                        description: "Você já finalizou esta prova. Use o botão 'Ver Resultado' para visualizar.",
+                                        variant: "destructive",
+                                      })
+                                      // Recarregar tentativas
+                                      attemptsQuery.refetch()
+                                      return
+                                    }
+                                    
+                                    // Carregar exam completo com questões se necessário
+                                    let examCompleto = exam
+                                    if (!exam.questions || exam.questions.length === 0) {
+                                      examCompleto = await getExamById(exam.id)
+                                    }
+                                    setExamSelecionado(examCompleto)
+                                    setAttemptAtual(currentAttempt || attempt || null)
+                                    setModalRealizarProvaOpen(true)
+                                  } catch (error: any) {
+                                    toast({
+                                      title: "Erro ao carregar prova",
+                                      description: error?.message || "Não foi possível carregar a prova.",
+                                      variant: "destructive",
+                                    })
+                                  }
+                                }}
+                              >
+                                <ActionIconComponent className="h-4 w-4 mr-2" />
+                                {actionLabel}
+                              </Button>
+                            )}
+                            {/* Botão de ver resultado - só aparece se estiver finalizada */}
+                            {isFinalized && attempt && (
+                              <Button
+                                onClick={() => {
+                                  setAttemptIdParaResultado(attempt.id)
+                                  setModalResultadoProvaOpen(true)
+                                }}
+                              >
+                                <ActionIconComponent className="h-4 w-4 mr-2" />
+                                {actionLabel}
+                              </Button>
+                            )}
+                            {/* Botão desabilitado para casos especiais */}
+                            {!isFinalized && (isNotStarted || (isPastDue && !attempt)) && (
+                              <Button disabled variant="outline">
+                                {actionLabel}
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })
+                })()}
+              </div>
+            </TabsContent>
+
           </Tabs>
         </div>
       </main>
       <ModalVideoChamada
         isOpen={modalVideoChamadaAberto}
-        onClose={setModalVideoChamadaAberto}
+        onClose={() => setModalVideoChamadaAberto(false)}
         titulo={videoChamadaSelecionada?.titulo}
         dataHora={videoChamadaSelecionada?.dataHora}
-      />
+      >
+        <div>Video chamada</div>
+      </ModalVideoChamada>
       <ModalDiscussaoForum
         isOpen={modalDiscussaoOpen}
         onClose={() => setModalDiscussaoOpen(false)}
         forum={forumSelecionado}
         onResponder={handleResponderDiscussao}
+      />
+      {examSelecionado && (
+        <ModalRealizarProva
+          isOpen={modalRealizarProvaOpen}
+          onClose={() => {
+            setModalRealizarProvaOpen(false)
+            setExamSelecionado(null)
+            setAttemptAtual(null)
+            // Recarregar tentativas
+            attemptsQuery.refetch()
+          }}
+          exam={examSelecionado}
+          attempt={attemptAtual}
+          onFinalizar={(submittedAttempt) => {
+            setModalRealizarProvaOpen(false)
+            setExamSelecionado(null)
+            setAttemptAtual(null)
+            // Recarregar tentativas e provas para atualizar a UI
+            attemptsQuery.refetch()
+            examsQuery.refetch()
+            // Se autoGrade, mostrar resultado imediatamente
+            if (examSelecionado.autoGrade) {
+              setAttemptIdParaResultado(submittedAttempt.id)
+              setModalResultadoProvaOpen(true)
+            } else {
+              toast({
+                title: "Prova submetida",
+                description: "Aguarde a correção manual do professor.",
+              })
+            }
+          }}
+        />
+      )}
+      <ModalResultadoProva
+        isOpen={modalResultadoProvaOpen}
+        onClose={() => {
+          setModalResultadoProvaOpen(false)
+          setAttemptIdParaResultado(null)
+          // Recarregar tentativas para atualizar a UI
+          attemptsQuery.refetch()
+          examsQuery.refetch()
+        }}
+        attemptId={attemptIdParaResultado}
       />
     </div>
   )

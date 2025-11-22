@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sidebar } from "@/components/layout/sidebar"
 import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle, Video, CalendarClock } from "lucide-react"
 import Link from "next/link"
@@ -15,7 +16,7 @@ import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
-import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
+import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada, ModalProva, ModalQuestaoProva, ModalTentativasProva, ModalDetalhesTentativa } from '@/components/modals'
 import { useParams } from "next/navigation"
 import { getClassById } from "@/src/services/ClassesService"
 import { getEnrollmentsByClass, EnrollmentDTO } from "@/src/services/enrollmentsService"
@@ -27,6 +28,7 @@ import { listLiveSessionsByClass, createLiveSession, LiveSessionDTO } from "@/sr
 import { getClassGradebook, createGradeForActivity, getActivityGradebook } from "@/src/services/gradesService"
 import { getClassAttendanceTable } from "@/src/services/attendancesService"
 import { useLiveSession } from "@/src/hooks/useLiveSession"
+import { listExams, createExam, updateExam, deleteExam, listExamQuestions, createExamQuestion, updateExamQuestion, deleteExamQuestion, ExamDTO, ExamAttemptDTO, CreateExamPayload, UpdateExamPayload, CreateExamQuestionPayload, UpdateExamQuestionPayload } from "@/src/services/examsService"
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -61,6 +63,21 @@ export default function TurmaDetalhePage() {
   const [videoChamadas, setVideoChamadas] = useState<VideoChamada[]>([])
   const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
   const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
+
+  // Estados para provas virtuais
+  const [provas, setProvas] = useState<ExamDTO[]>([])
+  const [modalProvaOpen, setModalProvaOpen] = useState(false)
+  const [provaEditando, setProvaEditando] = useState<ExamDTO | null>(null)
+  const [modoModalProva, setModoModalProva] = useState<'criar' | 'editar'>('criar')
+  const [modalQuestaoOpen, setModalQuestaoOpen] = useState(false)
+  const [questaoEditando, setQuestaoEditando] = useState<any>(null)
+  const [modoModalQuestao, setModoModalQuestao] = useState<'criar' | 'editar'>('criar')
+  const [provaSelecionadaParaQuestoes, setProvaSelecionadaParaQuestoes] = useState<ExamDTO | null>(null)
+  const [questoesProva, setQuestoesProva] = useState<any[]>([])
+  const [modalTentativasOpen, setModalTentativasOpen] = useState(false)
+  const [provaSelecionadaParaTentativas, setProvaSelecionadaParaTentativas] = useState<ExamDTO | null>(null)
+  const [modalDetalhesTentativaOpen, setModalDetalhesTentativaOpen] = useState(false)
+  const [tentativaSelecionadaId, setTentativaSelecionadaId] = useState<string | null>(null)
 
   const [turma, setTurma] = useState<{ nome: string; disciplina: string; alunos: number; mediaGeral: number; frequenciaMedia: number; }>(
     { nome: "Turma", disciplina: "-", alunos: 0, mediaGeral: 0, frequenciaMedia: 0 }
@@ -101,7 +118,8 @@ export default function TurmaDetalhePage() {
           acts,
           mats,
           frms,
-          sessions
+          sessions,
+          todasProvas
         ] = await Promise.all([
           getClassById(classId),
           getEnrollmentsByClass(classId),
@@ -110,7 +128,8 @@ export default function TurmaDetalhePage() {
           listActivitiesByClass(classId),
           listMaterialsByClass(classId),
           listForumsByClass(classId),
-          listLiveSessionsByClass(classId)
+          listLiveSessionsByClass(classId),
+          listExams()
         ])
 
         const totalAlunos = enrollments.length
@@ -167,7 +186,14 @@ export default function TurmaDetalhePage() {
           })
         )
 
-        const atividadesMapped: AtividadeItem[] = (acts as ActivityDTO[]).map((a, idx) => {
+        // Filtrar atividades excluindo virtual_exam (que tem sua própria aba)
+        const atividadesFiltradas = (acts as ActivityDTO[]).filter(a => a.type !== 'virtual_exam')
+        const submissionsCountsFiltrados = atividadesFiltradas.map((a, idx) => {
+          const originalIdx = (acts as ActivityDTO[]).findIndex(act => act.id === a.id)
+          return submissionsCounts[originalIdx] ?? 0
+        })
+
+        const atividadesMapped: AtividadeItem[] = atividadesFiltradas.map((a, idx) => {
           const prazo = a.dueDate || null
           const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
           return {
@@ -175,7 +201,7 @@ export default function TurmaDetalhePage() {
             titulo: a.title,
             tipo: a.type === 'exam' ? 'Avaliação' : a.type === 'project' ? 'Projeto' : 'Exercício',
             prazo,
-            entregues: submissionsCounts[idx] ?? 0,
+            entregues: submissionsCountsFiltrados[idx] ?? 0,
             total: totalAlunos,
             status,
             peso: a.maxScore ?? null,
@@ -209,6 +235,12 @@ export default function TurmaDetalhePage() {
           return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: s.meetingUrl || '#' }
         })
         setVideoChamadas(sessionsMapped)
+
+        // Filtrar e carregar provas virtuais da turma
+        const provasDaTurma = (todasProvas as ExamDTO[]).filter(
+          (p) => p.activity?.class?.id === classId && p.activity?.type === 'virtual_exam'
+        )
+        setProvas(provasDaTurma)
       } catch (e: any) {
         console.error(e)
         toast({
@@ -766,6 +798,177 @@ export default function TurmaDetalhePage() {
       setModalVideoChamadaAberto(false);
   };
 
+  // Funções para provas virtuais
+  const handleNovaProva = () => {
+    setModoModalProva('criar')
+    setProvaEditando(null)
+    setModalProvaOpen(true)
+  }
+
+  const handleEditarProva = (prova: ExamDTO) => {
+    setModoModalProva('editar')
+    setProvaEditando(prova)
+    setModalProvaOpen(true)
+  }
+
+  const handleSalvarProva = async (payload: CreateExamPayload | UpdateExamPayload, activityData?: { title: string; description?: string; startDate?: string; dueDate?: string; maxScore?: number }) => {
+    try {
+      if (modoModalProva === 'criar') {
+        // Criar Activity primeiro
+        if (activityData) {
+          const activity = await createActivity({
+            classId,
+            title: activityData.title,
+            unit: '1ª Unidade' as ActivityUnit,
+            type: 'virtual_exam' as const,
+            description: activityData.description,
+            startDate: activityData.startDate,
+            dueDate: activityData.dueDate,
+            maxScore: activityData.maxScore
+          })
+          
+          // Criar Exam vinculado à Activity
+          await createExam({
+            ...payload,
+            activityId: activity.id
+          })
+        } else {
+          throw new Error('Dados da atividade são obrigatórios para criar prova')
+        }
+      } else if (provaEditando?.id) {
+        await updateExam(provaEditando.id, payload)
+        // Atualizar Activity se houver dados para atualizar
+        if (activityData && provaEditando.activityId) {
+          await updateActivity(provaEditando.activityId, {
+            title: activityData.title,
+            description: activityData.description,
+            startDate: activityData.startDate,
+            dueDate: activityData.dueDate,
+            maxScore: activityData.maxScore
+          })
+        }
+      }
+      
+      // Recarregar provas
+      const todasProvas = await listExams()
+      const provasDaTurma = todasProvas.filter(
+        (p) => p.activity?.class?.id === classId && p.activity?.type === 'virtual_exam'
+      )
+      setProvas(provasDaTurma)
+      
+      toast({ title: "Prova salva", description: "A prova foi salva com sucesso!" })
+      setModalProvaOpen(false)
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar prova", description: e?.message || "Tente novamente." })
+    }
+  }
+
+  const handleDeletarProva = async (prova: ExamDTO) => {
+    try {
+      await deleteExam(prova.id)
+      // Recarregar provas
+      const todasProvas = await listExams()
+      const provasDaTurma = todasProvas.filter(
+        (p) => p.activity?.class?.id === classId && p.activity?.type === 'virtual_exam'
+      )
+      setProvas(provasDaTurma)
+      toast({ title: "Prova excluída", description: "A prova foi excluída com sucesso." })
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir prova", description: "Tente novamente." })
+    }
+  }
+
+  const [modalGerenciarQuestoesOpen, setModalGerenciarQuestoesOpen] = useState(false)
+
+  const handleGerenciarQuestoes = async (prova: ExamDTO) => {
+    setProvaSelecionadaParaQuestoes(prova)
+    try {
+      const questoes = await listExamQuestions(prova.id)
+      setQuestoesProva(questoes)
+      setModalGerenciarQuestoesOpen(true)
+    } catch (e: any) {
+      toast({ title: "Erro ao carregar questões", description: "Tente novamente." })
+    }
+  }
+
+  const handleNovaQuestao = () => {
+    setModoModalQuestao('criar')
+    setQuestaoEditando(null)
+    setModalGerenciarQuestoesOpen(false)
+    if (provaSelecionadaParaQuestoes) {
+      setModalQuestaoOpen(true)
+    }
+  }
+
+  const handleEditarQuestao = (questao: any) => {
+    setModoModalQuestao('editar')
+    setQuestaoEditando(questao)
+    setModalGerenciarQuestoesOpen(false)
+    setModalQuestaoOpen(true)
+  }
+
+  const handleSalvarQuestao = async (payload: CreateExamQuestionPayload | UpdateExamQuestionPayload) => {
+    try {
+      if (modoModalQuestao === 'criar' && provaSelecionadaParaQuestoes) {
+        await createExamQuestion({
+          ...payload,
+          examId: provaSelecionadaParaQuestoes.id
+        } as CreateExamQuestionPayload)
+      } else if (questaoEditando?.id) {
+        await updateExamQuestion(questaoEditando.id, payload)
+      }
+      
+      toast({ title: "Questão salva", description: "A questão foi salva com sucesso!" })
+      setModalQuestaoOpen(false)
+      setQuestaoEditando(null)
+      
+      // Recarregar questões e reabrir modal de gerenciar questões
+      if (provaSelecionadaParaQuestoes) {
+        try {
+          const questoes = await listExamQuestions(provaSelecionadaParaQuestoes.id)
+          setQuestoesProva(questoes)
+          setModalGerenciarQuestoesOpen(true)
+        } catch (e) {
+          // Se falhar, apenas fechar o modal de questão
+        }
+      }
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar questão", description: e?.message || "Tente novamente." })
+    }
+  }
+
+  const handleDeletarQuestao = async (questaoId: string) => {
+    try {
+      await deleteExamQuestion(questaoId)
+      // Recarregar questões
+      if (provaSelecionadaParaQuestoes) {
+        const questoes = await listExamQuestions(provaSelecionadaParaQuestoes.id)
+        setQuestoesProva(questoes)
+      }
+      toast({ title: "Questão excluída", description: "A questão foi excluída com sucesso." })
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir questão", description: "Tente novamente." })
+    }
+  }
+
+  const handleVerTentativas = (prova: ExamDTO) => {
+    setProvaSelecionadaParaTentativas(prova)
+    setModalTentativasOpen(true)
+  }
+
+  const handleVerDetalhesTentativa = (attempt: ExamAttemptDTO) => {
+    setTentativaSelecionadaId(attempt.id)
+    setModalDetalhesTentativaOpen(true)
+    setModalTentativasOpen(false)
+  }
+
+  const handleCorrecaoSalva = () => {
+    // Recarregar tentativas se necessário
+    if (provaSelecionadaParaTentativas) {
+      // As tentativas serão recarregadas quando o modal de tentativas for reaberto
+    }
+  }
+
   useEffect(() => {
     const checkThemes = () => {
       if (typeof document !== 'undefined') {
@@ -842,12 +1045,13 @@ export default function TurmaDetalhePage() {
           </div>
 
           <Tabs defaultValue="alunos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="alunos">Alunos</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
               <TabsTrigger value="forum">Fórum</TabsTrigger>
               <TabsTrigger value="aula-online">Aula Online</TabsTrigger>
+              <TabsTrigger value="provas-virtuais">Provas Virtuais</TabsTrigger>
               <TabsTrigger value="notas">Lançar Notas</TabsTrigger>
             </TabsList>
 
@@ -1136,6 +1340,96 @@ export default function TurmaDetalhePage() {
               </div>
             </TabsContent>
 
+            <TabsContent value="provas-virtuais">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Provas Virtuais</h3>
+                  <LiquidGlassButton onClick={handleNovaProva}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Prova
+                  </LiquidGlassButton>
+                </div>
+
+                {provas.length === 0 ? (
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhuma prova virtual criada ainda.</p>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ) : (
+                  provas.map((prova) => (
+                    <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={prova.id}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-lg">{prova.activity?.title || 'Prova sem título'}</CardTitle>
+                            <CardDescription>
+                              {prova.questions?.length || 0} questão(ões)
+                              {prova.activity?.startDate && (
+                                <> • Início: {new Date(prova.activity.startDate).toLocaleString('pt-BR')}</>
+                              )}
+                              {prova.activity?.dueDate && (
+                                <> • Término: {new Date(prova.activity.dueDate).toLocaleString('pt-BR')}</>
+                              )}
+                            </CardDescription>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <LiquidGlassButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditarProva(prova)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </LiquidGlassButton>
+                            <LiquidGlassButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleGerenciarQuestoes(prova)}
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Questões
+                            </LiquidGlassButton>
+                            <LiquidGlassButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleVerTentativas(prova)}
+                            >
+                              <Users className="h-4 w-4 mr-1" />
+                              Tentativas
+                            </LiquidGlassButton>
+                            <LiquidGlassButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeletarProva(prova)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </LiquidGlassButton>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2 text-sm text-muted-foreground">
+                          {prova.timeLimitMinutes && (
+                            <p>Tempo limite: {prova.timeLimitMinutes} minutos</p>
+                          )}
+                          {prova.shuffleQuestions && (
+                            <p>✓ Perguntas embaralhadas</p>
+                          )}
+                          {prova.shuffleOptions && (
+                            <p>✓ Alternativas embaralhadas</p>
+                          )}
+                          {prova.autoGrade && (
+                            <p>✓ Correção automática habilitada</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </LiquidGlassCard>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
             <TabsContent value="notas">
               <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
@@ -1345,7 +1639,13 @@ export default function TurmaDetalhePage() {
                                 }
                               })
                             )
-                            const atividadesMapped: AtividadeItem[] = (acts as ActivityDTO[]).map((a, idx) => {
+                            // Filtrar atividades excluindo virtual_exam (que tem sua própria aba)
+                            const atividadesFiltradas = (acts as ActivityDTO[]).filter(a => a.type !== 'virtual_exam')
+                            const submissionsCountsFiltrados = atividadesFiltradas.map((a) => {
+                              const originalIdx = (acts as ActivityDTO[]).findIndex(act => act.id === a.id)
+                              return submissionsCounts[originalIdx] ?? 0
+                            })
+                            const atividadesMapped: AtividadeItem[] = atividadesFiltradas.map((a, idx) => {
                               const prazo = a.dueDate || null
                               const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
                               return {
@@ -1353,7 +1653,7 @@ export default function TurmaDetalhePage() {
                                 titulo: a.title,
                                 tipo: a.type === 'exam' ? 'Avaliação' : a.type === 'project' ? 'Projeto' : 'Exercício',
                                 prazo,
-                                entregues: submissionsCounts[idx] ?? 0,
+                                entregues: submissionsCountsFiltrados[idx] ?? 0,
                                 total: totalAlunos,
                                 status,
                                 peso: a.maxScore ?? null,
@@ -1476,6 +1776,155 @@ export default function TurmaDetalhePage() {
           </div>
         </div>
       </ModalVideoChamada>
+
+      {/* Modal de Prova */}
+      <ModalProva
+        isOpen={modalProvaOpen}
+        onClose={() => {
+          setModalProvaOpen(false)
+          setProvaEditando(null)
+        }}
+        prova={provaEditando}
+        activityId={provaEditando?.activityId}
+        onSalvar={handleSalvarProva}
+        modo={modoModalProva}
+      />
+
+      {/* Modal de Questão */}
+      {provaSelecionadaParaQuestoes && (
+        <ModalQuestaoProva
+          isOpen={modalQuestaoOpen}
+          onClose={() => {
+            setModalQuestaoOpen(false)
+            setQuestaoEditando(null)
+          }}
+          questao={questaoEditando}
+          examId={provaSelecionadaParaQuestoes.id}
+          onSalvar={handleSalvarQuestao}
+          modo={modoModalQuestao}
+          ordem={questoesProva.length + 1}
+        />
+      )}
+
+      {/* Modal de Gerenciar Questões */}
+      {provaSelecionadaParaQuestoes && (
+        <Dialog open={modalGerenciarQuestoesOpen} onOpenChange={(open) => {
+          if (!open) {
+            setModalGerenciarQuestoesOpen(false)
+            setProvaSelecionadaParaQuestoes(null)
+            setQuestoesProva([])
+          }
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gerenciar Questões - {provaSelecionadaParaQuestoes.activity?.title}</DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {questoesProva.length} questão(ões) cadastrada(s)
+                </p>
+                <LiquidGlassButton onClick={handleNovaQuestao}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Questão
+                </LiquidGlassButton>
+              </div>
+              <div className="space-y-3">
+                {questoesProva.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    Nenhuma questão cadastrada. Clique em "Nova Questão" para começar.
+                  </p>
+                ) : (
+                  questoesProva
+                    .sort((a, b) => a.order - b.order)
+                    .map((questao) => (
+                      <LiquidGlassCard key={questao.id} intensity="medium">
+                        <div className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <span className="font-medium text-sm">
+                                  Questão {questao.order}
+                                </span>
+                                <Badge variant="outline">
+                                  {questao.type === 'multiple_choice' ? 'Múltipla Escolha' : 'Dissertativa'}
+                                </Badge>
+                                <Badge variant="secondary">
+                                  {questao.points} ponto(s)
+                                </Badge>
+                              </div>
+                              <p className="mb-2">{questao.questionText}</p>
+                              {questao.type === 'multiple_choice' && questao.options && (
+                                <div className="text-sm text-muted-foreground">
+                                  {questao.options.length} alternativa(s)
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex space-x-2">
+                              <LiquidGlassButton
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditarQuestao(questao)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </LiquidGlassButton>
+                              <LiquidGlassButton
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeletarQuestao(questao.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </LiquidGlassButton>
+                            </div>
+                          </div>
+                        </div>
+                      </LiquidGlassCard>
+                    ))
+                )}
+              </div>
+              <div className="flex justify-end mt-6 pt-4 border-t">
+                <LiquidGlassButton
+                  variant="outline"
+                  onClick={() => {
+                    setModalGerenciarQuestoesOpen(false)
+                    setProvaSelecionadaParaQuestoes(null)
+                    setQuestoesProva([])
+                  }}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Fechar
+                </LiquidGlassButton>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal de Tentativas */}
+      {provaSelecionadaParaTentativas && (
+        <ModalTentativasProva
+          isOpen={modalTentativasOpen}
+          onClose={() => {
+            setModalTentativasOpen(false)
+            setProvaSelecionadaParaTentativas(null)
+          }}
+          examId={provaSelecionadaParaTentativas.id}
+          onVerDetalhes={handleVerDetalhesTentativa}
+        />
+      )}
+
+      {/* Modal de Detalhes da Tentativa */}
+      {tentativaSelecionadaId && (
+        <ModalDetalhesTentativa
+          isOpen={modalDetalhesTentativaOpen}
+          onClose={() => {
+            setModalDetalhesTentativaOpen(false)
+            setTentativaSelecionadaId(null)
+          }}
+          attemptId={tentativaSelecionadaId}
+          onCorrecaoSalva={handleCorrecaoSalva}
+        />
+      )}
     </div>
   )
 }

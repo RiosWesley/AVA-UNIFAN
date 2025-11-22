@@ -1,6 +1,6 @@
 import api from './api';
 
-export type ActivityType = 'exam' | 'homework' | 'project';
+export type ActivityType = 'exam' | 'virtual_exam' | 'homework' | 'project';
 export type ActivityUnit = '1ª Unidade' | '2ª Unidade' | 'Prova Final';
 
 export interface ActivityDTO {
@@ -10,6 +10,7 @@ export interface ActivityDTO {
   description?: string | null;
   type: ActivityType;
   unit: ActivityUnit;
+  startDate?: string | null;
   dueDate?: string | null;
   maxScore?: number | null;
 }
@@ -20,6 +21,7 @@ export interface CreateActivityPayload {
   unit: ActivityUnit;
   type: ActivityType;
   description?: string;
+  startDate?: string;
   dueDate?: string;
   maxScore?: number;
   attachmentUrls?: string[];
