@@ -4,6 +4,8 @@ export type Department = {
   id: string;
   name: string;
   coordinator?: { id: string; name: string; email: string } | null;
+  teachers?: Teacher[];
+  courses?: Array<{ id: string; name: string; code?: string }>;
 };
 
 export type Teacher = {
@@ -16,10 +18,42 @@ export type Teacher = {
   roles?: Array<{ id: string; name: string }>;
 };
 
+export interface CreateDepartmentDto {
+  name: string;
+  coordinatorId?: string;
+}
+
+export interface UpdateDepartmentDto {
+  name?: string;
+  coordinatorId?: string;
+}
+
 export async function getDepartments(coordinatorId?: string): Promise<Department[]> {
   const params = coordinatorId ? { coordinatorId } : {};
   const { data } = await api.get<Department[]>('/departments', { params });
   return data;
+}
+
+export async function getDepartment(id: string): Promise<Department> {
+  const { data } = await api.get<Department>(`/departments/${id}`);
+  return data;
+}
+
+export async function createDepartment(payload: CreateDepartmentDto): Promise<Department> {
+  const { data } = await api.post<Department>('/departments', payload);
+  return data;
+}
+
+export async function updateDepartment(
+  id: string,
+  payload: UpdateDepartmentDto,
+): Promise<Department> {
+  const { data } = await api.patch<Department>(`/departments/${id}`, payload);
+  return data;
+}
+
+export async function deleteDepartment(id: string): Promise<void> {
+  await api.delete(`/departments/${id}`);
 }
 
 export async function getDepartmentTeachers(departmentId: string): Promise<Teacher[]> {

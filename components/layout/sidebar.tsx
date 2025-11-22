@@ -39,6 +39,7 @@ import {
   FileText,
   Video,
   LogOut,
+  Building2,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -83,6 +84,7 @@ const menuItems = {
     { icon: Home, label: "Início", href: "/administrador" },
     { icon: Users, label: "Usuários", href: "/administrador/usuarios" },
     { icon: BookOpen, label: "Cursos", href: "/administrador/cursos" },
+    { icon: Building2, label: "Departamentos", href: "/administrador/departamentos" },
     { icon: CreditCard, label: "Financeiro", href: "/administrador/financeiro" },
     { icon: MessageSquare, label: "Comunicação", href: "/administrador/comunicacao" },
   ],
