@@ -84,9 +84,7 @@ const menuItems = {
     { icon: Users, label: "Usuários", href: "/administrador/usuarios" },
     { icon: BookOpen, label: "Cursos", href: "/administrador/cursos" },
     { icon: CreditCard, label: "Financeiro", href: "/administrador/financeiro" },
-    { icon: BarChart3, label: "Relatórios", href: "/administrador/relatorios" },
     { icon: MessageSquare, label: "Comunicação", href: "/administrador/comunicacao" },
-    { icon: Settings, label: "Configurações", href: "/administrador/configuracoes" },
   ],
 }
 
