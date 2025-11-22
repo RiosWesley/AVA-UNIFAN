@@ -2,7 +2,7 @@
 "use client"
 
 import { useQuery } from '@tanstack/react-query'
-import { apiClient, calculateStudentMetrics, type Schedule, type Grade, type Activity, type News } from '@/lib/api-client'
+import { apiClient, calculateStudentMetrics, type Schedule, type Grade, type Activity, type News, type ScheduleWithRelations, type LessonPlanWithRelations } from '@/lib/api-client'
 
 // Key factory for React Query cache
 export const queryKeys = {
@@ -12,7 +12,9 @@ export const queryKeys = {
   attendance: (studentId: string) => ['attendance', studentId] as const,
   activities: (studentId: string) => ['activities', studentId] as const,
   news: (studentId: string) => ['news', studentId] as const,
-  enrollments: (studentId: string) => ['enrollments', studentId] as const
+  enrollments: (studentId: string) => ['enrollments', studentId] as const,
+  agendaSchedules: (studentId: string) => ['agendaSchedules', studentId] as const,
+  agendaLessonPlans: (studentId: string) => ['agendaLessonPlans', studentId] as const
 }
 
 // Hook to get current student data
@@ -79,6 +81,26 @@ export function useStudentEnrollments(studentId: string) {
   return useQuery({
     queryKey: queryKeys.enrollments(studentId),
     queryFn: () => apiClient.getStudentEnrollments(studentId),
+    enabled: !!studentId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  })
+}
+
+// Hook to get student schedules for agenda
+export function useStudentAgendaSchedules(studentId: string) {
+  return useQuery({
+    queryKey: queryKeys.agendaSchedules(studentId),
+    queryFn: () => apiClient.getStudentSchedulesForAgenda(studentId),
+    enabled: !!studentId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  })
+}
+
+// Hook to get student lesson plans for agenda
+export function useStudentAgendaLessonPlans(studentId: string) {
+  return useQuery({
+    queryKey: queryKeys.agendaLessonPlans(studentId),
+    queryFn: () => apiClient.getStudentLessonPlans(studentId),
     enabled: !!studentId,
     staleTime: 1000 * 60 * 10, // 10 minutes
   })
