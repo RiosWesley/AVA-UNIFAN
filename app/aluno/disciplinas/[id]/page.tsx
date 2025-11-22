@@ -16,6 +16,9 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient, type Forum, type VideoLesson, type MaterialItem, type Notice, type ClassActivity, type ActivitySubmissionStatus } from '@/lib/api-client'
+import { useLiveSession } from "@/src/hooks/useLiveSession"
+import { listLiveSessionsByClass } from "@/src/services/liveSessionsService"
+import RemoteVideo from "@/components/layout/RemoteVideo"
 
 export default function DisciplinaDetalhePage() {
   const params = useParams() as { id: string }
@@ -333,20 +336,55 @@ export default function DisciplinaDetalhePage() {
   }
 
   // Vídeo-chamadas
+
+  const [isJoining, setIsJoining] = useState(false);
+
+  const { 
+    joinSession, 
+    leaveSession, 
+    isConnected,
+    localVideoRef,
+    remoteStreams
+  } = useLiveSession();
+
   type VideoChamada = { id: number; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
-  const [videoChamadas, setVideoChamadas] = useState<VideoChamada[]>([
-    { id: 1, titulo: 'Plantão de Dúvidas - Funções', dataHora: '2025-10-30T19:00:00', status: 'agendada', link: '#' },
-    { id: 2, titulo: 'Revisão para Prova', dataHora: '2025-10-25T19:00:00', status: 'encerrada', link: '#' },
-    { id: 3, titulo: 'Aula ao vivo - Sistemas Lineares', dataHora: '2025-10-28T20:00:00', status: 'disponivel', link: '#' },
-  ])
+  
   const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
   const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
 
   const entrarNaVideoChamada = (reuniao: VideoChamada) => {
-    if (reuniao.status !== 'disponivel') return
-    setVideoChamadaSelecionada(reuniao)
-    setModalVideoChamadaAberto(true)
-  }
+    if (reuniao.status !== 'disponivel') return;
+    setIsJoining(true);
+    joinSession(classId, studentId);
+    setVideoChamadaSelecionada(reuniao);
+    setModalVideoChamadaAberto(true);
+};
+
+   const handleLeaveLiveSession = () => {
+      leaveSession();
+      setModalVideoChamadaAberto(false);
+  };
+
+  const liveSessionsQuery = useQuery({
+    queryKey: ['liveSessions', classId],
+    queryFn: () => listLiveSessionsByClass(classId),
+    enabled: !!classId,
+    refetchInterval: 30000,
+  });
+
+  const videoChamadas = useMemo(() => {
+    if (!liveSessionsQuery.data) return [];
+    return liveSessionsQuery.data.map((s: any) => {
+        const now = Date.now();
+        const start = new Date(s.startAt).getTime();
+        const end = s.endAt ? new Date(s.endAt).getTime() : start + 2 * 60 * 60 * 1000; // Default 2h
+        const status: 'agendada' | 'disponivel' | 'encerrada' = 
+            now < start ? 'agendada' : 
+            (now >= start && now <= end) ? 'disponivel' : 
+            'encerrada';
+        return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: '#' };
+    });
+  }, [liveSessionsQuery.data]);
 
   const handleVerDiscussao = async (forum: any) => {
     const toPtBrDate = (value: any): string => {
@@ -894,12 +932,40 @@ export default function DisciplinaDetalhePage() {
           </Tabs>
         </div>
       </main>
+
       <ModalVideoChamada
         isOpen={modalVideoChamadaAberto}
-        onClose={setModalVideoChamadaAberto}
+        onClose={handleLeaveLiveSession}
         titulo={videoChamadaSelecionada?.titulo}
         dataHora={videoChamadaSelecionada?.dataHora}
-      />
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+          {/* Vídeo Local */}
+          <div className="relative">
+            <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
+            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">Sua Câmera</div>
+          </div>
+          
+          {/* Grid para Vídeos Remotos */}
+          <div className="grid grid-cols-2 grid-rows-2 gap-2">
+            {remoteStreams.size > 0 ? (
+              Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
+                <div key={socketId} className="relative">
+                  <RemoteVideo stream={stream} />
+                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                    Participante
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
+                <p className="text-muted-foreground">Aguardando participantes...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </ModalVideoChamada>
+
       <ModalDiscussaoForum
         isOpen={modalDiscussaoOpen}
         onClose={() => setModalDiscussaoOpen(false)}
