@@ -77,9 +77,7 @@ const menuItems = {
     { icon: Users, label: "Professores", href: "/coordenador/professores" },
     { icon: Video, label: "Vídeo-aulas", href: "/coordenador/video-aulas" },
     { icon: Calendar, label: "Grade Horária", href: "/coordenador/grade" },
-    { icon: BarChart3, label: "Relatórios", href: "/coordenador/relatorios" },
     { icon: MessageSquare, label: "Comunicação", href: "/coordenador/comunicacao" },
-    { icon: Settings, label: "Configurações", href: "/coordenador/configuracoes" },
   ],
   administrador: [
     { icon: Home, label: "Início", href: "/administrador" },
