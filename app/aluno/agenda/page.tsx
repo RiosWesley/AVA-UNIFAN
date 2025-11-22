@@ -1,13 +1,17 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Calendar, Clock, MapPin, Users, Edit3, Trash2, Plus, Filter, Bell, BookOpen, Zap, Trophy, Sparkles, ChevronLeft, ChevronRight, CheckCircle, AlertCircle, Info, Target } from 'lucide-react'
+import { Calendar, Clock, Plus, BookOpen, Zap, Trophy, Sparkles, ChevronLeft, ChevronRight, CheckCircle, Info, Bell } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useStudentAgendaSchedules, useStudentAgendaLessonPlans } from '@/hooks/use-dashboard'
+import { type ScheduleWithRelations, type LessonPlanWithRelations } from '@/lib/api-client'
+import { me } from "@/src/services/auth"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 interface Evento {
   hora: string
@@ -34,6 +38,13 @@ export default function AgendaPage() {
   const [selectedDay, setSelectedDay] = useState('Ter')
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0)
+  const [studentId, setStudentId] = useState<string | null>(null)
+  const router = useRouter()
+
+  // Buscar dados do aluno
+  const { data: schedulesData = [], isLoading: isLoadingSchedules } = useStudentAgendaSchedules(studentId ?? "")
+  const { data: lessonPlansData = [], isLoading: isLoadingLessonPlans } = useStudentAgendaLessonPlans(studentId ?? "")
 
   useEffect(() => {
     const checkTheme = () => {
@@ -51,133 +62,134 @@ export default function AgendaPage() {
     return () => observer.disconnect()
   }, [])
 
-  const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
-  const eventosPorDia: EventosPorDia = {
-    Seg: [
-      {
-        hora: '08:00 - 09:40',
-        titulo: 'Matemática',
-        tipo: 'Aula',
-        sala: 'A-101',
-        professor: 'Prof. Silva',
-        participantes: 25,
-        descricao: 'Cálculo diferencial e integral aplicado a problemas reais',
-        prioridade: 'alta',
-        cor: 'blue'
-      },
-      {
-        hora: '10:00 - 11:40',
-        titulo: 'Física',
-        tipo: 'Laboratório',
-        sala: 'Lab-201',
-        professor: 'Prof. Costa',
-        participantes: 20,
-        descricao: 'Experimentos práticos sobre leis de Newton',
-        prioridade: 'média',
-        cor: 'green'
-      },
-    ],
-    Ter: [
-      {
-        hora: '14:00 - 15:40',
-        titulo: 'Português',
-        tipo: 'Aula',
-        sala: 'B-205',
-        professor: 'Prof. Santos',
-        participantes: 28,
-        descricao: 'Análise de textos literários brasileiros',
-        prioridade: 'alta',
-        cor: 'purple'
-      },
-      {
-        hora: '16:00 - 17:40',
-        titulo: 'Reunião de Projeto',
-        tipo: 'Evento',
-        sala: 'Sala 301',
-        professor: 'Coord. Maria',
-        participantes: 8,
-        descricao: 'Planejamento do projeto final de semestre',
-        prioridade: 'alta',
-        cor: 'orange'
-      },
-    ],
-    Qua: [
-      {
-        hora: '08:00 - 09:40',
-        titulo: 'História',
-        tipo: 'Aula',
-        sala: 'C-301',
-        professor: 'Prof. Oliveira',
-        participantes: 22,
-        descricao: 'Período colonial brasileiro e suas características',
-        prioridade: 'média',
-        cor: 'yellow'
-      },
-      {
-        hora: '16:00 - 17:30',
-        titulo: 'Reunião de Turma',
-        tipo: 'Evento',
-        sala: 'Auditório',
-        professor: '',
-        participantes: 30,
-        descricao: 'Discussão sobre melhorias na instituição',
-        prioridade: 'baixa',
-        cor: 'red'
-      },
-    ],
-    Qui: [
-      {
-        hora: '10:00 - 11:40',
-        titulo: 'Biologia',
-        tipo: 'Aula',
-        sala: 'D-102',
-        professor: 'Prof. Lima',
-        participantes: 24,
-        descricao: 'Ecossistemas e biodiversidade brasileira',
-        prioridade: 'alta',
-        cor: 'teal'
-      },
-    ],
-    Sex: [
-      {
-        hora: '08:00 - 09:40',
-        titulo: 'Química',
-        tipo: 'Laboratório',
-        sala: 'Lab-105',
-        professor: 'Prof. Ferreira',
-        participantes: 18,
-        descricao: 'Reações químicas e análise de compostos',
-        prioridade: 'média',
-        cor: 'cyan'
-      },
-      {
-        hora: '14:00 - 15:40',
-        titulo: 'Educação Física',
-        tipo: 'Prática',
-        sala: 'Quadra',
-        professor: 'Prof. Mendes',
-        participantes: 26,
-        descricao: 'Treinamento funcional e jogos coletivos',
-        prioridade: 'baixa',
-        cor: 'pink'
-      },
-    ],
-    Sáb: [
-      {
-        hora: '09:00 - 11:00',
-        titulo: 'Estudo Dirigido - Matemática',
-        tipo: 'Atividade',
-        sala: 'Sala de Estudo',
-        professor: 'Monitor',
-        participantes: 15,
-        descricao: 'Reforço de conteúdo e resolução de exercícios',
-        prioridade: 'média',
-        cor: 'indigo'
-      },
-    ],
-    Dom: [],
+  const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
+  const diasSemanaGrade = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+  // Mapeamento de DayOfWeek para dia abreviado
+  const dayOfWeekMap: Record<string, string> = {
+    'segunda-feira': 'Seg',
+    'terca-feira': 'Ter',
+    'quarta-feira': 'Qua',
+    'quinta-feira': 'Qui',
+    'sexta-feira': 'Sex',
+    'sabado': 'Sáb',
+    'domingo': 'Dom'
   }
+
+  // Função para mapear Schedule para Evento
+  const mapScheduleToEvento = (schedule: ScheduleWithRelations): Evento => {
+    return {
+      hora: `${schedule.startTime} - ${schedule.endTime}`,
+      titulo: schedule.class.discipline.name,
+      tipo: 'Aula',
+      sala: schedule.room || '',
+      professor: schedule.class.teacher?.name || '',
+      participantes: 0,
+      descricao: schedule.class.discipline.name,
+      prioridade: 'média',
+      cor: 'green'
+    }
+  }
+
+  // Função para mapear LessonPlan para Evento
+  const mapLessonPlanToEvento = (lessonPlan: LessonPlanWithRelations): Evento => {
+    const hora = lessonPlan.schedule 
+      ? `${lessonPlan.schedule.startTime} - ${lessonPlan.schedule.endTime}`
+      : ''
+    const sala = lessonPlan.schedule?.room || ''
+    
+    let prioridade: 'alta' | 'média' | 'baixa' = 'média'
+    if (lessonPlan.status === 'agendada') prioridade = 'média'
+    else if (lessonPlan.status === 'realizada') prioridade = 'baixa'
+    else if (lessonPlan.status === 'cancelada') prioridade = 'baixa'
+
+    return {
+      hora,
+      titulo: lessonPlan.class.discipline.name,
+      tipo: 'Aula',
+      sala,
+      professor: lessonPlan.class.teacher?.name || '',
+      participantes: 0,
+      descricao: lessonPlan.content,
+      prioridade,
+      cor: 'green'
+    }
+  }
+
+  // Agrupar schedules por dia da semana
+  const eventosPorDiaFromSchedules: EventosPorDia = useMemo(() => {
+    const eventos: EventosPorDia = {
+      Seg: [],
+      Ter: [],
+      Qua: [],
+      Qui: [],
+      Sex: [],
+      Sáb: [],
+      Dom: []
+    }
+
+    schedulesData.forEach(schedule => {
+      const diaAbreviado = dayOfWeekMap[schedule.dayOfWeek.toLowerCase()]
+      if (diaAbreviado && eventos[diaAbreviado as keyof EventosPorDia]) {
+        eventos[diaAbreviado as keyof EventosPorDia].push(mapScheduleToEvento(schedule))
+      }
+    })
+
+    return eventos
+  }, [schedulesData])
+
+  // Agrupar lesson plans por data para o calendário
+  const eventosPorDiaFromLessonPlans: EventosPorDia = useMemo(() => {
+    const eventos: EventosPorDia = {
+      Seg: [],
+      Ter: [],
+      Qua: [],
+      Qui: [],
+      Sex: [],
+      Sáb: [],
+      Dom: []
+    }
+
+    lessonPlansData.forEach(lessonPlan => {
+      const date = new Date(lessonPlan.date)
+      const dayOfWeek = date.getDay()
+      const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dayOfWeek] as keyof EventosPorDia
+      
+      if (dayName && eventos[dayName]) {
+        eventos[dayName].push(mapLessonPlanToEvento(lessonPlan))
+      }
+    })
+
+    return eventos
+  }, [lessonPlansData])
+
+  // Para a grade horária, usar schedules
+  const eventosPorDia: EventosPorDia = eventosPorDiaFromSchedules
 
   const getTipoConfig = (tipo: string) => {
     switch (tipo) {
@@ -232,13 +244,66 @@ export default function AgendaPage() {
     }
   }
 
-  const getPrioridadeIcon = (prioridade: string) => {
-    switch (prioridade) {
-      case 'alta': return <AlertCircle className="h-3 w-3 text-red-500" />
-      case 'média': return <Clock className="h-3 w-3 text-green-600" />
-      case 'baixa': return <CheckCircle className="h-3 w-3 text-green-600" />
-      default: return <Info className="h-3 w-3 text-green-600" />
+  // Função para calcular a semana atual (segunda a sábado)
+  const getWeekDays = useMemo(() => {
+    const today = new Date()
+    const monday = new Date(today)
+    const day = monday.getDay()
+    const diff = monday.getDate() - day + (day === 0 ? -6 : 1) // Ajusta para segunda-feira
+    monday.setDate(diff)
+    
+    // Aplica o offset da semana
+    monday.setDate(monday.getDate() + (currentWeekOffset * 7))
+    
+    const weekDays = []
+    for (let i = 0; i < 6; i++) { // Segunda a Sábado
+      const date = new Date(monday)
+      date.setDate(monday.getDate() + i)
+      weekDays.push({
+        dayName: diasSemanaGrade[i],
+        date: date,
+        dateStr: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      })
     }
+    return weekDays
+  }, [currentWeekOffset])
+
+  // Função para extrair horários únicos dos eventos (período completo)
+  // Retorna apenas horários que realmente têm eventos na semana atual
+  const getHorariosUnicos = useMemo(() => {
+    const horariosMap = new Map<string, { periodo: string; startTime: string; endTime: string }>()
+    
+    // Percorrer apenas os dias da semana atual (não todos os dias)
+    getWeekDays.forEach(day => {
+      const eventosDoDia = eventosPorDia[day.dayName] || []
+      eventosDoDia.forEach(evento => {
+        if (evento.hora) {
+          const [startTime, endTime] = evento.hora.split(' - ')
+          if (startTime && endTime) {
+            // Usar o período completo como chave única
+            const periodo = `${startTime} - ${endTime}`
+            if (!horariosMap.has(periodo)) {
+              horariosMap.set(periodo, {
+                periodo,
+                startTime,
+                endTime
+              })
+            }
+          }
+        }
+      })
+    })
+    
+    // Converter para array e ordenar por hora de início
+    return Array.from(horariosMap.values()).sort((a, b) => {
+      return a.startTime.localeCompare(b.startTime)
+    })
+  }, [eventosPorDia, getWeekDays])
+
+  // Função para obter eventos de um dia e período específicos
+  const getEventosPorDiaHorario = (dayName: string, periodo: string) => {
+    const eventos = eventosPorDia[dayName] || []
+    return eventos.filter(evento => evento.hora === periodo)
   }
 
   // Memoized calendar days to avoid recalculation on every render
@@ -256,19 +321,49 @@ export default function AgendaPage() {
     for (let day = 1; day <= lastDay; day++) {
       const dayOfWeek = new Date(currentYear, currentMonth, day).getDay()
       const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dayOfWeek]
-      const hasEvents = Object.keys(eventosPorDia).includes(dayName) && eventosPorDia[dayName].length > 0
+      
+      // Verificar se há lesson plans nesta data
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      const hasEvents = lessonPlansData.some(lp => {
+        const lpDate = new Date(lp.date)
+        const lpDateStr = `${lpDate.getFullYear()}-${String(lpDate.getMonth() + 1).padStart(2, '0')}-${String(lpDate.getDate()).padStart(2, '0')}`
+        return lpDateStr === dateStr
+      })
+      
       days.push({ day, hasEvents, dayName })
     }
 
     return days
-  }, [currentYear, currentMonth])
-
-  const eventosHoje = eventosPorDia[selectedDay] || []
+  }, [currentYear, currentMonth, lessonPlansData])
 
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ]
+
+  const formatWeekRange = () => {
+    if (getWeekDays.length === 0) return ''
+    const firstDay = getWeekDays[0].date
+    const lastDay = getWeekDays[getWeekDays.length - 1].date
+    const firstMonth = monthNames[firstDay.getMonth()].substring(0, 3)
+    const lastMonth = monthNames[lastDay.getMonth()].substring(0, 3)
+    if (firstMonth === lastMonth) {
+      return `${firstDay.getDate()} - ${lastDay.getDate()} de ${firstMonth} ${firstDay.getFullYear()}`
+    }
+    return `${firstDay.getDate()} ${firstMonth} - ${lastDay.getDate()} ${lastMonth} ${firstDay.getFullYear()}`
+  }
+
+  // Loading state
+  if (isLoadingSchedules || isLoadingLessonPlans || !studentId) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
@@ -312,12 +407,6 @@ export default function AgendaPage() {
                     </div>
                 </div>
                 <div className="hidden md:flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                      {eventosHoje.length}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Eventos Hoje</div>
-                  </div>
                   <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
                     <Calendar className="h-10 w-10 text-white" />
                   </div>
@@ -325,17 +414,142 @@ export default function AgendaPage() {
             </div>
             </div>
           </div>
+
+          {/* Grade Horária Semanal */}
+          <LiquidGlassCard
+            intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+            className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 ${
+              isLiquidGlass
+                ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
+                : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
+            }`}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">Grade Horária Semanal</h2>
+                    <p className="text-sm text-muted-foreground">{formatWeekRange()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setCurrentWeekOffset(currentWeekOffset - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setCurrentWeekOffset(0)}
+                  >
+                    Hoje
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setCurrentWeekOffset(currentWeekOffset + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="p-3 text-left text-sm font-bold text-foreground border-b border-green-200/50 dark:border-green-800/50">
+                        Horário
+                      </th>
+                      {getWeekDays.map((day) => (
+                        <th key={day.dayName} className="p-3 text-center text-sm font-bold text-foreground border-b border-green-200/50 dark:border-green-800/50">
+                          <div>{day.dayName}</div>
+                          <div className="text-xs text-muted-foreground font-normal">{day.dateStr}</div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getHorariosUnicos.length === 0 ? (
+                      <tr>
+                        <td colSpan={getWeekDays.length + 1} className="p-8 text-center text-muted-foreground">
+                          Nenhuma aula agendada para esta semana
+                        </td>
+                      </tr>
+                    ) : (
+                      getHorariosUnicos.map((horarioInfo) => (
+                        <tr key={horarioInfo.periodo} className="border-b border-green-200/30 dark:border-green-800/30">
+                          <td className="p-3 text-sm font-medium text-foreground whitespace-nowrap">
+                            {horarioInfo.periodo}
+                          </td>
+                          {getWeekDays.map((day) => {
+                            const eventos = getEventosPorDiaHorario(day.dayName, horarioInfo.periodo)
+                            return (
+                              <td key={`${day.dayName}-${horarioInfo.periodo}`} className="p-2">
+                                {eventos.map((evento, idx) => {
+                                  const tipoConfig = getTipoConfig(evento.tipo)
+                                  const TipoIcon = tipoConfig.icon
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className={`mb-2 p-2 rounded-lg border transition-all duration-300 hover:shadow-md ${
+                                        isLiquidGlass
+                                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
+                                          : `${tipoConfig.bgColor} ${tipoConfig.borderColor} border hover:shadow-lg`
+                                      }`}
+                                    >
+                                      <div className="flex items-start gap-2">
+                                        <div className={`w-6 h-6 rounded-lg ${tipoConfig.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                          <TipoIcon className="h-3 w-3 text-white" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="font-semibold text-xs text-foreground truncate">
+                                            {evento.titulo}
+                                          </div>
+                                          <div className="text-xs text-muted-foreground truncate">
+                                            {evento.sala}
+                                          </div>
+                                          {evento.professor && (
+                                            <div className="text-xs text-muted-foreground truncate">
+                                              {evento.professor}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </LiquidGlassCard>
           
-          <div className="grid gap-8 lg:grid-cols-3">
-            {/* Calendário Interativo */}
-            <LiquidGlassCard
-              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 lg:col-span-2 ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
-              }`}
-            >
+          {/* Calendário Interativo */}
+          <LiquidGlassCard
+            intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+            className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 ${
+              isLiquidGlass
+                ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
+                : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
+            }`}
+          >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
               <div className="relative p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -414,24 +628,37 @@ export default function AgendaPage() {
                       {dayInfo ? (
                         <>
                           <div className="font-semibold text-sm mb-2">{dayInfo.day}</div>
-                          {dayInfo.hasEvents && (
-                            <div className="space-y-1">
-                              {(eventosPorDia[dayInfo.dayName] || []).slice(0, 2).map((evento: Evento, idx: number) => (
-                                <div
-                                  key={idx}
-                                  className={`text-xs rounded-lg px-2 py-1 ${getTipoConfig(evento.tipo).bgColor} ${getTipoConfig(evento.tipo).borderColor} border`}
-                                >
-                                  <div className="font-medium truncate">{evento.titulo}</div>
-                                  <div className="text-xs opacity-75">{evento.hora.slice(0, 5)}</div>
-                                </div>
-                              ))}
-                              {(eventosPorDia[dayInfo.dayName] || []).length > 2 && (
-                                <div className="text-xs text-center text-muted-foreground font-medium">
-                                  +{(eventosPorDia[dayInfo.dayName] as Evento[]).length - 2}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          {dayInfo.hasEvents && (() => {
+                            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayInfo.day).padStart(2, '0')}`
+                            const eventosDoDia = lessonPlansData
+                              .filter(lp => {
+                                const lpDate = new Date(lp.date)
+                                const lpDateStr = `${lpDate.getFullYear()}-${String(lpDate.getMonth() + 1).padStart(2, '0')}-${String(lpDate.getDate()).padStart(2, '0')}`
+                                return lpDateStr === dateStr
+                              })
+                              .map(lp => mapLessonPlanToEvento(lp))
+                            
+                            return (
+                              <div className="space-y-1">
+                                {eventosDoDia.slice(0, 2).map((evento: Evento, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className={`text-xs rounded-lg px-2 py-1 ${getTipoConfig(evento.tipo).bgColor} ${getTipoConfig(evento.tipo).borderColor} border`}
+                                  >
+                                    <div className="font-medium truncate">{evento.titulo}</div>
+                                    {evento.hora && (
+                                      <div className="text-xs opacity-75">{evento.hora.slice(0, 5)}</div>
+                                    )}
+                                  </div>
+                                ))}
+                                {eventosDoDia.length > 2 && (
+                                  <div className="text-xs text-center text-muted-foreground font-medium">
+                                    +{eventosDoDia.length - 2}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </>
                       ) : null}
                     </div>
@@ -458,267 +685,6 @@ export default function AgendaPage() {
                 </div>
               </div>
             </LiquidGlassCard>
-
-            {/* Eventos do Dia Selecionado */}
-            <LiquidGlassCard
-              intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 ${
-                isLiquidGlass
-                  ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
-                  : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
-              }`}
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
-              <div className="relative p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                      <Clock className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">Eventos - {selectedDay}</h2>
-                      <p className="text-sm text-muted-foreground">{eventosHoje.length} eventos programados</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="rounded-full">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filtrar
-                    </Button>
-                    <Button variant="default" size="sm" className="rounded-full bg-gradient-to-r from-green-500 to-emerald-500">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Novo
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-4 max-h-[600px] overflow-y-auto">
-                  {eventosHoje.length > 0 ? eventosHoje.map((evento: Evento, index: number) => {
-                    const tipoConfig = getTipoConfig(evento.tipo)
-                    const TipoIcon = tipoConfig.icon
-                    return (
-                      <div key={index} className={`group relative p-4 rounded-2xl border transition-all duration-300 ${
-                        isLiquidGlass
-                          ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                          : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                      }`}>
-                        <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="relative">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-xl ${tipoConfig.color} flex items-center justify-center shadow-lg`}>
-                                <TipoIcon className="h-5 w-5 text-white" />
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-foreground group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                                  {evento.titulo}
-                                </h3>
-                                <p className="text-sm text-muted-foreground">{evento.descricao}</p>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <Badge className={`${tipoConfig.bgColor} ${tipoConfig.borderColor} ${tipoConfig.textColor} border px-2 py-1`}>
-                                {evento.tipo}
-                              </Badge>
-                              {getPrioridadeIcon(evento.prioridade)}
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Clock className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                <span className="font-medium">{evento.hora}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                <span>{evento.sala}</span>
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              {evento.professor && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                                  <span>{evento.professor}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2 text-sm">
-                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                <span>{evento.participantes} participantes</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                              <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                                {evento.prioridade === 'alta' ? 'Prioridade Alta' :
-                                 evento.prioridade === 'média' ? 'Prioridade Média' : 'Prioridade Baixa'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button variant="ghost" size="sm" className="h-8 px-2 rounded-full">
-                                <Bell className="h-3 w-3 mr-1" />
-                                Lembrete
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8 px-2 rounded-full">
-                                <Edit3 className="h-3 w-3 mr-1" />
-                                Editar
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8 px-2 rounded-full text-red-500 hover:text-red-700">
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                Remover
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  }) : (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 flex items-center justify-center mx-auto mb-4">
-                        <Calendar className="h-8 w-8 text-green-500" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">Dia Livre!</h3>
-                      <p className="text-muted-foreground mb-4">Nenhum evento programado para {selectedDay}</p>
-                      <Button variant="outline" className="rounded-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agendar Evento
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </LiquidGlassCard>
-          </div>
-
-          {/* Estatísticas Mensais */}
-          <LiquidGlassCard
-            intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-            className={`relative overflow-hidden rounded-xl border shadow-lg transition-all duration-300 ${
-              isLiquidGlass
-                ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50'
-                : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'
-            }`}
-          >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                    <Sparkles className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground">Estatísticas Mensais</h2>
-                    <p className="text-sm text-muted-foreground">Resumo de {monthNames[currentMonth]} {currentYear}</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="rounded-full">
-                  <Trophy className="h-4 w-4 mr-2" />
-                  Ver Relatório
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className={`group p-4 rounded-xl border transition-all duration-300 ${
-                  isLiquidGlass
-                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Total</div>
-                      <div className="text-lg font-bold text-green-600 dark:text-green-400">24</div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium text-foreground mb-1">Aulas</div>
-                  <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-1">
-                    <div className="w-4/5 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
-                  </div>
-                </div>
-
-                <div className={`group p-4 rounded-xl border transition-all duration-300 ${
-                  isLiquidGlass
-                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                      <Trophy className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Este mês</div>
-                      <div className="text-lg font-bold text-green-600 dark:text-green-400">5</div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium text-foreground mb-1">Eventos</div>
-                  <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-1">
-                    <div className="w-3/5 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
-                  </div>
-                </div>
-
-                <div className={`group p-4 rounded-xl border transition-all duration-300 ${
-                  isLiquidGlass
-                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                      <Target className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Pendentes</div>
-                      <div className="text-lg font-bold text-green-600 dark:text-green-400">12</div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium text-foreground mb-1">Atividades</div>
-                  <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-1">
-                    <div className="w-2/3 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
-                  </div>
-                </div>
-
-                <div className={`group p-4 rounded-2xl border transition-all duration-300  ${
-                  isLiquidGlass
-                    ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
-                    : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                }`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                      <CheckCircle className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground">Concluídas</div>
-                      <div className="text-lg font-bold text-green-600 dark:text-green-400">8</div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium text-foreground mb-1">Avaliações</div>
-                  <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-1">
-                    <div className="w-4/5 h-1 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-green-200/50 dark:border-green-800/50">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Taxa de Participação</span>
-                  <span className="font-bold text-green-600 dark:text-green-400">89%</span>
-                </div>
-                <div className="w-full bg-green-200 dark:bg-green-900/50 rounded-full h-2 mt-2">
-                  <div className="w-4/5 h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-                  </div>
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>0%</span>
-                  <span>100%</span>
-                </div>
-              </div>
-            </div>
-          </LiquidGlassCard>
         </div>
       </main>
     </div>

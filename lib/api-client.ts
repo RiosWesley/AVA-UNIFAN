@@ -187,6 +187,54 @@ export interface Discipline {
   workLoad?: number
 }
 
+// Schedule with relations from backend
+export interface ScheduleWithRelations {
+  id: string
+  dayOfWeek: string // 'segunda-feira', 'terca-feira', etc.
+  startTime: string // 'HH:mm'
+  endTime: string // 'HH:mm'
+  room: string | null
+  class: {
+    id: string
+    code: string
+    discipline: {
+      id: string
+      name: string
+    }
+    teacher?: {
+      id: string
+      name: string
+    } | null
+  }
+}
+
+// LessonPlan with relations from backend
+export interface LessonPlanWithRelations {
+  id: string
+  date: string // 'YYYY-MM-DD'
+  status: 'agendada' | 'realizada' | 'cancelada'
+  content: string
+  class: {
+    id: string
+    code: string
+    discipline: {
+      id: string
+      name: string
+    }
+    teacher?: {
+      id: string
+      name: string
+    } | null
+  }
+  schedule?: {
+    id: string
+    dayOfWeek: string
+    startTime: string
+    endTime: string
+    room: string | null
+  } | null
+}
+
 // API client with mock data
 export const apiClient = {
   // Student data
@@ -726,6 +774,17 @@ export const apiClient = {
     const { data } = await api.post<ChatMessage>(`/chats/students/${params.studentId}/classes/${params.classId}/messages`, {
       content: params.content
     })
+    return data
+  },
+
+  // -------- Agenda --------
+  async getStudentSchedulesForAgenda(studentId: string): Promise<ScheduleWithRelations[]> {
+    const { data } = await api.get<ScheduleWithRelations[]>(`/students/${studentId}/schedules`)
+    return data
+  },
+
+  async getStudentLessonPlans(studentId: string): Promise<LessonPlanWithRelations[]> {
+    const { data } = await api.get<LessonPlanWithRelations[]>(`/students/${studentId}/lesson-plans`)
     return data
   }
 }

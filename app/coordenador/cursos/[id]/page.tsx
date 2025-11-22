@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2 } from "lucide-react"
+import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2, PowerOff, Power } from "lucide-react"
 import { toast } from "@/components/ui/toast"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 import {
@@ -24,6 +24,7 @@ import {
   createDiscipline,
   updateClass,
   updateDiscipline,
+  toggleDisciplineStatus,
   type BackendClass,
   type BackendCourse,
   type BackendDiscipline,
@@ -97,7 +98,7 @@ const mapCourse = (data: BackendCourse): Curso => ({
 const mapDiscipline = (d: BackendDiscipline): Disciplina => ({
   id: d.id,
   nome: d.name,
-  codigo: d.code,
+  codigo: d.code ?? "",
   cargaHoraria: d.workloadHours ?? 0,
   creditos: d.credits ?? 0,
   semestre: d.semester,
@@ -193,10 +194,10 @@ export default function CursoDetalhePage() {
 
       const mappedStudents = studentsData.map(mapStudent)
       const mappedClasses = classesData
-        .map((classe) => mapClass(classe, cursoId))
+        .map((classe) => mapClass(classe))
         .filter((t) => t.status === "ativa")
       const mappedDisciplines = disciplinesData
-        .map((disciplina) => mapDiscipline(disciplina, cursoId))
+        .map((disciplina) => mapDiscipline(disciplina))
         .filter((d) => d.status === "ativa")
 
       setCurso({
@@ -304,7 +305,7 @@ export default function CursoDetalhePage() {
           workload: Number(novaDisciplina.cargaHoraria),
         })
         setDisciplinas((prev) =>
-          prev.map((d) => (d.id === disciplinaEditandoId ? mapDiscipline(updated, cursoId) : d))
+          prev.map((d) => (d.id === disciplinaEditandoId ? mapDiscipline(updated) : d))
         )
         toast({
           variant: "success",
@@ -319,7 +320,7 @@ export default function CursoDetalhePage() {
           courseId: cursoId,
         })
 
-        setDisciplinas((prev) => [...prev, mapDiscipline(created, cursoId)])
+        setDisciplinas((prev) => [...prev, mapDiscipline(created)])
         toast({
           variant: "success",
           title: "Disciplina adicionada",
@@ -360,7 +361,7 @@ export default function CursoDetalhePage() {
           year: Number(novaTurma.ano || new Date().getFullYear()),
           disciplineId: novaTurma.disciplinaId,
         })
-        const mapped = mapClass(updated, cursoId)
+        const mapped = mapClass(updated)
         setTurmas((prev) => prev.map((t) => (t.id === turmaEditandoId ? mapped : t)))
       toast({
         variant: "success",
@@ -375,7 +376,7 @@ export default function CursoDetalhePage() {
           disciplineId: novaTurma.disciplinaId,
         })
 
-        const mapped = mapClass(created, cursoId)
+        const mapped = mapClass(created)
         setTurmas((prev) => {
           const updated = [...prev, mapped]
           setCurso((current) => (current ? { ...current, turmas: updated.length } : current))
@@ -411,6 +412,37 @@ export default function CursoDetalhePage() {
       cargaHoraria: String(disciplina.cargaHoraria || ""),
     })
     setIsDisciplinaModalOpen(true)
+  }
+
+  const handleToggleDisciplineStatusClick = async (disciplina: Disciplina) => {
+    const newStatus = disciplina.status === "ativa" ? "inactive" : "active"
+    const statusLabel = newStatus === "active" ? "ativar" : "inativar"
+
+    try {
+      await toggleDisciplineStatus(cursoId, disciplina.id, newStatus)
+      
+      // Atualizar a lista de disciplinas
+      setDisciplinas((prev) =>
+        prev.map((d) =>
+          d.id === disciplina.id
+            ? { ...d, status: newStatus === "active" ? "ativa" : "inativa" }
+            : d
+        )
+      )
+
+      toast({
+        variant: "success",
+        title: "Status atualizado",
+        description: `Disciplina "${disciplina.nome}" ${statusLabel}da com sucesso.`,
+      })
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || `Não foi possível ${statusLabel} a disciplina`
+      toast({
+        variant: "error",
+        title: "Erro ao atualizar status",
+        description: Array.isArray(message) ? message.join(", ") : message,
+      })
+    }
   }
 
   const handleEditarTurma = (turma: Turma) => {
