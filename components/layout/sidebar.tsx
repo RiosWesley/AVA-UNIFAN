@@ -70,7 +70,6 @@ const menuItems = {
     { icon: Calendar, label: "Agenda", href: "/professor/agenda" },
     { icon: Clock, label: "Disponibilização de Horários", href: "/professor/disponibilizacao-horarios" },
     { icon: MessageSquare, label: "Comunicação", href: "/professor/comunicacao" },
-    { icon: Settings, label: "Configurações", href: "/professor/configuracoes" },
   ],
   coordenador: [
     { icon: Home, label: "Início", href: "/coordenador" },
