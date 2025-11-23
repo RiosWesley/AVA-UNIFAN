@@ -28,7 +28,24 @@ import { listLiveSessionsByClass, createLiveSession, LiveSessionDTO } from "@/sr
 import { getClassGradebook, createGradeForActivity, getActivityGradebook } from "@/src/services/gradesService"
 import { getClassAttendanceTable } from "@/src/services/attendancesService"
 import { useLiveSession } from "@/src/hooks/useLiveSession"
-import { listExams, createExam, updateExam, deleteExam, listExamQuestions, createExamQuestion, updateExamQuestion, deleteExamQuestion, ExamDTO, ExamAttemptDTO, CreateExamPayload, UpdateExamPayload, CreateExamQuestionPayload, UpdateExamQuestionPayload } from "@/src/services/examsService"
+import RemoteVideo from "@/components/layout/RemoteVideo"
+import { 
+  ExamDTO, 
+  ExamAttemptDTO,
+  CreateExamPayload, 
+  UpdateExamPayload, 
+  CreateExamQuestionPayload, 
+  UpdateExamQuestionPayload,
+  listExams, 
+  createExam, 
+  updateExam, 
+  deleteExam, 
+  listExamQuestions, 
+  createExamQuestion, 
+  updateExamQuestion, 
+  deleteExamQuestion 
+} from "@/src/services/examsService"
+
 
 export default function TurmaDetalhePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -777,9 +794,8 @@ export default function TurmaDetalhePage() {
     joinSession, 
     leaveSession, 
     isConnected, 
-    participants,
     localVideoRef,
-    remoteVideoRef
+    remoteStreams
   } = useLiveSession();
 
   const entrarNaVideoChamada = (reuniao: VideoChamada) => {
@@ -1763,16 +1779,29 @@ export default function TurmaDetalhePage() {
         titulo={videoChamadaSelecionada?.titulo}
         dataHora={videoChamadaSelecionada?.dataHora}
       >
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h3 className="font-bold">Sua Câmera</h3>
-            <video ref={localVideoRef} autoPlay muted playsInline className="w-full rounded-md bg-black"></video>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+          {/* Vídeo Local */}
+          <div className="relative">
+            <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
+            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">Sua Câmera</div>
           </div>
-          <div>
-            <h3 className="font-bold">Participantes ({participants.length})</h3>
-            <video ref={remoteVideoRef} autoPlay playsInline className="w-full rounded-md bg-black"></video>
-            {/* Em um sistema de grupo, precisa renderizar múltiplos vídeos aqui */}
+          
+          {/* Grid para Vídeos Remotos */}
+          <div className="grid grid-cols-2 grid-rows-2 gap-2">
+            {remoteStreams.size > 0 ? (
+              Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
+                <div key={socketId} className="relative">
+                  <RemoteVideo stream={stream} />
+                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                    Participante
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
+                <p className="text-muted-foreground">Aguardando participantes...</p>
+              </div>
+            )}
           </div>
         </div>
       </ModalVideoChamada>
