@@ -7,7 +7,7 @@ import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sidebar } from "@/components/layout/sidebar"
-import { Edit, Trash2, Send, Plus, Bell } from "lucide-react"
+import { Edit, Trash2, Send, Plus, Bell, Loader2 } from "lucide-react"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { useEffect, useState } from "react"
 import { ModalNovaMensagem, ModalAviso, ModalConfirmacao } from "@/components/modals"
@@ -20,6 +20,7 @@ export default function CoordenadorComunicacaoPage() {
   const [editingAviso, setEditingAviso] = useState<AvisoData | undefined>(undefined)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [avisoParaExcluir, setAvisoParaExcluir] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
   const turmaOptions: ComboboxOption[] = [
     { id: 'all', label: 'Todos os usuários' },
     { id: 'student', label: 'Todos os alunos' },
@@ -180,8 +181,29 @@ export default function CoordenadorComunicacaoPage() {
   }
 
   useEffect(() => {
-    refreshAvisos()
-    fetchInbox()
+    let mounted = true
+
+    async function loadData() {
+      try {
+        setLoading(true)
+        await Promise.all([
+          refreshAvisos(),
+          fetchInbox()
+        ])
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadData()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   const handleSaveAviso = async (data: AvisoData) => {
@@ -252,6 +274,20 @@ export default function CoordenadorComunicacaoPage() {
       setComunicadosPublicados(prev => prev.filter(c => c.id !== avisoParaExcluir))
       setAvisoParaExcluir(null)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="coordenador" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            <p className="text-muted-foreground">Carregando comunicação...</p>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (

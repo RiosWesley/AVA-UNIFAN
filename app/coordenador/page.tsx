@@ -9,8 +9,10 @@ import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { BookOpen, Users, Calendar, TrendingUp, GraduationCap, Star, Award, Activity, Sparkles, Bell, ChevronRight, Settings, CheckCircle, Clock, Loader2, AlertCircle, ChevronLeft } from "lucide-react"
-import { getCoordinatorDashboardData, type CoordenadorDashboardData } from "@/src/services/coordenador-dashboard"
+import { getCoordinatorDashboardData, getSemestresDisponiveisCoordenador, type CoordenadorDashboardData } from "@/src/services/coordenador-dashboard"
 import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function CoordenadorDashboard() {
   const router = useRouter()
@@ -19,6 +21,9 @@ export default function CoordenadorDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [dashboardData, setDashboardData] = useState<CoordenadorDashboardData | null>(null)
   const [cursosPage, setCursosPage] = useState(1)
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [loadingSemestres, setLoadingSemestres] = useState(false)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -36,10 +41,48 @@ export default function CoordenadorDashboard() {
     return () => observer.disconnect()
   }, [])
 
+  // Buscar semestres disponíveis
+  useEffect(() => {
+    let mounted = true
+
+    async function loadSemestres() {
+      try {
+        setLoadingSemestres(true)
+        const user = await getCurrentUser()
+        if (!mounted || !user?.id) return
+
+        const semestresDisponiveis = await getSemestresDisponiveisCoordenador(user.id)
+        if (!mounted) return
+
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+      } catch (err) {
+        console.error('Erro ao buscar semestres:', err)
+      } finally {
+        if (mounted) setLoadingSemestres(false)
+      }
+    }
+
+    loadSemestres()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   useEffect(() => {
     let mounted = true
 
     async function loadDashboardData() {
+      if (!semestreSelecionado && semestres.length > 0) return // Aguardar semestre ser selecionado
+      
       try {
         setLoading(true)
         setError(null)
@@ -51,7 +94,7 @@ export default function CoordenadorDashboard() {
           throw new Error('Usuário não autenticado')
         }
 
-        const data = await getCoordinatorDashboardData(user.id)
+        const data = await getCoordinatorDashboardData(user.id, semestreSelecionado || undefined)
         if (!mounted) return
 
         setDashboardData(data)
@@ -68,7 +111,7 @@ export default function CoordenadorDashboard() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [semestreSelecionado, semestres.length])
 
   // Resetar página quando os cursos mudarem ou ajustar se necessário
   useEffect(() => {
@@ -98,6 +141,9 @@ export default function CoordenadorDashboard() {
       color: colors[index % colors.length]
     }
   })
+
+  // Verificar se há dados válidos (pelo menos um valor > 0)
+  const hasValidData = pieData.some(item => item.value > 0)
 
   // Paginação dos cursos
   const cursosPorPagina = 5
@@ -180,6 +226,36 @@ export default function CoordenadorDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                {loadingSemestres || semestres.length === 0 ? (
+                  <Skeleton className="h-10 w-40" />
+                ) : (
+                  <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                    <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                      isLiquidGlass
+                        ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                        : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                    }`}>
+                      <SelectValue placeholder="Selecionar semestre" />
+                    </SelectTrigger>
+                    <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                      {semestres.map((semestre) => (
+                        <SelectItem key={semestre.id} value={semestre.id}>
+                          <div className="flex items-center space-x-2">
+                            <span>{semestre.nome}</span>
+                            {semestre.ativo && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                Atual
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               <LiquidGlassButton 
                 variant="outline" 
                 size="lg" 
@@ -312,7 +388,7 @@ export default function CoordenadorDashboard() {
                     <CardDescription className="text-gray-600 dark:text-gray-400">Por nível de ensino</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {pieData.length > 0 ? (
+                    {hasValidData ? (
                       <>
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
@@ -345,8 +421,12 @@ export default function CoordenadorDashboard() {
                     </div>
                       </>
                     ) : (
-                      <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                        Nenhum dado disponível
+                      <div className="flex flex-col items-center justify-center h-[300px] text-center p-8">
+                        <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                          <Users className="h-8 w-8 text-green-600 dark:text-green-400 opacity-50" />
+                        </div>
+                        <p className="text-muted-foreground font-medium mb-2">Nenhum dado disponível</p>
+                        <p className="text-sm text-muted-foreground/70">Os dados de distribuição de alunos aparecerão aqui quando disponíveis</p>
                       </div>
                     )}
                   </CardContent>

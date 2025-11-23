@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label"
 import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2, PowerOff, Power } from "lucide-react"
 import { toast } from "@/components/ui/toast"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   getCourseById,
   getCourseClasses,
@@ -57,6 +59,7 @@ type Turma = {
   capacidade: number
   status: "ativa" | "inativa"
   courseId?: string
+  semestre?: string
 }
 
 type Aluno = {
@@ -108,19 +111,37 @@ const mapDiscipline = (d: BackendDiscipline): Disciplina => ({
   courseId: d.courseId ?? d.course?.id
 })
 
-const mapClass = (c: BackendClass): Turma => ({
-  id: c.id,
-  codigo: c.code,
-  disciplina: c.discipline?.name ?? "Sem disciplina",
-  professor: c.teacher?.name ?? "Sem professor",
-  periodo: c.period ?? "Periodo nao informado",
-  horario: c.schedule ?? "Horario nao informado",
-  sala: c.room ?? "Sala nao informada",
-  alunos: c.studentsCount ?? 0,
-  capacidade: c.capacity ?? c.studentsCount ?? 0,
-  status: c.status === "inactive" ? "inativa" : "ativa",
-  courseId: c.courseId ?? c.course?.id
-})
+const mapClass = (c: BackendClass): Turma => {
+  // Extrair semestre de academicPeriod.period, period ou semester
+  let semestre: string | undefined
+  if (c.academicPeriod?.period) {
+    semestre = c.academicPeriod.period
+  } else if (c.period) {
+    const periodParts = c.period.split('/')
+    if (periodParts.length > 0) {
+      semestre = periodParts[0].replace('-', '.')
+    } else {
+      semestre = c.period.replace('-', '.')
+    }
+  } else if (c.semester) {
+    semestre = c.semester.replace('-', '.')
+  }
+
+  return {
+    id: c.id,
+    codigo: c.code,
+    disciplina: c.discipline?.name ?? "Sem disciplina",
+    professor: c.teacher?.name ?? "Sem professor",
+    periodo: c.period ?? "Periodo nao informado",
+    horario: c.schedule ?? "Horario nao informado",
+    sala: c.room ?? "Sala nao informada",
+    alunos: c.studentsCount ?? 0,
+    capacidade: c.capacity ?? c.studentsCount ?? 0,
+    status: c.status === "inactive" ? "inativa" : "ativa",
+    courseId: c.courseId ?? c.course?.id,
+    semestre
+  }
+}
 
 const mapStudent = (s: BackendCourseStudent): Aluno => ({
   id: s.id,
@@ -148,6 +169,8 @@ export default function CursoDetalhePage() {
   const [filtroTipoDisciplina, setFiltroTipoDisciplina] = useState<"todas" | "obrigatoria" | "optativa">("todas")
   const [filtroStatusDisciplina, setFiltroStatusDisciplina] = useState<"todas" | "ativa" | "inativa">("todas")
   const [filtroStatusTurma, setFiltroStatusTurma] = useState<"todas" | "ativa" | "inativa">("todas")
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
   const [isDisciplinaModalOpen, setIsDisciplinaModalOpen] = useState(false)
   const [isTurmaModalOpen, setIsTurmaModalOpen] = useState(false)
   const [isSavingDisciplina, setIsSavingDisciplina] = useState(false)
@@ -224,6 +247,45 @@ export default function CursoDetalhePage() {
     loadData()
   }, [loadData])
 
+  // Buscar semestres disponíveis baseados nas turmas do curso
+  useEffect(() => {
+    if (turmas.length === 0) return
+
+    const semestresMap = new Map<string, { id: string; nome: string; ativo: boolean }>()
+    
+    turmas.forEach(turma => {
+      if (turma.semestre) {
+        if (!semestresMap.has(turma.semestre)) {
+          semestresMap.set(turma.semestre, {
+            id: turma.semestre,
+            nome: turma.semestre,
+            ativo: false
+          })
+        }
+      }
+    })
+
+    const semestresArray = Array.from(semestresMap.values()).sort((a, b) => {
+      const [yearA, semA] = a.id.split('.').map(Number)
+      const [yearB, semB] = b.id.split('.').map(Number)
+      if (yearA !== yearB) return yearB - yearA
+      return semB - semA
+    })
+
+    if (semestresArray.length > 0) {
+      semestresArray[0].ativo = true
+      setSemestres(semestresArray)
+      
+      // Selecionar semestre ativo ou o primeiro disponível
+      const semestreAtivo = semestresArray.find(s => s.ativo)
+      if (semestreAtivo) {
+        setSemestreSelecionado(semestreAtivo.id)
+      } else if (semestresArray.length > 0) {
+        setSemestreSelecionado(semestresArray[0].id)
+      }
+    }
+  }, [turmas])
+
   useEffect(() => {
     if (!novaTurma.disciplinaId && disciplinas.length > 0) {
       setNovaTurma((prev) => ({
@@ -252,9 +314,10 @@ export default function CursoDetalhePage() {
         t.codigo.toLowerCase().includes(term) ||
         t.professor.toLowerCase().includes(term)
       const matchesStatus = filtroStatusTurma === "todas" || t.status === filtroStatusTurma
-      return matchesSearch && matchesStatus
+      const matchesSemestre = !semestreSelecionado || t.semestre === semestreSelecionado
+      return matchesSearch && matchesStatus && matchesSemestre
     })
-  }, [turmas, searchTurmas, filtroStatusTurma])
+  }, [turmas, searchTurmas, filtroStatusTurma, semestreSelecionado])
 
   const alunosFiltrados = useMemo(() => {
     const term = searchAlunos.toLowerCase()
@@ -742,6 +805,32 @@ export default function CursoDetalhePage() {
                             className="pl-10"
                           />
                         </div>
+                        {isLoading || semestres.length === 0 ? (
+                          <Skeleton className="h-10 w-40" />
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                            <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                              <SelectTrigger className="w-40">
+                                <SelectValue placeholder="Selecionar semestre" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {semestres.map((semestre) => (
+                                  <SelectItem key={semestre.id} value={semestre.id}>
+                                    <div className="flex items-center space-x-2">
+                                      <span>{semestre.nome}</span>
+                                      {semestre.ativo && (
+                                        <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                          Atual
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                         <select
                           value={filtroStatusTurma}
                           onChange={(e) => setFiltroStatusTurma(e.target.value as typeof filtroStatusTurma)}

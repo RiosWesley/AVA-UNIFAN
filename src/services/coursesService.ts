@@ -48,6 +48,7 @@ export type BackendClass = {
   course?: { id: string; name: string } | null;
   discipline?: { id: string; name: string } | null;
   teacher?: { id: string; name: string } | null;
+  academicPeriod?: { id: string; period: string } | null;
 };
 
 export type BackendCourseStudent = {

@@ -125,7 +125,7 @@ async function getClassDetails(classId: string): Promise<{ enrollments: any[], g
   }
 }
 
-export async function calculateCourseStatistics(courseId: string): Promise<{
+export async function calculateCourseStatistics(courseId: string, semestre?: string): Promise<{
   turmas: number
   alunos: number
   professores: Set<string>
@@ -134,7 +134,31 @@ export async function calculateCourseStatistics(courseId: string): Promise<{
 }> {
   try {
     const classes = await getCourseClasses(courseId)
-    if (classes.length === 0) {
+    
+    // Filtrar turmas por semestre se fornecido
+    let filteredClasses = classes
+    if (semestre) {
+      filteredClasses = classes.filter(classe => {
+        let classeSemestre: string | undefined
+        
+        if ((classe as any).academicPeriod?.period) {
+          classeSemestre = (classe as any).academicPeriod.period
+        } else if (classe.period) {
+          const periodParts = classe.period.split('/')
+          if (periodParts.length > 0) {
+            classeSemestre = periodParts[0].replace('-', '.')
+          } else {
+            classeSemestre = classe.period.replace('-', '.')
+          }
+        } else if (classe.semester) {
+          classeSemestre = classe.semester.replace('-', '.')
+        }
+        
+        return classeSemestre === semestre
+      })
+    }
+    
+    if (filteredClasses.length === 0) {
       return { turmas: 0, alunos: 0, professores: new Set(), media: 0, frequencia: 0 }
     }
 
@@ -143,7 +167,7 @@ export async function calculateCourseStatistics(courseId: string): Promise<{
     const allGrades: number[] = []
     const allFrequencies: number[] = []
 
-    for (const classItem of classes) {
+    for (const classItem of filteredClasses) {
       if (classItem.teacher?.id) {
         professoresSet.add(classItem.teacher.id)
       }
@@ -175,7 +199,7 @@ export async function calculateCourseStatistics(courseId: string): Promise<{
       : 0
 
     return {
-      turmas: classes.length,
+      turmas: filteredClasses.length,
       alunos: totalAlunos,
       professores: professoresSet,
       media: Math.round(media * 10) / 10,
@@ -292,7 +316,7 @@ export async function getCoordinatorNotices(): Promise<CoordenadorComunicado[]> 
   }
 }
 
-export async function getCoordinatorDashboardData(coordinatorId: string): Promise<CoordenadorDashboardData> {
+export async function getCoordinatorDashboardData(coordinatorId: string, semestre?: string): Promise<CoordenadorDashboardData> {
   // Buscar departamentos do coordenador
   const departments = await getCoordinatorDepartments(coordinatorId)
   const departmentIds = departments.map(d => d.id)
@@ -327,7 +351,7 @@ export async function getCoordinatorDashboardData(coordinatorId: string): Promis
   const allTeacherIds = new Set<string>()
 
   for (const course of courses) {
-    const stats = await calculateCourseStatistics(course.id)
+    const stats = await calculateCourseStatistics(course.id, semestre)
     
     totalTurmas += stats.turmas
     totalAlunos += stats.alunos
@@ -379,6 +403,86 @@ export async function getCoordinatorDashboardData(coordinatorId: string): Promis
     desempenhoData,
     professores: teachers,
     comunicados: notices
+  }
+}
+
+/**
+ * Obtém a lista de semestres disponíveis para um coordenador
+ * @param coordinatorId ID do coordenador
+ * @returns Array de objetos com id e nome do semestre
+ */
+export const getSemestresDisponiveisCoordenador = async (coordinatorId: string): Promise<Array<{ id: string; nome: string; ativo: boolean }>> => {
+  try {
+    // Buscar departamentos do coordenador
+    const departments = await getCoordinatorDepartments(coordinatorId)
+    const departmentIds = departments.map(d => d.id)
+    
+    if (departmentIds.length === 0) {
+      return []
+    }
+
+    // Buscar cursos dos departamentos
+    const courses = await getCoursesByDepartments(departmentIds)
+    
+    // Buscar turmas de todos os cursos e extrair semestres únicos
+    const semestresMap = new Map<string, { id: string; nome: string; ativo: boolean }>()
+    
+    for (const course of courses) {
+      try {
+        const classes = await getCourseClasses(course.id)
+        
+        classes.forEach(classe => {
+          // Tentar obter semestre de academicPeriod.period, period ou semester
+          let semestreId: string | undefined
+          
+          if ((classe as any).academicPeriod?.period) {
+            semestreId = (classe as any).academicPeriod.period
+          } else if (classe.period) {
+            // Extrair semestre do formato "2025-1/2025" ou similar
+            const periodParts = classe.period.split('/')
+            if (periodParts.length > 0) {
+              semestreId = periodParts[0].replace('-', '.')
+            } else {
+              semestreId = classe.period.replace('-', '.')
+            }
+          } else if (classe.semester) {
+            semestreId = classe.semester.replace('-', '.')
+          }
+          
+          if (semestreId) {
+            // Normalizar formato para "2025.1"
+            const normalized = semestreId.replace('-', '.')
+            
+            if (!semestresMap.has(normalized)) {
+              semestresMap.set(normalized, {
+                id: normalized,
+                nome: normalized,
+                ativo: false
+              })
+            }
+          }
+        })
+      } catch (error) {
+        console.error(`Erro ao buscar turmas do curso ${course.id}:`, error)
+      }
+    }
+    
+    // Ordenar semestres (mais recente primeiro) e marcar o primeiro como ativo
+    const semestres = Array.from(semestresMap.values()).sort((a, b) => {
+      const [yearA, semA] = a.id.split('.').map(Number)
+      const [yearB, semB] = b.id.split('.').map(Number)
+      if (yearA !== yearB) return yearB - yearA
+      return semB - semA
+    })
+    
+    if (semestres.length > 0) {
+      semestres[0].ativo = true
+    }
+    
+    return semestres
+  } catch (error) {
+    console.error("Erro ao buscar semestres disponíveis:", error)
+    return []
   }
 }
 
