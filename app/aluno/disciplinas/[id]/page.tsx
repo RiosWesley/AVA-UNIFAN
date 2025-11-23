@@ -21,21 +21,39 @@ import { listExams, listAttemptsByStudent, getExamById, ExamDTO, ExamAttemptDTO 
 import { useLiveSession } from "@/src/hooks/useLiveSession"
 import { listLiveSessionsByClass } from "@/src/services/liveSessionsService"
 import RemoteVideo from "@/components/layout/RemoteVideo"
+import { me } from '@/src/services/auth'
 
 export default function DisciplinaDetalhePage() {
   const params = useParams() as { id: string }
   const classId = params.id
   const router = useRouter()
+  const [studentId, setStudentId] = useState<string | null>(null)
 
-  // Fallback: obter studentId do localStorage se existir ou usar um mock UUID consistente com outras telas
-  const getStudentId = () => {
-    if (typeof window !== 'undefined') {
-      const ls = localStorage.getItem('ava:studentId')
-      if (ls) return ls
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
     }
-    return '29bc17a4-0b68-492b-adef-82718898d9eb'
-  }
-  const studentId = getStudentId()
+    init()
+  }, [router])
 
   // Detalhes da turma para preencher cabeçalho
   const classDetailsQuery = useQuery({
@@ -86,7 +104,7 @@ export default function DisciplinaDetalhePage() {
       if (!activitiesQuery.data || !studentId) return
       try {
         const results = await Promise.all(
-          activitiesQuery.data.map((a) => apiClient.getActivitySubmissionStatus(String(a.id), studentId).catch(() => null))
+          activitiesQuery.data.map((a) => apiClient.getActivitySubmissionStatus(String(a.id), studentId!).catch(() => null))
         )
         const map: Record<string, ActivitySubmissionStatus> = {}
         results.forEach((status) => {
@@ -121,6 +139,7 @@ export default function DisciplinaDetalhePage() {
   // Upload activity mutation
   const uploadActivityMutation = useMutation({
     mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment: string }) => {
+      if (!studentId) throw new Error("Usuário não autenticado")
       const res = await apiClient.uploadActivitySubmission({
         studentId,
         activityId,
@@ -130,6 +149,7 @@ export default function DisciplinaDetalhePage() {
       return res
     },
     onSuccess: (data, variables) => {
+      if (!studentId) return
       toast({
         title: "Atividade enviada com sucesso! 🎉",
         description: `${data.fileName} foi enviada para a atividade.`,
@@ -273,6 +293,7 @@ export default function DisciplinaDetalhePage() {
   // Mutation for marking video as watched
   const markAsWatchedMutation = useMutation({
     mutationFn: async (videoId: number) => {
+      if (!studentId) throw new Error("Usuário não autenticado")
       const original = videoLessonsQuery.data?.find(v => Number(v.id) === videoId || v.id === String(videoId))
       const idStr = original?.id ? String(original.id) : String(videoId)
       await apiClient.markVideoLessonWatched(idStr, studentId)
@@ -363,7 +384,7 @@ export default function DisciplinaDetalhePage() {
 
   const attemptsQuery = useQuery({
     queryKey: ['exam-attempts-student', studentId],
-    queryFn: () => listAttemptsByStudent(studentId),
+    queryFn: () => listAttemptsByStudent(studentId!),
     enabled: !!studentId,
   })
 
@@ -378,7 +399,7 @@ export default function DisciplinaDetalhePage() {
   const [activeTab, setActiveTab] = useState<string>('avisos')
 
   const entrarNaVideoChamada = (reuniao: VideoChamada) => {
-    if (reuniao.status !== 'disponivel') return;
+    if (reuniao.status !== 'disponivel' || !studentId) return;
     setIsJoining(true);
     joinSession(classId, studentId);
     setVideoChamadaSelecionada(reuniao);
@@ -478,7 +499,7 @@ export default function DisciplinaDetalhePage() {
   }
 
   const handleResponderDiscussao = (texto: string, parentId?: number) => {
-    if (!forumSelecionado) return
+    if (!forumSelecionado || !studentId) return
     ;(async () => {
       try {
         const realParentId = parentId ? postIdMap[parentId] : undefined
@@ -1232,6 +1253,7 @@ export default function DisciplinaDetalhePage() {
                             {!isFinalized && canStart && attempt?.status !== 'submitted' && attempt?.status !== 'graded' && (
                               <Button
                                 onClick={async () => {
+                                  if (!studentId) return
                                   try {
                                     // Verificar novamente se não há tentativa finalizada antes de abrir
                                     const currentAttempts = await listAttemptsByStudent(studentId)

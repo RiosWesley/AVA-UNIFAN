@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LiquidGlassCard } from "@/components/liquid-glass"
@@ -13,13 +14,16 @@ import { Activity, Users, AlertTriangle, BookOpen, Percent, BarChart3, Graduatio
 import { AttendanceData, DisciplineAttendance } from "@/src/types/Frequencia"
 import { getStudentFrequencia } from "@/src/services/FrequenciaService"
 import { PageSpinner } from "@/components/ui/page-spinner"
+import { me } from '@/src/services/auth'
 
 export default function FrequenciaPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   
   const [attendanceData, setAttendanceData] = useState<AttendanceData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [studentId, setStudentId] = useState<string | null>(null)
   
   const [semestreSelecionado, setSemestreSelecionado] = useState<string>("2025-2")
   const [modalOpen, setModalOpen] = useState(false)
@@ -32,12 +36,38 @@ export default function FrequenciaPage() {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
     return () => observer.disconnect()
   }, [])
+
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
   
   useEffect(() => {
     const fetchInitialData = async () => {
+       if (!studentId) return
        setIsLoading(true)
        try {
-           const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
            const data = await getStudentFrequencia(studentId, semestreSelecionado); 
            if (data.availableSemesters.length > 0) {
              setSemestreSelecionado(data.availableSemesters[0]);
@@ -48,17 +78,15 @@ export default function FrequenciaPage() {
        }
    };
    fetchInitialData();
- }, []);
+ }, [studentId]);
 
   useEffect(() => {
-    if (!semestreSelecionado) return;
+    if (!semestreSelecionado || !studentId) return;
 
     const loadFrequenciaData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        //MOCKADO POR ENQUANTO
-        const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
         const data = await getStudentFrequencia(studentId, semestreSelecionado);
         setAttendanceData(data);
       } catch (err: any) {
@@ -69,7 +97,7 @@ export default function FrequenciaPage() {
     };
     
     loadFrequenciaData();
-  }, [semestreSelecionado]);
+  }, [semestreSelecionado, studentId]);
 
     const calcularPercentualFaltas = (d: DisciplineAttendance): number => {
       const faltas = d.absencesByUnit.unit1 + d.absencesByUnit.unit2;

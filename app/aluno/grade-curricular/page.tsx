@@ -60,35 +60,28 @@ export default function AlunoGradeCurricularPage() {
   }, [])
 
   useEffect(() => {
-    // ID mockado para desenvolvimento - exibir dados do usuário específico
-    const MOCK_STUDENT_ID = "29bc17a4-0b68-492b-adef-82718898d9eb"
-    
-    // Usa o ID mockado diretamente
-    setStudentId(MOCK_STUDENT_ID)
-    
-    // Código original comentado caso precise reativar:
-    // const init = async () => {
-    //   const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
-    //   if (!token) {
-    //     router.push("/")
-    //     return
-    //   }
-    //   const storedUserId = localStorage.getItem("ava:userId")
-    //   if (storedUserId) {
-    //     setStudentId(storedUserId)
-    //     return
-    //   }
-    //   try {
-    //     const current = await me()
-    //     if (current?.id) {
-    //       localStorage.setItem("ava:userId", current.id)
-    //       setStudentId(current.id)
-    //     }
-    //   } catch {
-    //     router.push("/")
-    //   }
-    // }
-    // init()
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
   }, [router])
 
   useEffect(() => {

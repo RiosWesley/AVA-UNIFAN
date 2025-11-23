@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
@@ -13,10 +14,13 @@ import { PerformanceData } from "@/src/types/Desempenho"
 import { getSemestresDisponiveis } from "@/src/services/ClassesService"
 import { getStudentGradebook } from "@/src/services/BoletimService"
 import { PageSpinner } from "@/components/ui/page-spinner"
+import { me } from '@/src/services/auth'
 
 export default function DesempenhoPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [animatedValues, setAnimatedValues] = useState<{[key: string]: number}>({})
+  const [studentId, setStudentId] = useState<string | null>(null)
 
    const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -30,14 +34,41 @@ export default function DesempenhoPage() {
     checkTheme();
     const observer = new MutationObserver(checkTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
 
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
+
+  useEffect(() => {
     const loadPerformanceData = async () => {
+      if (!studentId) return
       try {
         setIsLoading(true);
         setError(null);
-        
-        // MOCKADO POR ENQUANTO
-        const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
         
         // Buscar gradebook para ter acesso aos semestres
         const gradebook = await getStudentGradebook(studentId);
@@ -68,9 +99,7 @@ export default function DesempenhoPage() {
     };
     
     loadPerformanceData();
-
-    return () => observer.disconnect();
-  }, []);
+  }, [studentId]);
 
   // Filtrar dados de desempenho por semestre
   const performanceDataFiltrado = useMemo(() => {
@@ -360,7 +389,7 @@ export default function DesempenhoPage() {
                 <div className="h-64 w-full">
                 <div className="flex justify-around h-full gap-2 px-2">
                               
-                  {performanceByDiscipline.map((item, i) => (
+                  {performanceByDiscipline.map((item: { disc: string; nota: number }, i: number) => (
                     <div key={i} className="flex flex-col justify-end items-center w-full group">
                                   
                       <div 

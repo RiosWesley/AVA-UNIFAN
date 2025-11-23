@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getStudentGradebook } from "@/src/services/BoletimService"
 import { getSemestresDisponiveis } from "@/src/services/ClassesService"
 import { GradebookData } from "@/src/types/Boletim"
+import { me } from '@/src/services/auth'
 
 const UNIDADES_PADRAO = ["1ª Unidade", "2ª Unidade", "Prova Final", "Média Final"];
 
@@ -42,12 +44,14 @@ function normalizarUnidade(unidade: string): string {
 }
 
 export default function AlunoBoletimPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false);
   const [gradebook, setGradebook] = useState<GradebookData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [semestreSelecionado, setSemestreSelecionado] = useState<string>("");
   const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([]);
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkTheme = () => {
@@ -59,12 +63,41 @@ export default function AlunoBoletimPage() {
       attributes: true,
       attributeFilter: ["class"]
     });
+    return () => observer.disconnect();
+  }, []);
 
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
+
+  useEffect(() => {
     const loadGradebookData = async () => {
+      if (!studentId) return
       setIsLoading(true);
       setError(null);
       try {
-        const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
         const data = await getStudentGradebook(studentId);
         setGradebook(data);
         
@@ -87,9 +120,7 @@ export default function AlunoBoletimPage() {
     };
 
     loadGradebookData();
-
-    return () => observer.disconnect();
-  }, []);
+  }, [studentId]);
 
   if (isLoading) {
     return (
