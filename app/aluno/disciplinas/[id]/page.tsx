@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
@@ -367,8 +367,12 @@ export default function DisciplinaDetalhePage() {
     leaveSession, 
     isConnected,
     isScreenSharing,
+    isMuted,
+    isVideoOff,
     startScreenSharing,
     stopScreenSharing,
+    toggleMute,
+    toggleVideo,
     localVideoRef,
     remoteStreams
   } = useLiveSession();
@@ -404,6 +408,7 @@ export default function DisciplinaDetalhePage() {
   // Estado para menu de compartilhamento de tela
   const [screenShareMenuOpen, setScreenShareMenuOpen] = useState(false)
   const screenShareMenuRef = useRef<HTMLDivElement>(null)
+  const [hasRaisedHand, setHasRaisedHand] = useState(false)
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -422,10 +427,23 @@ export default function DisciplinaDetalhePage() {
     }
   }, [screenShareMenuOpen])
 
-  const entrarNaVideoChamada = (reuniao: VideoChamada) => {
+  const entrarNaVideoChamada = async (reuniao: VideoChamada) => {
     if (reuniao.status !== 'disponivel' || !studentId) return;
     setIsJoining(true);
-    joinSession(classId, studentId);
+    
+    // Obter nome do usuário
+    let userName: string | undefined;
+    try {
+      const current = await me();
+      userName = current?.name;
+      if (userName) {
+        localStorage.setItem('ava:userName', userName);
+      }
+    } catch {
+      userName = localStorage.getItem('ava:userName') || undefined;
+    }
+    
+    joinSession(classId, studentId, 'student', userName);
     setVideoChamadaSelecionada(reuniao);
     setModalVideoChamadaAberto(true);
 };
@@ -1366,64 +1384,87 @@ export default function DisciplinaDetalhePage() {
         dataHora={videoChamadaSelecionada?.dataHora}
       >
         <div className="flex flex-col h-full gap-4">
-          {/* Controles de Compartilhamento */}
-          <div className="flex items-center justify-end gap-2">
-            {!isScreenSharing ? (
-              <div className="relative" ref={screenShareMenuRef}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setScreenShareMenuOpen(!screenShareMenuOpen)}
-                >
-                  <Monitor className="h-4 w-4 mr-2" />
-                  Compartilhar Tela
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                </Button>
-                {screenShareMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-popover border rounded-md shadow-lg z-50">
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-t-md"
-                      onClick={() => {
-                        startScreenSharing('screen');
-                        setScreenShareMenuOpen(false);
-                      }}
-                    >
-                      Tela Inteira
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent"
-                      onClick={() => {
-                        startScreenSharing('window');
-                        setScreenShareMenuOpen(false);
-                      }}
-                    >
-                      Janela
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-b-md"
-                      onClick={() => {
-                        startScreenSharing('browser');
-                        setScreenShareMenuOpen(false);
-                      }}
-                    >
-                      Aba do Navegador
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
+          {/* Controles */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Controles do Aluno */}
+            <div className="flex items-center gap-2">
               <Button
-                variant="destructive"
+                variant={isMuted ? "destructive" : "outline"}
                 size="sm"
-                onClick={() => {
-                  stopScreenSharing();
-                  setScreenShareMenuOpen(false);
-                }}
+                onClick={toggleMute}
               >
-                <MonitorStop className="h-4 w-4 mr-2" />
-                Parar Compartilhamento
+                {isMuted ? <MicOff className="h-4 w-4 mr-2" /> : <Mic className="h-4 w-4 mr-2" />}
+                {isMuted ? "Microfone Desligado" : "Silenciar"}
               </Button>
-            )}
+              <Button
+                variant={isVideoOff ? "destructive" : "outline"}
+                size="sm"
+                onClick={toggleVideo}
+              >
+                {isVideoOff ? <VideoOff className="h-4 w-4 mr-2" /> : <Video className="h-4 w-4 mr-2" />}
+                {isVideoOff ? "Câmera Desligada" : "Desligar Câmera"}
+              </Button>
+            </div>
+
+            {/* Controles de Compartilhamento */}
+            <div className="flex items-center gap-2">
+              {!isScreenSharing ? (
+                <div className="relative" ref={screenShareMenuRef}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScreenShareMenuOpen(!screenShareMenuOpen)}
+                  >
+                    <Monitor className="h-4 w-4 mr-2" />
+                    Compartilhar Tela
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                  {screenShareMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-popover border rounded-md shadow-lg z-50">
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-t-md"
+                        onClick={() => {
+                          startScreenSharing('screen');
+                          setScreenShareMenuOpen(false);
+                        }}
+                      >
+                        Tela Inteira
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent"
+                        onClick={() => {
+                          startScreenSharing('window');
+                          setScreenShareMenuOpen(false);
+                        }}
+                      >
+                        Janela
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-b-md"
+                        onClick={() => {
+                          startScreenSharing('browser');
+                          setScreenShareMenuOpen(false);
+                        }}
+                      >
+                        Aba do Navegador
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    stopScreenSharing();
+                    setScreenShareMenuOpen(false);
+                  }}
+                >
+                  <MonitorStop className="h-4 w-4 mr-2" />
+                  Parar Compartilhamento
+                </Button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
