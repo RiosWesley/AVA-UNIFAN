@@ -48,8 +48,16 @@ export default function CoordenadorDashboard() {
     async function loadSemestres() {
       try {
         setLoadingSemestres(true)
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
         const user = await getCurrentUser()
-        if (!mounted || !user?.id) return
+        if (!mounted || !user?.id) {
+          router.push("/")
+          return
+        }
 
         const semestresDisponiveis = await getSemestresDisponiveisCoordenador(user.id)
         if (!mounted) return
@@ -65,6 +73,9 @@ export default function CoordenadorDashboard() {
         }
       } catch (err) {
         console.error('Erro ao buscar semestres:', err)
+        if (mounted) {
+          router.push("/")
+        }
       } finally {
         if (mounted) setLoadingSemestres(false)
       }
@@ -75,7 +86,7 @@ export default function CoordenadorDashboard() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [router])
 
   useEffect(() => {
     let mounted = true
@@ -87,11 +98,18 @@ export default function CoordenadorDashboard() {
         setLoading(true)
         setError(null)
 
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+
         const user = await getCurrentUser()
         if (!mounted) return
 
         if (!user?.id) {
-          throw new Error('Usuário não autenticado')
+          router.push("/")
+          return
         }
 
         const data = await getCoordinatorDashboardData(user.id, semestreSelecionado || undefined)
@@ -100,7 +118,9 @@ export default function CoordenadorDashboard() {
         setDashboardData(data)
       } catch (err: any) {
         console.error('Erro ao carregar dados do dashboard:', err)
-        setError(err?.message || 'Não foi possível carregar os dados do dashboard.')
+        if (mounted) {
+          router.push("/")
+        }
       } finally {
         if (mounted) setLoading(false)
       }
@@ -111,7 +131,7 @@ export default function CoordenadorDashboard() {
     return () => {
       mounted = false
     }
-  }, [semestreSelecionado, semestres.length])
+  }, [semestreSelecionado, semestres.length, router])
 
   // Resetar página quando os cursos mudarem ou ajustar se necessário
   useEffect(() => {

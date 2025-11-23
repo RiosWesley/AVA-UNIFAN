@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,6 +14,7 @@ import { Users, Plus, Search, Edit, Trash2, Mail, GraduationCap, Loader2 } from 
 import { getDepartments, getDepartmentTeachers, removeTeacherFromDepartment, addTeachersToDepartment, type Department, type Teacher } from "@/src/services/departmentsService"
 import { usuariosService } from "@/src/services/usuariosService"
 import { toastError, toastSuccess } from "@/components/ui/toast"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 
 type Professor = {
   id: string
@@ -24,10 +26,8 @@ type Professor = {
   status: "Ativo" | "Inativo"
 }
 
-// ID mockado do coordenador para buscar os departamentos
-const MOCK_COORDINATOR_ID = "5f634e5c-d028-434d-af46-cc9ea23eb77b"
-
 export default function ProfessoresCoordenadorPage() {
+  const router = useRouter()
   const [professores, setProfessores] = useState<Professor[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("")
@@ -36,6 +36,7 @@ export default function ProfessoresCoordenadorPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<"todos" | "Ativo" | "Inativo">("todos")
   const [activeTab, setActiveTab] = useState<"lista" | "cadastro">("lista")
+  const [coordinatorId, setCoordinatorId] = useState<string | null>(null)
 
   const [form, setForm] = useState<{
     nome: string
@@ -107,13 +108,37 @@ export default function ProfessoresCoordenadorPage() {
     setCpfError(null)
   }
 
-  // Carregar departamentos do coordenador (usando ID mockado)
+  // Buscar usuário autenticado
   useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (user?.id) {
+          setCoordinatorId(user.id)
+        } else {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
+
+  // Carregar departamentos do coordenador
+  useEffect(() => {
+    if (!coordinatorId) return
+
     async function loadDepartments() {
       try {
         setIsLoading(true)
-        // Usar ID mockado do coordenador para buscar o departamento onde ele é coordenador
-        const depts = await getDepartments(MOCK_COORDINATOR_ID)
+        const depts = await getDepartments(coordinatorId ?? undefined)
         
         console.log("Departamentos retornados:", depts)
         
@@ -137,7 +162,7 @@ export default function ProfessoresCoordenadorPage() {
     }
 
     loadDepartments()
-  }, [])
+  }, [coordinatorId])
 
   // Carregar professores quando o departamento mudar
   useEffect(() => {

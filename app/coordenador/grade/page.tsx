@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
@@ -47,6 +48,7 @@ const HORARIOS_DISPONIVEIS = [
 ]
 
 export default function GradeHorariaPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroCurso, setFiltroCurso] = useState<string>("todos")
@@ -158,8 +160,16 @@ export default function GradeHorariaPage() {
       try {
         setLoading(true)
         setLoadingSemestres(true)
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
         const user = await getCurrentUser()
-        if (!mounted || !user?.id) return
+        if (!mounted || !user?.id) {
+          router.push("/")
+          return
+        }
 
         const semestresDisponiveis = await getSemestresDisponiveisCoordenador(user.id)
         if (!mounted) return
@@ -175,6 +185,9 @@ export default function GradeHorariaPage() {
         }
       } catch (err) {
         console.error('Erro ao buscar semestres:', err)
+        if (mounted) {
+          router.push("/")
+        }
       } finally {
         if (mounted) {
           setLoadingSemestres(false)
@@ -188,7 +201,7 @@ export default function GradeHorariaPage() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [router])
 
   const horariosFiltrados = horarios.filter(horario => {
     const matchesSearch = 

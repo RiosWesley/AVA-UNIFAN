@@ -33,6 +33,7 @@ import {
   type BackendCourseStudent
 } from "@/src/services/coursesService"
 import { Combobox } from "@/components/ui/combobox"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 
 type Disciplina = {
   id: string
@@ -204,6 +205,27 @@ export default function CursoDetalhePage() {
 
     return () => observer.disconnect()
   }, [])
+
+  // Verificar autenticação
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   const loadData = useCallback(async () => {
     try {
