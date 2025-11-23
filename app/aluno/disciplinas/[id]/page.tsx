@@ -370,7 +370,7 @@ export default function DisciplinaDetalhePage() {
     remoteStreams
   } = useLiveSession();
 
-  type VideoChamada = { id: number; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
+  type VideoChamada = { id: string; titulo: string; dataHora: string; startAt: string; endAt: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
   
   const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
   const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
@@ -428,7 +428,7 @@ export default function DisciplinaDetalhePage() {
             now < start ? 'agendada' : 
             (now >= start && now <= end) ? 'disponivel' : 
             'encerrada';
-        return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: '#' };
+        return { id: s.id, titulo: s.title, dataHora: s.startAt, startAt: s.startAt, endAt: s.endAt || new Date(start + 2 * 60 * 60 * 1000).toISOString(), status, link: s.meetingUrl || '#' };
     });
   }, [liveSessionsQuery.data]);
 
@@ -1077,25 +1077,38 @@ export default function DisciplinaDetalhePage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center"><CalendarClock className="h-5 w-5 mr-2"/>Vídeo-chamadas</h3>
                 {videoChamadas.map((reuniao) => {
-                  const data = new Date(reuniao.dataHora)
-                  const agora = new Date()
+                  const dataInicio = new Date(reuniao.startAt)
+                  const dataTermino = new Date(reuniao.endAt)
                   const podeEntrar = reuniao.status === 'disponivel'
                   const statusLabel = reuniao.status === 'agendada' ? 'Agendada' : reuniao.status === 'disponivel' ? 'Disponível' : 'Encerrada'
                   const statusVariant = reuniao.status === 'disponivel' ? 'default' : reuniao.status === 'agendada' ? 'secondary' : 'destructive'
                   return (
                     <Card key={reuniao.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">{reuniao.titulo}</h4>
-                            <p className="text-xs text-muted-foreground">{data.toLocaleString('pt-BR')}</p>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg">{reuniao.titulo}</CardTitle>
+                            <CardDescription className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                <span>Início: {dataInicio.toLocaleString('pt-BR')}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                <span>Término: {dataTermino.toLocaleString('pt-BR')}</span>
+                              </div>
+                            </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant={statusVariant as any}>{statusLabel}</Badge>
-                            <Button size="sm" variant={podeEntrar ? 'default' : 'outline'} disabled={!podeEntrar} onClick={() => entrarNaVideoChamada(reuniao)}>
-                              <Video className="h-4 w-4 mr-2"/> Entrar
-                            </Button>
                           </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-end">
+                          <Button size="sm" variant={podeEntrar ? 'default' : 'outline'} disabled={!podeEntrar} onClick={() => entrarNaVideoChamada(reuniao)}>
+                            <Video className="h-4 w-4 mr-2"/> Entrar
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>

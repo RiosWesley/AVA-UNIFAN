@@ -16,7 +16,7 @@ import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
-import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada, ModalProva, ModalQuestaoProva, ModalTentativasProva, ModalDetalhesTentativa } from '@/components/modals'
+import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada, ModalVideoChamadaForm, ModalProva, ModalQuestaoProva, ModalTentativasProva, ModalDetalhesTentativa } from '@/components/modals'
 import { useParams, useRouter } from "next/navigation"
 import { getClassById } from "@/src/services/ClassesService"
 import { getEnrollmentsByClass, EnrollmentDTO } from "@/src/services/enrollmentsService"
@@ -24,7 +24,7 @@ import { listActivitiesByClass, createActivity, updateActivity, deleteActivity, 
 import { listMaterialsByClass, createMaterial, updateMaterial, deleteMaterial, MaterialDTO } from "@/src/services/materialsService"
 import { listForumsByClass, createForum, updateForum, deleteForum, ForumDTO } from "@/src/services/forumsService"
 import { listPostsByForum, createForumPost, ForumPostDTO } from "@/src/services/forumPostsService"
-import { listLiveSessionsByClass, createLiveSession, LiveSessionDTO } from "@/src/services/liveSessionsService"
+import { listLiveSessionsByClass, createLiveSession, updateLiveSession, deleteLiveSession, getLiveSessionById, LiveSessionDTO, CreateLiveSessionPayload, UpdateLiveSessionPayload } from "@/src/services/liveSessionsService"
 import { getClassGradebook, createGradeForActivity, getActivityGradebook } from "@/src/services/gradesService"
 import { getClassAttendanceTable } from "@/src/services/attendancesService"
 import { useLiveSession } from "@/src/hooks/useLiveSession"
@@ -78,10 +78,13 @@ export default function TurmaDetalhePage() {
   const [forumSelecionado, setForumSelecionado] = useState<any>(null)
 
   // Estados para videochamadas
-  type VideoChamada = { id: string; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
+  type VideoChamada = { id: string; titulo: string; dataHora: string; startAt: string; endAt: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
   const [videoChamadas, setVideoChamadas] = useState<VideoChamada[]>([])
   const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
   const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
+  const [modalVideoChamadaFormOpen, setModalVideoChamadaFormOpen] = useState(false)
+  const [videoChamadaEditando, setVideoChamadaEditando] = useState<LiveSessionDTO | null>(null)
+  const [modoModalVideoChamada, setModoModalVideoChamada] = useState<'criar' | 'editar'>('criar')
 
   // Estados para provas virtuais
   const [provas, setProvas] = useState<ExamDTO[]>([])
@@ -252,7 +255,7 @@ export default function TurmaDetalhePage() {
           const start = new Date(s.startAt).getTime()
           const end = new Date(s.endAt).getTime()
           const status: 'agendada' | 'disponivel' | 'encerrada' = now < start ? 'agendada' : (now >= start && now <= end ? 'disponivel' : 'encerrada')
-          return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: s.meetingUrl || '#' }
+          return { id: s.id, titulo: s.title, dataHora: s.startAt, startAt: s.startAt, endAt: s.endAt, status, link: s.meetingUrl || '#' }
         })
         setVideoChamadas(sessionsMapped)
 
@@ -820,6 +823,69 @@ export default function TurmaDetalhePage() {
       setModalVideoChamadaAberto(false);
   };
 
+  // Funções para videochamadas
+  const handleNovaVideoChamada = () => {
+    setModoModalVideoChamada('criar')
+    setVideoChamadaEditando(null)
+    setModalVideoChamadaFormOpen(true)
+  }
+
+  const handleEditarVideoChamada = async (videoChamada: VideoChamada) => {
+    try {
+      const session = await getLiveSessionById(videoChamada.id)
+      setModoModalVideoChamada('editar')
+      setVideoChamadaEditando(session)
+      setModalVideoChamadaFormOpen(true)
+    } catch (e: any) {
+      toast({ title: "Erro ao carregar videochamada", description: "Tente novamente." })
+    }
+  }
+
+  const handleSalvarVideoChamada = async (payload: CreateLiveSessionPayload | UpdateLiveSessionPayload) => {
+    try {
+      if (modoModalVideoChamada === 'criar') {
+        await createLiveSession(payload as CreateLiveSessionPayload)
+      } else if (videoChamadaEditando?.id) {
+        await updateLiveSession(videoChamadaEditando.id, payload as UpdateLiveSessionPayload)
+      }
+      
+      // Recarregar videochamadas
+      const sessions = await listLiveSessionsByClass(classId)
+      const sessionsMapped: VideoChamada[] = (sessions as LiveSessionDTO[]).map(s => {
+        const now = Date.now()
+        const start = new Date(s.startAt).getTime()
+        const end = new Date(s.endAt).getTime()
+        const status: 'agendada' | 'disponivel' | 'encerrada' = now < start ? 'agendada' : (now >= start && now <= end ? 'disponivel' : 'encerrada')
+        return { id: s.id, titulo: s.title, dataHora: s.startAt, startAt: s.startAt, endAt: s.endAt, status, link: s.meetingUrl || '#' }
+      })
+      setVideoChamadas(sessionsMapped)
+      
+      toast({ title: "Videochamada salva", description: "A videochamada foi salva com sucesso!" })
+      setModalVideoChamadaFormOpen(false)
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar videochamada", description: e?.message || "Tente novamente." })
+    }
+  }
+
+  const handleDeletarVideoChamada = async (videoChamada: VideoChamada) => {
+    try {
+      await deleteLiveSession(videoChamada.id)
+      // Recarregar videochamadas
+      const sessions = await listLiveSessionsByClass(classId)
+      const sessionsMapped: VideoChamada[] = (sessions as LiveSessionDTO[]).map(s => {
+        const now = Date.now()
+        const start = new Date(s.startAt).getTime()
+        const end = new Date(s.endAt).getTime()
+        const status: 'agendada' | 'disponivel' | 'encerrada' = now < start ? 'agendada' : (now >= start && now <= end ? 'disponivel' : 'encerrada')
+        return { id: s.id, titulo: s.title, dataHora: s.startAt, startAt: s.startAt, endAt: s.endAt, status, link: s.meetingUrl || '#' }
+      })
+      setVideoChamadas(sessionsMapped)
+      toast({ title: "Videochamada excluída", description: "A videochamada foi excluída com sucesso." })
+    } catch (e: any) {
+      toast({ title: "Erro ao excluir videochamada", description: "Tente novamente." })
+    }
+  }
+
   // Funções para provas virtuais
   const handleNovaProva = () => {
     setModoModalProva('criar')
@@ -1324,64 +1390,67 @@ export default function TurmaDetalhePage() {
                     <Video className="h-5 w-5 mr-2" />
                     Aula Online
                   </h3>
-                  <LiquidGlassButton onClick={async () => {
-                    try {
-                      const start = new Date()
-                      const end = new Date(start.getTime() + 60 * 60 * 1000)
-                      await createLiveSession({
-                        classId,
-                        title: 'Nova Videochamada',
-                        startAt: start.toISOString(),
-                        endAt: end.toISOString(),
-                        meetingUrl: '#'
-                      })
-                      const sessions = await listLiveSessionsByClass(classId)
-                      const sessionsMapped: VideoChamada[] = (sessions as LiveSessionDTO[]).map(s => {
-                        const now = Date.now()
-                        const startMs = new Date(s.startAt).getTime()
-                        const endMs = new Date(s.endAt).getTime()
-                        const status: 'agendada' | 'disponivel' | 'encerrada' = now < startMs ? 'agendada' : (now >= startMs && now <= endMs ? 'disponivel' : 'encerrada')
-                        return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: s.meetingUrl || '#' }
-                      })
-                      setVideoChamadas(sessionsMapped)
-                      toast({ title: "Sessão criada", description: "Videochamada criada com sucesso." })
-                    } catch (e: any) {
-                      toast({ title: "Erro ao criar sessão", description: "Tente novamente." })
-                    }
-                  }}>
+                  <LiquidGlassButton onClick={handleNovaVideoChamada}>
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Videochamada
                   </LiquidGlassButton>
                 </div>
 
                 {videoChamadas.map((reuniao) => {
-                  const data = new Date(reuniao.dataHora)
+                  const dataInicio = new Date(reuniao.startAt)
+                  const dataTermino = new Date(reuniao.endAt)
                   const podeEntrar = reuniao.status === 'disponivel'
                   const statusLabel = reuniao.status === 'agendada' ? 'Agendada' : reuniao.status === 'disponivel' ? 'Disponível' : 'Encerrada'
                   const statusVariant = reuniao.status === 'disponivel' ? 'default' : reuniao.status === 'agendada' ? 'secondary' : 'destructive'
                   return (
                     <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={reuniao.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">{reuniao.titulo}</h4>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <CalendarClock className="h-3 w-3" />
-                              {data.toLocaleString('pt-BR')}
-                            </p>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg">{reuniao.titulo}</CardTitle>
+                            <CardDescription className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                <span>Início: {dataInicio.toLocaleString('pt-BR')}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                <span>Término: {dataTermino.toLocaleString('pt-BR')}</span>
+                              </div>
+                            </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant={statusVariant as any}>{statusLabel}</Badge>
-                            <LiquidGlassButton 
-                              size="sm" 
-                              variant={podeEntrar ? 'default' : 'outline'} 
-                              disabled={!podeEntrar} 
-                              onClick={() => entrarNaVideoChamada(reuniao)}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <LiquidGlassButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditarVideoChamada(reuniao)}
                             >
-                              <Video className="h-4 w-4 mr-2"/>
-                              Entrar
+                              <Edit className="h-4 w-4" />
+                            </LiquidGlassButton>
+                            <LiquidGlassButton
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeletarVideoChamada(reuniao)}
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </LiquidGlassButton>
                           </div>
+                          <LiquidGlassButton 
+                            size="sm" 
+                            variant={podeEntrar ? 'default' : 'outline'} 
+                            disabled={!podeEntrar} 
+                            onClick={() => entrarNaVideoChamada(reuniao)}
+                          >
+                            <Video className="h-4 w-4 mr-2"/>
+                            Entrar
+                          </LiquidGlassButton>
                         </div>
                       </CardContent>
                     </LiquidGlassCard>
@@ -1839,6 +1908,19 @@ export default function TurmaDetalhePage() {
           </div>
         </div>
       </ModalVideoChamada>
+
+      {/* Modal de Formulário de Videochamada */}
+      <ModalVideoChamadaForm
+        isOpen={modalVideoChamadaFormOpen}
+        onClose={() => {
+          setModalVideoChamadaFormOpen(false)
+          setVideoChamadaEditando(null)
+        }}
+        videoChamada={videoChamadaEditando}
+        classId={classId}
+        onSalvar={handleSalvarVideoChamada}
+        modo={modoModalVideoChamada}
+      />
 
       {/* Modal de Prova */}
       <ModalProva

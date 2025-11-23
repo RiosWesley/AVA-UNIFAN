@@ -19,6 +19,14 @@ export interface CreateLiveSessionPayload {
   meetingUrl?: string;
 }
 
+export interface UpdateLiveSessionPayload {
+  classId?: string;
+  title?: string;
+  startAt?: string; // ISO
+  endAt?: string;   // ISO
+  meetingUrl?: string;
+}
+
 export async function listLiveSessionsByClass(classId: string): Promise<LiveSessionDTO[]> {
   const { data } = await api.get(`/live-sessions/class/${classId}`);
   return data;
@@ -34,4 +42,12 @@ export async function getLiveSessionById(id: string): Promise<LiveSessionDTO> {
   return data;
 }
 
+export async function updateLiveSession(id: string, payload: UpdateLiveSessionPayload): Promise<LiveSessionDTO> {
+  const { data } = await api.patch(`/live-sessions/${id}`, payload);
+  return data;
+}
+
+export async function deleteLiveSession(id: string): Promise<void> {
+  await api.delete(`/live-sessions/${id}`);
+}
 
