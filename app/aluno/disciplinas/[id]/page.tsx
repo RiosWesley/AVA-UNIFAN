@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
 import { ModalRealizarProva, ModalResultadoProva } from '@/components/modals'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -366,6 +366,9 @@ export default function DisciplinaDetalhePage() {
     joinSession, 
     leaveSession, 
     isConnected,
+    isScreenSharing,
+    startScreenSharing,
+    stopScreenSharing,
     localVideoRef,
     remoteStreams
   } = useLiveSession();
@@ -397,6 +400,27 @@ export default function DisciplinaDetalhePage() {
 
   // Estado para controlar aba ativa
   const [activeTab, setActiveTab] = useState<string>('avisos')
+
+  // Estado para menu de compartilhamento de tela
+  const [screenShareMenuOpen, setScreenShareMenuOpen] = useState(false)
+  const screenShareMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (screenShareMenuRef.current && !screenShareMenuRef.current.contains(event.target as Node)) {
+        setScreenShareMenuOpen(false)
+      }
+    }
+
+    if (screenShareMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [screenShareMenuOpen])
 
   const entrarNaVideoChamada = (reuniao: VideoChamada) => {
     if (reuniao.status !== 'disponivel' || !studentId) return;
@@ -1341,29 +1365,93 @@ export default function DisciplinaDetalhePage() {
         titulo={videoChamadaSelecionada?.titulo}
         dataHora={videoChamadaSelecionada?.dataHora}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-          {/* Vídeo Local */}
-          <div className="relative">
-            <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
-            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">Sua Câmera</div>
-          </div>
-          
-          {/* Grid para Vídeos Remotos */}
-          <div className="grid grid-cols-2 grid-rows-2 gap-2">
-            {remoteStreams.size > 0 ? (
-              Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
-                <div key={socketId} className="relative">
-                  <RemoteVideo stream={stream} />
-                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
-                    Participante
+        <div className="flex flex-col h-full gap-4">
+          {/* Controles de Compartilhamento */}
+          <div className="flex items-center justify-end gap-2">
+            {!isScreenSharing ? (
+              <div className="relative" ref={screenShareMenuRef}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setScreenShareMenuOpen(!screenShareMenuOpen)}
+                >
+                  <Monitor className="h-4 w-4 mr-2" />
+                  Compartilhar Tela
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+                {screenShareMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-popover border rounded-md shadow-lg z-50">
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-t-md"
+                      onClick={() => {
+                        startScreenSharing('screen');
+                        setScreenShareMenuOpen(false);
+                      }}
+                    >
+                      Tela Inteira
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent"
+                      onClick={() => {
+                        startScreenSharing('window');
+                        setScreenShareMenuOpen(false);
+                      }}
+                    >
+                      Janela
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-b-md"
+                      onClick={() => {
+                        startScreenSharing('browser');
+                        setScreenShareMenuOpen(false);
+                      }}
+                    >
+                      Aba do Navegador
+                    </button>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
-                <p className="text-muted-foreground">Aguardando participantes...</p>
+                )}
               </div>
+            ) : (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  stopScreenSharing();
+                  setScreenShareMenuOpen(false);
+                }}
+              >
+                <MonitorStop className="h-4 w-4 mr-2" />
+                Parar Compartilhamento
+              </Button>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+            {/* Vídeo Local */}
+            <div className="relative">
+              <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
+              <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                {isScreenSharing ? 'Sua Tela' : 'Sua Câmera'}
+              </div>
+            </div>
+            
+            {/* Grid para Vídeos Remotos */}
+            <div className="grid grid-cols-2 grid-rows-2 gap-2">
+              {remoteStreams.size > 0 ? (
+                Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
+                  <div key={socketId} className="relative">
+                    <RemoteVideo stream={stream} />
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                      Participante
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
+                  <p className="text-muted-foreground">Aguardando participantes...</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </ModalVideoChamada>

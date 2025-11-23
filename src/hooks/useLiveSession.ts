@@ -13,11 +13,14 @@ const ICE_SERVERS = {
 
 export const useLiveSession = () => {
   const [isConnected, setIsConnected] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map());
 
   const socketRef = useRef<Socket | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -226,6 +229,7 @@ export const useLiveSession = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localStreamRef.current = stream;
+      cameraStreamRef.current = stream; // Salvar referência ao stream da câmera
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
@@ -260,14 +264,179 @@ export const useLiveSession = () => {
     }
   }, [setupWebRTCHandlers]);
 
+  const startScreenSharing = useCallback(async (type?: 'screen' | 'window' | 'browser') => {
+    try {
+      // Determinar displaySurface baseado no tipo
+      let displaySurface: 'monitor' | 'window' | 'browser' = 'monitor';
+      if (type === 'window') {
+        displaySurface = 'window';
+      } else if (type === 'browser') {
+        displaySurface = 'browser';
+      }
+
+      // Obter stream de tela
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          displaySurface: displaySurface as any,
+        },
+        audio: true, // Tentar capturar áudio do sistema (pode falhar em alguns navegadores)
+      });
+
+      screenStreamRef.current = screenStream;
+
+      // Obter track de vídeo da tela
+      const videoTrack = screenStream.getVideoTracks()[0];
+      if (!videoTrack) {
+        throw new Error('Nenhum track de vídeo encontrado no stream de tela');
+      }
+
+      // Substituir tracks em todas as peer connections
+      peerConnectionsRef.current.forEach((pc, socketId) => {
+        const videoSender = pc.getSenders().find(sender => sender.track?.kind === 'video');
+        if (videoSender) {
+          videoSender.replaceTrack(videoTrack).catch(error => {
+            console.error(`[ScreenShare] Erro ao substituir track para ${socketId}:`, error);
+            toast({ 
+              title: "Erro ao compartilhar tela", 
+              description: "Não foi possível atualizar a conexão com um participante." 
+            });
+          });
+        }
+      });
+
+      // Atualizar vídeo local
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = screenStream;
+      }
+
+      // Atualizar localStreamRef para o stream de tela
+      localStreamRef.current = screenStream;
+
+      setIsScreenSharing(true);
+
+      // Listener para quando o usuário para de compartilhar pela UI do navegador
+      videoTrack.onended = () => {
+        stopScreenSharing();
+      };
+
+      toast({ 
+        title: "Compartilhamento iniciado", 
+        description: "Sua tela está sendo compartilhada." 
+      });
+    } catch (error: any) {
+      console.error('[ScreenShare] Erro ao iniciar compartilhamento de tela:', error);
+      
+      // Não mostrar erro se o usuário cancelou
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        toast({ 
+          title: "Permissão negada", 
+          description: "Permissão de compartilhamento de tela foi negada." 
+        });
+      } else if (error.name === 'AbortError' || error.name === 'NotReadableError') {
+        // Usuário cancelou ou erro de leitura - não mostrar toast
+        return;
+      } else {
+        toast({ 
+          title: "Erro ao compartilhar tela", 
+          description: error.message || "Não foi possível iniciar o compartilhamento de tela." 
+        });
+      }
+    }
+  }, []);
+
+  const stopScreenSharing = useCallback(() => {
+    try {
+      // Parar tracks de tela
+      screenStreamRef.current?.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+
+      // Verificar se ainda temos stream da câmera
+      if (!cameraStreamRef.current) {
+        console.warn('[ScreenShare] Stream da câmera não encontrado. Tentando obter novamente...');
+        // Tentar obter stream da câmera novamente
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then(stream => {
+            cameraStreamRef.current = stream;
+            localStreamRef.current = stream;
+            
+            // Substituir tracks em todas as peer connections
+            const videoTrack = stream.getVideoTracks()[0];
+            if (videoTrack) {
+              peerConnectionsRef.current.forEach((pc, socketId) => {
+                const videoSender = pc.getSenders().find(sender => sender.track?.kind === 'video');
+                if (videoSender) {
+                  videoSender.replaceTrack(videoTrack).catch(error => {
+                    console.error(`[ScreenShare] Erro ao restaurar track da câmera para ${socketId}:`, error);
+                  });
+                }
+              });
+            }
+
+            // Atualizar vídeo local
+            if (localVideoRef.current) {
+              localVideoRef.current.srcObject = stream;
+            }
+          })
+          .catch(error => {
+            console.error('[ScreenShare] Erro ao obter stream da câmera:', error);
+            toast({ 
+              title: "Erro ao restaurar câmera", 
+              description: "Não foi possível restaurar a câmera." 
+            });
+          });
+      } else {
+        // Obter track de vídeo da câmera
+        const videoTrack = cameraStreamRef.current.getVideoTracks()[0];
+        if (videoTrack) {
+          // Substituir tracks em todas as peer connections
+          peerConnectionsRef.current.forEach((pc, socketId) => {
+            const videoSender = pc.getSenders().find(sender => sender.track?.kind === 'video');
+            if (videoSender) {
+              videoSender.replaceTrack(videoTrack).catch(error => {
+                console.error(`[ScreenShare] Erro ao restaurar track da câmera para ${socketId}:`, error);
+              });
+            }
+          });
+        }
+
+        // Atualizar vídeo local
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = cameraStreamRef.current;
+        }
+
+        // Atualizar localStreamRef para o stream da câmera
+        localStreamRef.current = cameraStreamRef.current;
+      }
+
+      setIsScreenSharing(false);
+
+      toast({ 
+        title: "Compartilhamento encerrado", 
+        description: "Voltando para a câmera." 
+      });
+    } catch (error) {
+      console.error('[ScreenShare] Erro ao parar compartilhamento de tela:', error);
+      toast({ 
+        title: "Erro", 
+        description: "Não foi possível parar o compartilhamento de tela." 
+      });
+    }
+  }, []);
+
   const leaveSession = useCallback(() => {
     console.log("Saindo da sessão e limpando recursos...");
 
     peerConnectionsRef.current.forEach(pc => pc.close());
     peerConnectionsRef.current.clear();
     
+    // Parar todos os tracks
     localStreamRef.current?.getTracks().forEach(track => track.stop());
+    cameraStreamRef.current?.getTracks().forEach(track => track.stop());
+    screenStreamRef.current?.getTracks().forEach(track => track.stop());
+    
     localStreamRef.current = null;
+    cameraStreamRef.current = null;
+    screenStreamRef.current = null;
     
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     
@@ -275,6 +444,7 @@ export const useLiveSession = () => {
     socketRef.current = null;
 
     setIsConnected(false);
+    setIsScreenSharing(false);
     setRemoteStreams(new Map());
   }, []);
   
@@ -289,6 +459,9 @@ export const useLiveSession = () => {
     joinSession, 
     leaveSession, 
     isConnected,
+    isScreenSharing,
+    startScreenSharing,
+    stopScreenSharing,
     localVideoRef,
     remoteStreams, 
   };

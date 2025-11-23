@@ -10,11 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle, Video, CalendarClock } from "lucide-react"
+import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle, Video, CalendarClock, Monitor, MonitorStop, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
 import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada, ModalVideoChamadaForm, ModalProva, ModalQuestaoProva, ModalTentativasProva, ModalDetalhesTentativa } from '@/components/modals'
 import { useParams, useRouter } from "next/navigation"
@@ -101,6 +101,27 @@ export default function TurmaDetalhePage() {
   const [modalDetalhesTentativaOpen, setModalDetalhesTentativaOpen] = useState(false)
   const [tentativaSelecionadaId, setTentativaSelecionadaId] = useState<string | null>(null)
   const [teacherId, setTeacherId] = useState<string | null>(null)
+
+  // Estado para menu de compartilhamento de tela
+  const [screenShareMenuOpen, setScreenShareMenuOpen] = useState(false)
+  const screenShareMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (screenShareMenuRef.current && !screenShareMenuRef.current.contains(event.target as Node)) {
+        setScreenShareMenuOpen(false)
+      }
+    }
+
+    if (screenShareMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [screenShareMenuOpen])
 
   const [turma, setTurma] = useState<{ nome: string; disciplina: string; alunos: number; mediaGeral: number; frequenciaMedia: number; }>(
     { nome: "Turma", disciplina: "-", alunos: 0, mediaGeral: 0, frequenciaMedia: 0 }
@@ -799,7 +820,10 @@ export default function TurmaDetalhePage() {
   const { 
     joinSession, 
     leaveSession, 
-    isConnected, 
+    isConnected,
+    isScreenSharing,
+    startScreenSharing,
+    stopScreenSharing,
     localVideoRef,
     remoteStreams
   } = useLiveSession();
@@ -1882,29 +1906,93 @@ export default function TurmaDetalhePage() {
         titulo={videoChamadaSelecionada?.titulo}
         dataHora={videoChamadaSelecionada?.dataHora}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-          {/* Vídeo Local */}
-          <div className="relative">
-            <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
-            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">Sua Câmera</div>
-          </div>
-          
-          {/* Grid para Vídeos Remotos */}
-          <div className="grid grid-cols-2 grid-rows-2 gap-2">
-            {remoteStreams.size > 0 ? (
-              Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
-                <div key={socketId} className="relative">
-                  <RemoteVideo stream={stream} />
-                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
-                    Participante
+        <div className="flex flex-col h-full gap-4">
+          {/* Controles de Compartilhamento */}
+          <div className="flex items-center justify-end gap-2">
+            {!isScreenSharing ? (
+              <div className="relative" ref={screenShareMenuRef}>
+                <LiquidGlassButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setScreenShareMenuOpen(!screenShareMenuOpen)}
+                >
+                  <Monitor className="h-4 w-4 mr-2" />
+                  Compartilhar Tela
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </LiquidGlassButton>
+                {screenShareMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-popover border rounded-md shadow-lg z-50">
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-t-md"
+                      onClick={() => {
+                        startScreenSharing('screen');
+                        setScreenShareMenuOpen(false);
+                      }}
+                    >
+                      Tela Inteira
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent"
+                      onClick={() => {
+                        startScreenSharing('window');
+                        setScreenShareMenuOpen(false);
+                      }}
+                    >
+                      Janela
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-b-md"
+                      onClick={() => {
+                        startScreenSharing('browser');
+                        setScreenShareMenuOpen(false);
+                      }}
+                    >
+                      Aba do Navegador
+                    </button>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
-                <p className="text-muted-foreground">Aguardando participantes...</p>
+                )}
               </div>
+            ) : (
+              <LiquidGlassButton
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  stopScreenSharing();
+                  setScreenShareMenuOpen(false);
+                }}
+              >
+                <MonitorStop className="h-4 w-4 mr-2" />
+                Parar Compartilhamento
+              </LiquidGlassButton>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+            {/* Vídeo Local */}
+            <div className="relative">
+              <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
+              <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                {isScreenSharing ? 'Sua Tela' : 'Sua Câmera'}
+              </div>
+            </div>
+            
+            {/* Grid para Vídeos Remotos */}
+            <div className="grid grid-cols-2 grid-rows-2 gap-2">
+              {remoteStreams.size > 0 ? (
+                Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
+                  <div key={socketId} className="relative">
+                    <RemoteVideo stream={stream} />
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                      Participante
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
+                  <p className="text-muted-foreground">Aguardando participantes...</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </ModalVideoChamada>
