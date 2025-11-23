@@ -853,15 +853,20 @@ export default function TurmaDetalhePage() {
         }
       } else if (provaEditando?.id) {
         await updateExam(provaEditando.id, payload)
-        // Atualizar Activity se houver dados para atualizar
-        if (activityData && provaEditando.activityId) {
-          await updateActivity(provaEditando.activityId, {
-            title: activityData.title,
-            description: activityData.description,
-            startDate: activityData.startDate,
-            dueDate: activityData.dueDate,
-            maxScore: activityData.maxScore
-          })
+        // Atualizar Activity - sempre atualizar quando activityData for fornecido
+        if (activityData) {
+          const activityIdToUpdate = provaEditando.activityId || provaEditando.activity?.id
+          if (activityIdToUpdate) {
+            await updateActivity(activityIdToUpdate, {
+              title: activityData.title,
+              description: activityData.description,
+              startDate: activityData.startDate,
+              dueDate: activityData.dueDate,
+              maxScore: activityData.maxScore
+            })
+          } else {
+            console.warn('ActivityId não encontrado para atualização')
+          }
         }
       }
       

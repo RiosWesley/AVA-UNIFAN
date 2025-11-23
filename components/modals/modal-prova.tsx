@@ -126,13 +126,17 @@ export function ModalProva({
 
     const maxScoreValue = maxScore ? Number(maxScore) : undefined
 
+    // Converter datas de datetime-local para ISO string
+    const startDateISO = dataInicio ? new Date(dataInicio).toISOString() : undefined
+    const dueDateISO = dataTermino ? new Date(dataTermino).toISOString() : undefined
+
     if (modo === 'criar') {
       // Passar dados da Activity para criar junto
       onSalvar(payload, {
         title: titulo.trim(),
         description: descricao || undefined,
-        startDate: dataInicio || undefined,
-        dueDate: dataTermino || undefined,
+        startDate: startDateISO,
+        dueDate: dueDateISO,
         maxScore: maxScoreValue
       })
     } else {
@@ -140,8 +144,8 @@ export function ModalProva({
       onSalvar(payload, {
         title: titulo.trim(),
         description: descricao || undefined,
-        startDate: dataInicio || undefined,
-        dueDate: dataTermino || undefined,
+        startDate: startDateISO,
+        dueDate: dueDateISO,
         maxScore: maxScoreValue
       })
     }
