@@ -205,6 +205,10 @@ export interface ScheduleWithRelations {
       id: string
       name: string
     } | null
+    academicPeriod?: {
+      id: string
+      period: string
+    } | null
   }
 }
 
@@ -224,6 +228,10 @@ export interface LessonPlanWithRelations {
     teacher?: {
       id: string
       name: string
+    } | null
+    academicPeriod?: {
+      id: string
+      period: string
     } | null
   }
   schedule?: {
@@ -337,6 +345,8 @@ export const apiClient = {
       status: 'pendente' | 'concluido' | 'avaliado'
       nota: number | null
       dataConclusao: string | null
+      semestre?: string
+      classId?: string
     }>>(`/activities/students/${studentId}`)
 
     const mapStatus = (s: 'pendente' | 'concluido' | 'avaliado'): 'pending' | 'completed' => {
@@ -351,7 +361,7 @@ export const apiClient = {
       discipline: a.disciplina,
       dueDate: a.dataVencimento ? String(a.dataVencimento) : '',
       status: mapStatus(a.status),
-      classId: ''
+      classId: a.classId || ''
     }))
   },
 

@@ -5,15 +5,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Search, CheckCircle, Clock, Target, Calendar as CalIcon, BookOpen, Upload } from 'lucide-react'
+import { Search, CheckCircle, Clock, Target, Calendar as CalIcon, BookOpen, Upload, GraduationCap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { ModalEnviarAtividade } from '@/components/modals'
 import { StudentActivity } from "@/src/Atividade"
 import { completeStudentActivity, getStudentActivities, uploadStudentActivity } from "@/src/services/atividadeService"
 import { PageSpinner } from "@/components/ui/page-spinner"
+import { getSemestresDisponiveis } from "@/src/services/ClassesService"
 
 export default function AtividadesPage() {
 
@@ -21,6 +23,8 @@ export default function AtividadesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [modalEnviarAtividadeOpen, setModalEnviarAtividadeOpen] = useState(false)
   const [atividadeSelecionada, setAtividadeSelecionada] = useState<StudentActivity | null>(null)
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
   
 
   const queryClient = useQueryClient()
@@ -33,6 +37,28 @@ export default function AtividadesPage() {
     return '29bc17a4-0b68-492b-adef-82718898d9eb'
   }
   const studentId = getStudentId()
+
+  // Buscar semestres disponíveis
+  useEffect(() => {
+    const buscarSemestres = async () => {
+      if (!studentId) return
+      try {
+        const semestresDisponiveis = await getSemestresDisponiveis(studentId)
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar semestres:", error)
+      }
+    }
+    buscarSemestres()
+  }, [studentId])
 
   useEffect(() => {
     const checkTheme = () => setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"));
@@ -94,11 +120,23 @@ export default function AtividadesPage() {
     setModalEnviarAtividadeOpen(true);
   };
 
+  // Filtrar atividades por semestre
+  const atividadesFiltradas = useMemo(() => {
+    if (!semestreSelecionado) return allActivities
+    return allActivities.filter(activity => {
+      if (!activity.semestre) return false
+      // Normalizar formato de semestre (2025.1 ou 2025-1)
+      const periodoNormalizado = activity.semestre.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+  }, [allActivities, semestreSelecionado])
+
   const { atividadesPendentes, atividadesConcluidas } = useMemo(() => {
-    const pendentes = allActivities.filter(a => a.status === 'pendente');
-    const concluidas = allActivities.filter(a => a.status === 'concluido' || a.status === 'avaliado');
+    const pendentes = atividadesFiltradas.filter(a => a.status === 'pendente');
+    const concluidas = atividadesFiltradas.filter(a => a.status === 'concluido' || a.status === 'avaliado');
     return { atividadesPendentes: pendentes, atividadesConcluidas: concluidas };
-  }, [allActivities]);
+  }, [atividadesFiltradas]);
 
   const filteredPendentes = useMemo(() => 
     atividadesPendentes.filter(a =>
@@ -178,6 +216,32 @@ export default function AtividadesPage() {
                     <div className="text-2xl font-bold text-foreground">
                       {atividadesPendentes.length + atividadesConcluidas.length}
                     </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                        isLiquidGlass
+                          ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                          : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                      }`}>
+                        <SelectValue placeholder="Selecionar semestre" />
+                      </SelectTrigger>
+                      <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                        {semestres.map((semestre) => (
+                          <SelectItem key={semestre.id} value={semestre.id}>
+                            <div className="flex items-center space-x-2">
+                              <span>{semestre.nome}</span>
+                              {semestre.ativo && (
+                                <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                  Atual
+                                </Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

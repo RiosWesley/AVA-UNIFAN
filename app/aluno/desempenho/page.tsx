@@ -1,13 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { BarChart3, LineChart, Award, TrendingUp, GraduationCap, Star, Clock, Trophy, Target, Zap, ChevronUp, ChevronDown, Sparkles, Calendar, Badge } from 'lucide-react'
+import { BarChart3, LineChart, Award, TrendingUp, GraduationCap, Star, Clock, Trophy, Target, Zap, ChevronUp, ChevronDown, Sparkles, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getStudentPerformance } from "@/src/services/desempenhoService"
 import { PerformanceData } from "@/src/types/Desempenho"
+import { getSemestresDisponiveis } from "@/src/services/ClassesService"
+import { getStudentGradebook } from "@/src/services/BoletimService"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 export default function DesempenhoPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
@@ -16,6 +21,9 @@ export default function DesempenhoPage() {
    const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [gradebookData, setGradebookData] = useState<any>(null)
 
   useEffect(() => {
     const checkTheme = () => setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"));
@@ -25,12 +33,35 @@ export default function DesempenhoPage() {
 
     const loadPerformanceData = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+        
         // MOCKADO POR ENQUANTO
         const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
+        
+        // Buscar gradebook para ter acesso aos semestres
+        const gradebook = await getStudentGradebook(studentId);
+        setGradebookData(gradebook || null);
+        
+        // Buscar semestres disponíveis
+        const semestresDisponiveis = await getSemestresDisponiveis(studentId);
+        setSemestres(semestresDisponiveis || []);
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        if (semestresDisponiveis && semestresDisponiveis.length > 0) {
+          const semestreAtivo = semestresDisponiveis.find(s => s.ativo);
+          if (semestreAtivo) {
+            setSemestreSelecionado(semestreAtivo.id);
+          } else {
+            setSemestreSelecionado(semestresDisponiveis[0].id);
+          }
+        }
+        
         const data = await getStudentPerformance(studentId);
-        setPerformanceData(data);
+        setPerformanceData(data || null);
       } catch (err: any) {
-        setError(err.message);
+        console.error("Erro ao carregar dados de desempenho:", err);
+        setError(err?.message || "Erro ao carregar dados de desempenho");
       } finally {
         setIsLoading(false);
       }
@@ -41,9 +72,111 @@ export default function DesempenhoPage() {
     return () => observer.disconnect();
   }, []);
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center"><p>Carregando desempenho...</p></div>;
-  if (error) return <div className="flex h-screen items-center justify-center text-red-500"><p>Erro: {error}</p></div>;
-  if (!performanceData) return <div className="flex h-screen items-center justify-center"><p>Nenhum dado de desempenho encontrado.</p></div>;
+  // Filtrar dados de desempenho por semestre
+  const performanceDataFiltrado = useMemo(() => {
+    if (!performanceData || !gradebookData || !semestreSelecionado) return performanceData;
+    
+    // Filtrar disciplinas do gradebook por semestre
+    const disciplinasFiltradas = (gradebookData?.disciplinas || []).filter((d: any) => {
+      if (!d || !d.semestre) return false;
+      const periodoNormalizado = d.semestre.replace('-', '.');
+      const semestreNormalizado = semestreSelecionado.replace('-', '.');
+      return periodoNormalizado === semestreNormalizado;
+    });
+    
+    // Recalcular métricas
+    const totalDisciplinas = disciplinasFiltradas.length;
+    const mediaGeral = totalDisciplinas > 0 
+      ? disciplinasFiltradas.reduce((acc: number, d: any) => acc + d.media, 0) / totalDisciplinas 
+      : 0;
+    const frequenciaGeral = totalDisciplinas > 0 
+      ? disciplinasFiltradas.reduce((acc: number, d: any) => acc + d.frequencia, 0) / totalDisciplinas 
+      : 0;
+    const disciplinasAprovadas = disciplinasFiltradas.filter((d: any) => d.situacao === 'Aprovado').length;
+    
+    const allGrades = disciplinasFiltradas.flatMap((d: any) => (d.notas || []).map((n: any) => n?.nota).filter((n: any) => n !== null && n !== undefined)) as number[];
+    const bestGrade = allGrades.length > 0 ? Math.max(...allGrades) : 0;
+    
+    const metrics = [
+      {
+        title: 'Média Geral',
+        value: mediaGeral,
+        displayValue: mediaGeral.toFixed(1),
+        description: 'Média de todas as disciplinas',
+        trend: '',
+      },
+      {
+        title: 'Melhor Nota',
+        value: bestGrade,
+        displayValue: bestGrade.toFixed(1),
+        description: 'Sua nota mais alta este semestre',
+        trend: '',
+      },
+      {
+        title: 'Disciplinas Aprovadas',
+        value: disciplinasAprovadas,
+        displayValue: `${disciplinasAprovadas}/${totalDisciplinas}`,
+        description: `Aprovado em ${disciplinasAprovadas} de ${totalDisciplinas} disciplinas`,
+        trend: '',
+      },
+      {
+        title: 'Frequência',
+        value: frequenciaGeral,
+        displayValue: `${frequenciaGeral.toFixed(0)}%`,
+        description: 'Presença média nas aulas',
+        trend: '',
+      },
+    ];
+    
+    const performanceByDiscipline = disciplinasFiltradas.map((d: any) => ({
+      disc: d.disciplina,
+      nota: d.media,
+    }));
+    
+    return {
+      ...performanceData,
+      metrics,
+      performanceByDiscipline,
+    };
+  }, [performanceData, gradebookData, semestreSelecionado]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Erro ao carregar dados</h2>
+            <p className="text-gray-600 dark:text-gray-400">{error}</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!performanceDataFiltrado) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">Nenhum dado de desempenho encontrado.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const getConceitoColor = (conceito: string) => {
     switch (conceito) {
@@ -98,7 +231,7 @@ export default function DesempenhoPage() {
     return <span>{displayValue.toFixed(1)}{suffix}</span>
   }
 
-  const { metrics, recentGrades, performanceByDiscipline } = performanceData;
+  const { metrics = [], performanceByDiscipline = [] } = performanceDataFiltrado || {};
 
   const barColors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500'];
 
@@ -129,6 +262,32 @@ export default function DesempenhoPage() {
                   Acompanhe seu progresso acadêmico e conquistas com métricas detalhadas
                 </p>
               </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                  isLiquidGlass
+                    ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                }`}>
+                  <SelectValue placeholder="Selecionar semestre" />
+                </SelectTrigger>
+                <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                  {semestres.map((semestre) => (
+                    <SelectItem key={semestre.id} value={semestre.id}>
+                      <div className="flex items-center space-x-2">
+                        <span>{semestre.nome}</span>
+                        {semestre.ativo && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                            Atual
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           

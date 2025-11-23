@@ -125,8 +125,10 @@ export function ModalQuestaoProva({
       novas.forEach((alt, i) => {
         alt.is_correct = i === index
       })
+    } else if (campo === 'text') {
+      novas[index].text = valor as string
     } else {
-      novas[index][campo] = valor as any
+      novas[index].is_correct = valor as boolean
     }
     setAlternativas(novas)
   }
@@ -310,4 +312,5 @@ export function ModalQuestaoProva({
     </Dialog>
   )
 }
+
 

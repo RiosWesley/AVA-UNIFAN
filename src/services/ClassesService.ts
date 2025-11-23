@@ -59,4 +59,25 @@ export const transformarDadosParaComponente = (dadosApi: ClassFromAPI[]): Semest
   return Object.values(semestresAgrupados);
 };
 
+/**
+ * Obtém a lista de semestres disponíveis para um aluno
+ * @param alunoId ID do aluno
+ * @returns Array de objetos com id e nome do semestre
+ */
+export const getSemestresDisponiveis = async (alunoId: string): Promise<Array<{ id: string; nome: string; ativo: boolean }>> => {
+  try {
+    const dadosDaApi = await getDisciplinasPorAluno(alunoId);
+    const dadosTransformados = transformarDadosParaComponente(dadosDaApi);
+    
+    return dadosTransformados.map(s => ({
+      id: s.id,
+      nome: s.nome,
+      ativo: s.ativo
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar semestres disponíveis:", error);
+    return [];
+  }
+};
+
  

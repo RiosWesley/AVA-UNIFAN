@@ -7,4 +7,6 @@ export interface StudentActivity {
   status: 'pendente' | 'concluido' | 'avaliado';
   nota: number | null;
   dataConclusao: string | null;
+  semestre?: string; // Adicionado para filtro por semestre
+  classId?: string; // Adicionado para referência à classe
 }

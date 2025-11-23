@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation"
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Calendar, Clock, Plus, BookOpen, Zap, Trophy, Sparkles, ChevronLeft, ChevronRight, CheckCircle, Info, Bell } from 'lucide-react'
+import { Calendar, Clock, Plus, BookOpen, Zap, Trophy, Sparkles, ChevronLeft, ChevronRight, CheckCircle, Info, Bell, GraduationCap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useStudentAgendaSchedules, useStudentAgendaLessonPlans } from '@/hooks/use-dashboard'
 import { type ScheduleWithRelations, type LessonPlanWithRelations } from '@/lib/api-client'
 import { me } from "@/src/services/auth"
 import { PageSpinner } from "@/components/ui/page-spinner"
+import { getSemestresDisponiveis } from "@/src/services/ClassesService"
 
 interface Evento {
   hora: string
@@ -40,6 +42,8 @@ export default function AgendaPage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0)
   const [studentId, setStudentId] = useState<string | null>(null)
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
   const router = useRouter()
 
   // Buscar dados do aluno
@@ -86,6 +90,28 @@ export default function AgendaPage() {
     }
     init()
   }, [router])
+
+  // Buscar semestres disponíveis
+  useEffect(() => {
+    const buscarSemestres = async () => {
+      if (!studentId) return
+      try {
+        const semestresDisponiveis = await getSemestresDisponiveis(studentId)
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar semestres:", error)
+      }
+    }
+    buscarSemestres()
+  }, [studentId])
 
   const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
   const diasSemanaGrade = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -141,6 +167,29 @@ export default function AgendaPage() {
     }
   }
 
+  // Filtrar schedules e lesson plans por semestre
+  const schedulesFiltrados = useMemo(() => {
+    if (!semestreSelecionado) return schedulesData
+    return schedulesData.filter(schedule => {
+      const periodo = schedule.class.academicPeriod?.period
+      // Normalizar formato de semestre (2025.1 ou 2025-1)
+      const periodoNormalizado = periodo?.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+  }, [schedulesData, semestreSelecionado])
+
+  const lessonPlansFiltrados = useMemo(() => {
+    if (!semestreSelecionado) return lessonPlansData
+    return lessonPlansData.filter(lessonPlan => {
+      const periodo = lessonPlan.class.academicPeriod?.period
+      // Normalizar formato de semestre (2025.1 ou 2025-1)
+      const periodoNormalizado = periodo?.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+  }, [lessonPlansData, semestreSelecionado])
+
   // Agrupar schedules por dia da semana
   const eventosPorDiaFromSchedules: EventosPorDia = useMemo(() => {
     const eventos: EventosPorDia = {
@@ -153,7 +202,7 @@ export default function AgendaPage() {
       Dom: []
     }
 
-    schedulesData.forEach(schedule => {
+    schedulesFiltrados.forEach(schedule => {
       const diaAbreviado = dayOfWeekMap[schedule.dayOfWeek.toLowerCase()]
       if (diaAbreviado && eventos[diaAbreviado as keyof EventosPorDia]) {
         eventos[diaAbreviado as keyof EventosPorDia].push(mapScheduleToEvento(schedule))
@@ -161,7 +210,7 @@ export default function AgendaPage() {
     })
 
     return eventos
-  }, [schedulesData])
+  }, [schedulesFiltrados])
 
   // Agrupar lesson plans por data para o calendário
   const eventosPorDiaFromLessonPlans: EventosPorDia = useMemo(() => {
@@ -175,7 +224,7 @@ export default function AgendaPage() {
       Dom: []
     }
 
-    lessonPlansData.forEach(lessonPlan => {
+    lessonPlansFiltrados.forEach(lessonPlan => {
       const date = new Date(lessonPlan.date)
       const dayOfWeek = date.getDay()
       const dayName = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][dayOfWeek] as keyof EventosPorDia
@@ -186,7 +235,7 @@ export default function AgendaPage() {
     })
 
     return eventos
-  }, [lessonPlansData])
+  }, [lessonPlansFiltrados])
 
   // Para a grade horária, usar schedules
   const eventosPorDia: EventosPorDia = eventosPorDiaFromSchedules
@@ -324,7 +373,7 @@ export default function AgendaPage() {
       
       // Verificar se há lesson plans nesta data
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      const hasEvents = lessonPlansData.some(lp => {
+      const hasEvents = lessonPlansFiltrados.some(lp => {
         const lpDate = new Date(lp.date)
         const lpDateStr = `${lpDate.getFullYear()}-${String(lpDate.getMonth() + 1).padStart(2, '0')}-${String(lpDate.getDate()).padStart(2, '0')}`
         return lpDateStr === dateStr
@@ -334,7 +383,7 @@ export default function AgendaPage() {
     }
 
     return days
-  }, [currentYear, currentMonth, lessonPlansData])
+  }, [currentYear, currentMonth, lessonPlansFiltrados])
 
   const monthNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -405,6 +454,34 @@ export default function AgendaPage() {
                         Atualizado
                       </Badge>
                     </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                        isLiquidGlass
+                          ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                          : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                      }`}>
+                        <SelectValue placeholder="Selecionar semestre" />
+                      </SelectTrigger>
+                      <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                        {semestres.map((semestre) => (
+                          <SelectItem key={semestre.id} value={semestre.id}>
+                            <div className="flex items-center space-x-2">
+                              <span>{semestre.nome}</span>
+                              {semestre.ativo && (
+                                <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                  Atual
+                                </Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="hidden md:flex items-center space-x-4">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
@@ -630,7 +707,7 @@ export default function AgendaPage() {
                           <div className="font-semibold text-sm mb-2">{dayInfo.day}</div>
                           {dayInfo.hasEvents && (() => {
                             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayInfo.day).padStart(2, '0')}`
-                            const eventosDoDia = lessonPlansData
+                            const eventosDoDia = lessonPlansFiltrados
                               .filter(lp => {
                                 const lpDate = new Date(lp.date)
                                 const lpDateStr = `${lpDate.getFullYear()}-${String(lpDate.getMonth() + 1).padStart(2, '0')}-${String(lpDate.getDate()).padStart(2, '0')}`

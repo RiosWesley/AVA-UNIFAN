@@ -106,7 +106,7 @@ export function ModalTentativasProva({
           ) : (
             <div className="space-y-3">
               {tentativas.map((tentativa) => (
-                <LiquidGlassCard key={tentativa.id} intensity={0.3}>
+                <LiquidGlassCard key={tentativa.id} intensity="medium">
                   <div className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -171,4 +171,5 @@ export function ModalTentativasProva({
     </Dialog>
   )
 }
+
 

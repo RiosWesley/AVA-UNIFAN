@@ -1,4 +1,4 @@
-interface DisciplinaBoletim {
+export interface DisciplinaBoletim {
   disciplina: string;
   codigo: string;
   media: number;
@@ -9,9 +9,10 @@ interface DisciplinaBoletim {
     nota: number | null;
   }[];
   cor: string;
+  semestre?: string;
 }
 
-interface GradebookData {
+export interface GradebookData {
   geral: {
     mediaGeral: number;
     frequenciaGeral: number;

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,27 +11,36 @@ import { PageSpinner } from "@/components/ui/page-spinner"
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Bell, Calendar, Clock, DollarSign, FileText, GraduationCap, TrendingUp, Star, Target, Activity, Sparkles } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Carousel from "@/components/ui/carousel"
 import { useDashboardData } from "@/hooks/use-dashboard"
+import { useStudentAgendaSchedules } from "@/hooks/use-dashboard"
 import { me } from "@/src/services/auth"
+import { getSemestresDisponiveis } from "@/src/services/ClassesService"
+import { getStudentGradebook } from "@/src/services/BoletimService"
 
 export default function AlunoDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const router = useRouter()
   const [studentId, setStudentId] = useState<string | null>(null)
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [gradebookData, setGradebookData] = useState<any>(null)
 
   // Dashboard data with React Query
   const {
     student,
-    upcomingSchedules,
-    recentGrades,
+    schedules,
+    grades,
+    attendance,
+    activities,
     news,
-    attendancePercentage,
-    gradeAverage,
-    pendingActivitiesCount,
     isLoading,
     error
   } = useDashboardData(studentId ?? "")
+
+  // Buscar schedules com informação de semestre
+  const { data: agendaSchedulesData = [] } = useStudentAgendaSchedules(studentId ?? "")
 
   useEffect(() => {
     const checkTheme = () => {
@@ -73,6 +82,134 @@ export default function AlunoDashboard() {
     }
     init()
   }, [router])
+
+  // Buscar semestres disponíveis e gradebook
+  useEffect(() => {
+    const buscarSemestres = async () => {
+      if (!studentId) return
+      try {
+        const semestresDisponiveis = await getSemestresDisponiveis(studentId)
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+
+        // Buscar gradebook para ter acesso aos semestres das disciplinas
+        const gradebook = await getStudentGradebook(studentId)
+        setGradebookData(gradebook)
+      } catch (error) {
+        console.error("Erro ao buscar semestres:", error)
+      }
+    }
+    buscarSemestres()
+  }, [studentId])
+
+  // Filtrar dados por semestre
+  const atividadesFiltradas = useMemo(() => {
+    if (!activities || !semestreSelecionado) return activities || []
+    return activities.filter((activity: any) => {
+      if (!activity.semestre) return false
+      const periodoNormalizado = activity.semestre.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+  }, [activities, semestreSelecionado])
+
+  const schedulesFiltrados = useMemo(() => {
+    if (!agendaSchedulesData || !semestreSelecionado) return []
+    const filtrados = agendaSchedulesData.filter((schedule: any) => {
+      const periodo = schedule.class?.academicPeriod?.period
+      if (!periodo) return false
+      const periodoNormalizado = periodo.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+    
+    // Converter para o formato esperado pelo dashboard
+    return filtrados.map((schedule: any) => ({
+      id: schedule.id,
+      classId: schedule.class?.id || '',
+      discipline: schedule.class?.discipline?.name || '',
+      professor: schedule.class?.teacher?.name || '',
+      room: schedule.room || '',
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      dayOfWeek: 0,
+      type: 'Teórica'
+    }))
+  }, [agendaSchedulesData, semestreSelecionado])
+
+  const gradesFiltrados = useMemo(() => {
+    if (!gradebookData || !semestreSelecionado) return grades || []
+    
+    // Filtrar disciplinas do gradebook por semestre
+    const disciplinasFiltradas = gradebookData.disciplinas.filter((d: any) => {
+      if (!d.semestre) return false
+      const periodoNormalizado = d.semestre.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+    
+    // Extrair notas das disciplinas filtradas
+    const notas: any[] = []
+    disciplinasFiltradas.forEach((disciplina: any) => {
+      disciplina.notas.forEach((nota: any) => {
+        if (nota.nota !== null) {
+          notas.push({
+            id: `${disciplina.codigo}-${nota.unidade}`,
+            discipline: disciplina.disciplina,
+            value: nota.nota,
+            date: new Date().toISOString(), // Aproximação, já que não temos data exata
+            concept: nota.nota >= 9 ? 'Excelente' : nota.nota >= 8 ? 'Ótimo' : nota.nota >= 6 ? 'Bom' : 'Regular',
+            classId: ''
+          })
+        }
+      })
+    })
+    
+    return notas.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4)
+  }, [gradebookData, semestreSelecionado, grades])
+
+  // Recalcular métricas baseadas nos dados filtrados
+  const attendancePercentage = useMemo(() => {
+    // Para frequência, usar dados do gradebook filtrado
+    if (!gradebookData || !semestreSelecionado) return attendance?.length ? 
+      (attendance.filter((a: any) => a.status === 'present').length / attendance.length) * 100 : 0
+    
+    const disciplinasFiltradas = gradebookData.disciplinas.filter((d: any) => {
+      if (!d.semestre) return false
+      const periodoNormalizado = d.semestre.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+    
+    if (disciplinasFiltradas.length === 0) return 0
+    const frequenciaMedia = disciplinasFiltradas.reduce((acc: number, d: any) => acc + d.frequencia, 0) / disciplinasFiltradas.length
+    return Math.round(frequenciaMedia)
+  }, [gradebookData, semestreSelecionado, attendance])
+
+  const gradeAverage = useMemo(() => {
+    if (!gradesFiltrados || gradesFiltrados.length === 0) return 0
+    const sum = gradesFiltrados.reduce((acc: number, grade: any) => acc + grade.value, 0)
+    return parseFloat((sum / gradesFiltrados.length).toFixed(1))
+  }, [gradesFiltrados])
+
+  const pendingActivitiesCount = useMemo(() => {
+    return atividadesFiltradas.filter((a: any) => a.status === 'pending').length
+  }, [atividadesFiltradas])
+
+  const upcomingSchedules = useMemo(() => {
+    return schedulesFiltrados.slice(0, 3)
+  }, [schedulesFiltrados])
+
+  const recentGrades = useMemo(() => {
+    return gradesFiltrados.slice(0, 4)
+  }, [gradesFiltrados])
 
   // Loading state
   if (isLoading || !studentId) {
@@ -148,14 +285,42 @@ export default function AlunoDashboard() {
                 </div>
               </div>
             </div>
-            <LiquidGlassButton
-              variant="outline"
-              size="lg"
-              className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30 transition-all duration-300"
-            >
-              <Bell className="h-5 w-5 mr-2 text-green-600" />
-              <span className="font-semibold">3 Notificações</span>
-            </LiquidGlassButton>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                  <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                    isLiquidGlass
+                      ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                      : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                  }`}>
+                    <SelectValue placeholder="Selecionar semestre" />
+                  </SelectTrigger>
+                  <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                    {semestres.map((semestre) => (
+                      <SelectItem key={semestre.id} value={semestre.id}>
+                        <div className="flex items-center space-x-2">
+                          <span>{semestre.nome}</span>
+                          {semestre.ativo && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                              Atual
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <LiquidGlassButton
+                variant="outline"
+                size="lg"
+                className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30 transition-all duration-300"
+              >
+                <Bell className="h-5 w-5 mr-2 text-green-600" />
+                <span className="font-semibold">3 Notificações</span>
+              </LiquidGlassButton>
+            </div>
           </div>
 
           {/* Mural de Avisos (Carrossel) */}

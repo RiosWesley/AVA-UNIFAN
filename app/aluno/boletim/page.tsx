@@ -8,7 +8,10 @@ import { PageSpinner } from "@/components/ui/page-spinner"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { GraduationCap, Download, Calendar, Award, Trophy, Medal } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getStudentGradebook } from "@/src/services/BoletimService"
+import { getSemestresDisponiveis } from "@/src/services/ClassesService"
+import { GradebookData } from "@/src/types/Boletim"
 
 const UNIDADES_PADRAO = ["1ª Unidade", "2ª Unidade", "Prova Final", "Média Final"];
 
@@ -43,6 +46,8 @@ export default function AlunoBoletimPage() {
   const [gradebook, setGradebook] = useState<GradebookData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("");
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([]);
 
   useEffect(() => {
     const checkTheme = () => {
@@ -62,6 +67,18 @@ export default function AlunoBoletimPage() {
         const studentId = '29bc17a4-0b68-492b-adef-82718898d9eb';
         const data = await getStudentGradebook(studentId);
         setGradebook(data);
+        
+        // Buscar semestres disponíveis
+        const semestresDisponiveis = await getSemestresDisponiveis(studentId);
+        setSemestres(semestresDisponiveis);
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo);
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id);
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id);
+        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -111,7 +128,35 @@ export default function AlunoBoletimPage() {
     );
   }
 
-  const { geral, disciplinas } = gradebook;
+  const { geral, disciplinas: todasDisciplinas } = gradebook;
+  
+  // Filtrar disciplinas por semestre
+  const disciplinas = semestreSelecionado
+    ? todasDisciplinas.filter(d => {
+        if (!d.semestre) return false
+        // Normalizar formato de semestre (2025.1 ou 2025-1)
+        const periodoNormalizado = d.semestre.replace('-', '.')
+        const semestreNormalizado = semestreSelecionado.replace('-', '.')
+        return periodoNormalizado === semestreNormalizado
+      })
+    : todasDisciplinas;
+  
+  // Recalcular métricas gerais baseadas nas disciplinas filtradas
+  const totalDisciplinas = disciplinas.length;
+  const mediaGeral = totalDisciplinas > 0 
+    ? disciplinas.reduce((acc, d) => acc + d.media, 0) / totalDisciplinas 
+    : 0;
+  const frequenciaGeral = totalDisciplinas > 0 
+    ? disciplinas.reduce((acc, d) => acc + d.frequencia, 0) / totalDisciplinas 
+    : 0;
+  const disciplinasAprovadas = disciplinas.filter(d => d.situacao === 'Aprovado').length;
+  
+  const geralFiltrado = {
+    mediaGeral: parseFloat(mediaGeral.toFixed(1)),
+    frequenciaGeral: parseFloat(frequenciaGeral.toFixed(0)),
+    disciplinasAprovadas,
+    totalDisciplinas,
+  };
 
   const processarNotasDisciplina = (disciplina: any) => {
     const notasMap = new Map<string, number | null>();
@@ -177,16 +222,42 @@ export default function AlunoBoletimPage() {
                 <div className="flex items-center mt-2 space-x-2">
                   <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                     <Trophy className="h-3 w-3 mr-1" />
-                    Média: {geral.mediaGeral.toFixed(1)}
+                    Média: {geralFiltrado.mediaGeral.toFixed(1)}
                   </Badge>
                   <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
                     <Medal className="h-3 w-3 mr-1" />
-                    {geral.disciplinasAprovadas}/{geral.totalDisciplinas} aprovadas
+                    {geralFiltrado.disciplinasAprovadas}/{geralFiltrado.totalDisciplinas} aprovadas
                   </Badge>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                  <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                    isLiquidGlass
+                      ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                      : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                  }`}>
+                    <SelectValue placeholder="Selecionar semestre" />
+                  </SelectTrigger>
+                  <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                    {semestres.map((semestre) => (
+                      <SelectItem key={semestre.id} value={semestre.id}>
+                        <div className="flex items-center space-x-2">
+                          <span>{semestre.nome}</span>
+                          {semestre.ativo && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                              Atual
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'

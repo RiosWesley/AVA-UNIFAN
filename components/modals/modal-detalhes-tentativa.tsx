@@ -275,7 +275,7 @@ export function ModalDetalhesTentativa({
 
         <div className="mt-4 space-y-4">
           {/* Informações do Aluno */}
-          <LiquidGlassCard intensity={0.3}>
+          <LiquidGlassCard intensity="medium">
             <div className="p-4">
               <h3 className="font-medium mb-2">
                 {tentativa.student?.name || 'Aluno desconhecido'}
@@ -302,7 +302,7 @@ export function ModalDetalhesTentativa({
           <div className="space-y-4">
             <h3 className="font-medium">Questões e Respostas</h3>
             {questoesOrdenadas.map((answer, index) => (
-              <LiquidGlassCard key={answer.id} intensity={0.2}>
+              <LiquidGlassCard key={answer.id} intensity="low">
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -345,4 +345,5 @@ export function ModalDetalhesTentativa({
     </Dialog>
   )
 }
+
 

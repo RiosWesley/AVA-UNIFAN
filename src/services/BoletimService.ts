@@ -1,4 +1,5 @@
 import api from "./api";
+import { GradebookData } from "../types/Boletim";
 
 export const getStudentGradebook = async (studentId: string): Promise<GradebookData> => {
   try {

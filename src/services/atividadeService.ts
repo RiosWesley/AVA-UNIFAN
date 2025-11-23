@@ -3,8 +3,31 @@ import api from "./api";
 
 export const getStudentActivities = async (studentId: string): Promise<StudentActivity[]> => {
   try {
-    const response = await api.get<StudentActivity[]>(`/activities/students/${studentId}`);
-    return response.data;
+    const response = await api.get<Array<{
+      id: string;
+      titulo: string;
+      descricao: string | null;
+      dataVencimento: string | null;
+      disciplina: string;
+      status: 'pendente' | 'concluido' | 'avaliado';
+      nota: number | null;
+      dataConclusao: string | null;
+      semestre?: string;
+      classId?: string;
+    }>>(`/activities/students/${studentId}`);
+    
+    return response.data.map(a => ({
+      id: a.id,
+      titulo: a.titulo,
+      descricao: a.descricao,
+      dataVencimento: a.dataVencimento,
+      disciplina: a.disciplina,
+      status: a.status,
+      nota: a.nota,
+      dataConclusao: a.dataConclusao,
+      semestre: a.semestre,
+      classId: a.classId
+    }));
   } catch (error) {
     console.error("Erro ao buscar atividades:", error);
     throw new Error("Não foi possível carregar as atividades.");
