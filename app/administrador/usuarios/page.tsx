@@ -18,8 +18,11 @@ import { getDepartments, addTeachersToDepartment, setDepartmentCoordinator, type
 import { getCourses, type BackendCourse } from "@/src/services/coursesService"
 import { linkStudentToCourses } from "@/src/services/studentCoursesService"
 import { toast } from "@/components/ui/toast"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
 
 export default function UsuariosAdministradorPage() {
+  const router = useRouter()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +48,27 @@ export default function UsuariosAdministradorPage() {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([])
   const [entrySemester, setEntrySemester] = useState<string>("")
   const [entrySemesterError, setEntrySemesterError] = useState<string | null>(null)
+
+  // Verificar autenticação e role
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id || !user?.roles?.includes("admin")) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   // Resetar página quando filtros mudarem
   useEffect(() => {

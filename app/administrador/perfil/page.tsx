@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,17 +11,44 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Settings, Bell, Shield, Camera, Crown } from "lucide-react"
+import { Sidebar } from "@/components/layout/sidebar"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
 
 export default function PerfilAdministradorPage() {
+  const router = useRouter()
   const [notificacoes, setNotificacoes] = useState({
     email: true,
     push: true,
     sms: true,
   })
 
+  // Verificar autenticação e role
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id || !user?.roles?.includes("admin")) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex h-screen bg-background">
+      <Sidebar userRole="administrador" />
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
@@ -295,6 +322,8 @@ export default function PerfilAdministradorPage() {
           </Card>
         </TabsContent>
       </Tabs>
+        </div>
+      </main>
     </div>
   )
 }

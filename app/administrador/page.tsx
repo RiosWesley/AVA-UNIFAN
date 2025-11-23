@@ -9,8 +9,11 @@ import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
 import { Users, DollarSign, TrendingUp, AlertTriangle, Settings, FileText, Shield, Database, Star, Award, Activity, Target, Sparkles, Bell, ChevronRight, Clock, Server, Zap, CheckCircle } from "lucide-react"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
 
 export default function AdministradorDashboard() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
 
   useEffect(() => {
@@ -28,6 +31,27 @@ export default function AdministradorDashboard() {
 
     return () => observer.disconnect()
   }, [])
+
+  // Verificar autenticação e role
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id || !user?.roles?.includes("admin")) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   const estatisticasGerais = {
     totalUsuarios: 110,

@@ -15,6 +15,8 @@ import { BookOpen, Plus, Edit, Trash2, Eye, Users, Building2 } from "lucide-reac
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { BackendCourse, createCourse, CreateCoursePayload, deleteCourse, getCourses, getDepartments, updateCourse, UpdateCoursePayload } from "@/src/services/coursesService"
 import { PageSpinner } from "@/components/ui/page-spinner"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
 
 type FormStatus = 'Ativo' | 'Inativo';
 
@@ -29,6 +31,7 @@ const statusDisplayMap: Record<'active' | 'inactive', FormStatus> = {
 };
 
 export default function CursosAdministradorPage() {
+  const router = useRouter()
   const queryClient = useQueryClient();
 
   // Estados da UI
@@ -45,6 +48,27 @@ export default function CursosAdministradorPage() {
     name: "", code: "", departmentId: "", totalHours: "", durationSemesters: "", status: 'active' as 'active' | 'inactive', description: ""
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Verificar autenticação e role
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id || !user?.roles?.includes("admin")) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   useEffect(() => {
     const handler = setTimeout(() => {
