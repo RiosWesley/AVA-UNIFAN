@@ -16,11 +16,16 @@ import { useEffect, useState } from "react"
 import { ModalNovaMensagem, ModalAviso, ModalConfirmacao } from "@/components/modals"
 import type { AvisoData } from "@/components/modals"
 import type { ComboboxOption } from "@/components/ui/combobox"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 export default function ProfessorComunicacaoPage() {
+  const router = useRouter()
   const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
   const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
-  const currentUserId = "3f259c81-4a5c-4ae8-8b81-6d59f5eb3028"
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   type InboxItem = {
     otherUser: { id: string; name: string; email: string }
@@ -235,10 +240,81 @@ export default function ProfessorComunicacaoPage() {
     }
   }
 
+  // Buscar usuário atual e dados
   useEffect(() => {
-    fetchInbox()
-    refreshAvisos()
-  }, [])
+    const init = async () => {
+      try {
+        setLoading(true)
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (user?.id) {
+          setCurrentUserId(user.id)
+          // Carregar dados após obter o userId
+          const userId = user.id
+          try {
+            // Carregar inbox
+            if (API_URL && userId) {
+              const inboxRes = await fetch(`${API_URL}/messages/inbox`, {
+                headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
+              })
+              if (inboxRes.ok) {
+                const inboxData = await inboxRes.json()
+                const normalized: InboxItem[] = (Array.isArray(inboxData) ? inboxData : []).map((i: any) => ({
+                  ...i,
+                  lastMessage: { ...i.lastMessage, sentAt: i.lastMessage?.sentAt ?? new Date().toISOString() },
+                }))
+                setInbox(normalized)
+              }
+            }
+            // Carregar avisos
+            if (API_URL) {
+              const avisosRes = await fetch(`${API_URL}/notice-board?includeExpired=true`, { 
+                headers: { 'Content-Type': 'application/json' } 
+              })
+              if (avisosRes.ok) {
+                const avisosList = await avisosRes.json()
+                const avisosItems = (Array.isArray(avisosList) ? avisosList : avisosList?.data ?? []).map((n: any) => ({
+                  id: n.id as string,
+                  titulo: n.title as string,
+                  data: new Date(n.createdAt ?? n.publishedAt ?? Date.now()).toLocaleDateString('pt-BR'),
+                  visualizacoes: 0,
+                  turma: mapAudienceToLabel(n.audience),
+                  conteudo: n.content as string,
+                }))
+                setAvisos(avisosItems)
+              }
+            }
+          } catch (error) {
+            console.error("Erro ao carregar dados:", error)
+          }
+        } else {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      } finally {
+        setLoading(false)
+      }
+    }
+    init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="professor" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -270,24 +346,26 @@ export default function ProfessorComunicacaoPage() {
                 <h3 className="text-lg font-semibold">Mensagens</h3>
                 <Dialog open={isNovaMensagemOpen}>
                   <DialogTrigger asChild onClick={() => setIsNovaMensagemOpen(true)}>
-                    <LiquidGlassButton>
+                    <LiquidGlassButton disabled={!currentUserId}>
                       <Plus className="h-4 w-4 mr-2" />
                       Nova Mensagem
                     </LiquidGlassButton>
                   </DialogTrigger>
-                  <ModalNovaMensagem
-                    isOpen={isNovaMensagemOpen}
-                    onClose={() => setIsNovaMensagemOpen(false)}
-                    currentUserId={currentUserId}
-                    context="teacher"
-                    onSend={({ destinatarioId }) => {
-                      setIsNovaMensagemOpen(false)
-                      fetchInbox()
-                      if (destinatarioId) {
-                        handleSelectInboxItem(destinatarioId)
-                      }
-                    }}
-                  />
+                  {currentUserId && (
+                    <ModalNovaMensagem
+                      isOpen={isNovaMensagemOpen}
+                      onClose={() => setIsNovaMensagemOpen(false)}
+                      currentUserId={currentUserId}
+                      context="teacher"
+                      onSend={({ destinatarioId }) => {
+                        setIsNovaMensagemOpen(false)
+                        fetchInbox()
+                        if (destinatarioId) {
+                          handleSelectInboxItem(destinatarioId)
+                        }
+                      }}
+                    />
+                  )}
                 </Dialog>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -9,6 +9,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Users, BookOpen, FileText, CheckCircle, Calendar, TrendingUp, Clock, ChevronRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { FrequencyModal } from "@/components/modals"
@@ -22,6 +23,7 @@ import { useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ProfessorTurmasPage() {
+  const router = useRouter()
   const [turmas, setTurmas] = useState<Turma[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null)
@@ -42,18 +44,26 @@ export default function ProfessorTurmasPage() {
     const init = async () => {
       try {
         setLoadingUser(true)
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
         const user = await getCurrentUser()
         if (user?.id) {
           setTeacherId(user.id)
+        } else {
+          router.push("/")
         }
       } catch (error) {
         console.error("Erro ao buscar usuário:", error)
+        router.push("/")
       } finally {
         setLoadingUser(false)
       }
     }
     init()
-  }, [])
+  }, [router])
 
   // Buscar semestres disponíveis
   useEffect(() => {

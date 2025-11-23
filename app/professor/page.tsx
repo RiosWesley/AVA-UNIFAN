@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ProfessorDashboard() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -59,9 +61,19 @@ export default function ProfessorDashboard() {
         setLoading(true)
         setError(null)
         
+        // Verificar token de autenticação
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        
         // Buscar usuário atual
         const user = await getCurrentUser()
-        if (!mounted || !user?.id) return
+        if (!mounted || !user?.id) {
+          router.push("/")
+          return
+        }
         
         const teacherId = user.id
         setCurrentUser({ id: teacherId, name: user.name || 'Professor' })
@@ -83,7 +95,9 @@ export default function ProfessorDashboard() {
         
         setAllClasses(classes)
       } catch (e: any) {
-        setError('Não foi possível carregar os dados do dashboard.')
+        if (mounted) {
+          router.push("/")
+        }
       } finally {
         if (mounted) setLoading(false)
       }
@@ -92,7 +106,7 @@ export default function ProfessorDashboard() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [router])
 
   // Filtrar classes por semestre e atualizar dados derivados
   useEffect(() => {

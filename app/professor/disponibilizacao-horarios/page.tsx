@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -61,6 +62,7 @@ const TURNOS: Array<{
 ]
 
 export default function DisponibilizacaoHorariosPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [semestreSelecionado, setSemestreSelecionado] = useState("")
   const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
@@ -96,18 +98,26 @@ export default function DisponibilizacaoHorariosPage() {
     const init = async () => {
       try {
         setLoading(true)
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
         const user = await getCurrentUser()
         if (user?.id) {
           setTeacherId(user.id)
+        } else {
+          router.push("/")
         }
       } catch (error) {
         console.error("Erro ao buscar usuário:", error)
+        router.push("/")
       } finally {
         setLoading(false)
       }
     }
     init()
-  }, [])
+  }, [router])
 
   // Buscar semestres disponíveis
   useEffect(() => {

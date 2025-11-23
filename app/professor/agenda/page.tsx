@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
@@ -27,6 +28,7 @@ interface DayInfo {
 }
 
 export default function AgendaPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
@@ -101,12 +103,20 @@ export default function AgendaPage() {
         setLoading(true)
         setError(null)
 
+        // Verificar token de autenticação
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+
         // Obter usuário atual
         const user = await getCurrentUser()
         if (!mounted) return
 
         if (!user.id) {
-          throw new Error('Usuário não autenticado')
+          router.push("/")
+          return
         }
 
         setTeacherId(user.id)
@@ -133,7 +143,9 @@ export default function AgendaPage() {
         setEventosPorDataCalendario(eventosCalendario)
       } catch (err: any) {
         console.error('Erro ao carregar agenda:', err)
-        setError(err.message || 'Não foi possível carregar a agenda.')
+        if (mounted) {
+          router.push("/")
+        }
       } finally {
         if (mounted) setLoading(false)
       }
@@ -144,7 +156,7 @@ export default function AgendaPage() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [router])
 
   // Filtrar classes, schedules e lesson plans por semestre
   const classesFiltradas = useMemo(() => {

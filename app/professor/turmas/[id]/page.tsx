@@ -17,7 +17,7 @@ import { saveAs } from 'file-saver'
 import { useRef, useState, useEffect } from 'react'
 import { toast, toastInfo, toastImportSuccess, toastImportError, toastImportWarning } from '@/components/ui/toast'
 import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMaterial, ModalDetalhesAluno, ModalForum, ModalDiscussaoForum, ModalVideoChamada, ModalProva, ModalQuestaoProva, ModalTentativasProva, ModalDetalhesTentativa } from '@/components/modals'
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { getClassById } from "@/src/services/ClassesService"
 import { getEnrollmentsByClass, EnrollmentDTO } from "@/src/services/enrollmentsService"
 import { listActivitiesByClass, createActivity, updateActivity, deleteActivity, listSubmissionsByActivity, ActivityDTO, ActivityUnit, completeActivityForStudent } from "@/src/services/activitiesService"
@@ -29,6 +29,7 @@ import { getClassGradebook, createGradeForActivity, getActivityGradebook } from 
 import { getClassAttendanceTable } from "@/src/services/attendancesService"
 import { useLiveSession } from "@/src/hooks/useLiveSession"
 import RemoteVideo from "@/components/layout/RemoteVideo"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 import { 
   ExamDTO, 
   ExamAttemptDTO,
@@ -48,6 +49,7 @@ import {
 
 
 export default function TurmaDetalhePage() {
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [notasImportadas, setNotasImportadas] = useState<Record<string, string>>({})
   const [notasDigitadas, setNotasDigitadas] = useState<Record<string, string>>({})
@@ -95,6 +97,7 @@ export default function TurmaDetalhePage() {
   const [provaSelecionadaParaTentativas, setProvaSelecionadaParaTentativas] = useState<ExamDTO | null>(null)
   const [modalDetalhesTentativaOpen, setModalDetalhesTentativaOpen] = useState(false)
   const [tentativaSelecionadaId, setTentativaSelecionadaId] = useState<string | null>(null)
+  const [teacherId, setTeacherId] = useState<string | null>(null)
 
   const [turma, setTurma] = useState<{ nome: string; disciplina: string; alunos: number; mediaGeral: number; frequenciaMedia: number; }>(
     { nome: "Turma", disciplina: "-", alunos: 0, mediaGeral: 0, frequenciaMedia: 0 }
@@ -801,8 +804,11 @@ export default function TurmaDetalhePage() {
   const entrarNaVideoChamada = (reuniao: VideoChamada) => {
     if (reuniao.status !== 'disponivel') return;
     
-    // UUID DO PROFESSOR ESTA MOCKADO POR ENQUANTO
-    const teacherId = '3f259c81-4a5c-4ae8-8b81-6d59f5eb3028';
+    if (!teacherId) {
+      toast({ title: "Erro", description: "Não foi possível identificar o professor. Tente novamente." })
+      return
+    }
+    
     joinSession(classId, teacherId); 
     
     setVideoChamadaSelecionada(reuniao);
@@ -1008,6 +1014,29 @@ export default function TurmaDetalhePage() {
 
     return () => observer.disconnect()
   }, [])
+
+  // Buscar usuário atual
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (user?.id) {
+          setTeacherId(user.id)
+        } else {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   return (
     <div className="flex h-screen bg-background">
