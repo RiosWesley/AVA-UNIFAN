@@ -87,6 +87,7 @@ const menuItems = {
     { icon: Building2, label: "Departamentos", href: "/administrador/departamentos" },
     { icon: CreditCard, label: "Financeiro", href: "/administrador/financeiro" },
     { icon: MessageSquare, label: "Comunicação", href: "/administrador/comunicacao" },
+    { icon: Settings, label: "Configurações", href: "/administrador/configuracoes" },
   ],
 }
 
