@@ -9,8 +9,10 @@ import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config
 import { BookOpen, Calendar, FileText, Users, CheckCircle, Star, Award, Clock, GraduationCap, Activity, Target, Sparkles, Bell, ChevronRight, Play } from "lucide-react"
 import Carousel from "@/components/ui/carousel"
 import { useMemo } from "react"
-import { getTeacherClassesWithDetails, getTeacherActivitiesAggregated, getTeacherNotices, buildAgendaSemanalFromClasses, buildProximasAulasFromClasses, buildTurmasData, calculateStats } from "@/src/services/professor-dashboard"
+import { getTeacherClassesWithDetails, getTeacherActivitiesAggregated, getTeacherNotices, buildAgendaSemanalFromClasses, buildProximasAulasFromClasses, buildTurmasData, calculateStats, getCurrentUser, getSemestresDisponiveisProfessor } from "@/src/services/professor-dashboard"
 import api from "@/src/services/api"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ProfessorDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
@@ -30,6 +32,9 @@ export default function ProfessorDashboard() {
   const TURMAS_PAGE_SIZE = 5
   const [comunicadosPage, setComunicadosPage] = useState(1)
   const COMUNICADOS_PAGE_SIZE = 5
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [allClasses, setAllClasses] = useState<any[]>([])
 
   useEffect(() => {
     const checkTheme = () => {
@@ -53,42 +58,30 @@ export default function ProfessorDashboard() {
       try {
         setLoading(true)
         setError(null)
-        // Mock de usuário solicitador
-        const teacherId = '3f259c81-4a5c-4ae8-8b81-6d59f5eb3028'
-        if (!mounted) return
-        // Busca o nome do professor pelo ID
-        let professorName = 'Professor'
-        try {
-          const { data } = await api.get<{ id: string; name?: string }>(`/users/${teacherId}`)
-          if (data?.name) professorName = data.name
-        } catch {
-          // mantém nome padrão se falhar
+        
+        // Buscar usuário atual
+        const user = await getCurrentUser()
+        if (!mounted || !user?.id) return
+        
+        const teacherId = user.id
+        setCurrentUser({ id: teacherId, name: user.name || 'Professor' })
+
+        // Buscar semestres disponíveis
+        const semestresDisponiveis = await getSemestresDisponiveisProfessor(teacherId)
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
         }
-        setCurrentUser({ id: teacherId, name: professorName })
 
         const classes = await getTeacherClassesWithDetails(teacherId)
         if (!mounted) return
-
-        const turmasData = buildTurmasData(classes)
-        const agenda = buildAgendaSemanalFromClasses(classes)
-        const proximas = buildProximasAulasFromClasses(classes)
-        setTurmas(turmasData)
-        setTurmasPage(1)
-        setAgendaSemanal(agenda)
-        setProximasAulas(proximas)
-
-        const atividadesAgg = await getTeacherActivitiesAggregated(classes)
-        if (!mounted) return
-        setAtividades(atividadesAgg)
-        setActivitiesPage(1) // reset ao carregar
-
-        const comunicadosData = await getTeacherNotices()
-        if (!mounted) return
-        setComunicados(comunicadosData)
-        setComunicadosPage(1)
-
-        const s = calculateStats(classes, atividadesAgg)
-        setStats(s)
+        
+        setAllClasses(classes)
       } catch (e: any) {
         setError('Não foi possível carregar os dados do dashboard.')
       } finally {
@@ -100,6 +93,36 @@ export default function ProfessorDashboard() {
       mounted = false
     }
   }, [])
+
+  // Filtrar classes por semestre e atualizar dados derivados
+  useEffect(() => {
+    if (allClasses.length === 0) return
+
+    const classesFiltradas = semestreSelecionado
+      ? allClasses.filter(classe => {
+          const periodo = classe.semestre
+          const periodoNormalizado = periodo?.replace('-', '.')
+          const semestreNormalizado = semestreSelecionado.replace('-', '.')
+          return periodoNormalizado === semestreNormalizado
+        })
+      : allClasses
+
+    const turmasData = buildTurmasData(classesFiltradas)
+    const agenda = buildAgendaSemanalFromClasses(classesFiltradas)
+    const proximas = buildProximasAulasFromClasses(classesFiltradas)
+    setTurmas(turmasData)
+    setTurmasPage(1)
+    setAgendaSemanal(agenda)
+    setProximasAulas(proximas)
+
+    // Atualizar atividades e estatísticas
+    getTeacherActivitiesAggregated(classesFiltradas).then(atividadesAgg => {
+      setAtividades(atividadesAgg)
+      setActivitiesPage(1)
+      const s = calculateStats(classesFiltradas, atividadesAgg)
+      setStats(s)
+    })
+  }, [allClasses, semestreSelecionado])
 
   useEffect(() => {
     // Garante que a página atual seja válida quando o total muda
@@ -162,6 +185,142 @@ export default function ProfessorDashboard() {
     { src: "/placeholder-logo.png", alt: "Aviso 3" },
   ]
 
+  if (loading) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="professor" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            {/* Skeleton do Header */}
+            <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+              isLiquidGlass
+                ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+            }`}>
+              <div className="flex items-center space-x-4">
+                <Skeleton className="w-16 h-16 rounded-2xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-64" />
+                  <Skeleton className="h-5 w-80" />
+                  <div className="flex gap-2 mt-2">
+                    <Skeleton className="h-6 w-24" />
+                    <Skeleton className="h-6 w-32" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-10 w-40" />
+                </div>
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-40" />
+              </div>
+            </div>
+
+            {/* Skeleton do Carrossel */}
+            <div className="mb-8">
+              <Skeleton className="h-96 w-full rounded-xl" />
+            </div>
+
+            {/* Skeleton dos Cards de Estatísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {[1, 2, 3].map((i) => (
+                <LiquidGlassCard key={i} intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-9 w-9 rounded-lg" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-16 mb-2" />
+                    <Skeleton className="h-3 w-24" />
+                  </CardContent>
+                </LiquidGlassCard>
+              ))}
+            </div>
+
+            {/* Skeleton do Layout Principal */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6">
+              <div className="xl:col-span-8 space-y-6">
+                <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {[1, 2].map((i) => (
+                        <div key={i} className="p-4 border rounded-xl space-y-2">
+                          <Skeleton className="h-5 w-48" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </LiquidGlassCard>
+
+                <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <Skeleton className="h-12 w-12 rounded-lg" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-1/2" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </LiquidGlassCard>
+              </div>
+
+              <div className="xl:col-span-4 space-y-6">
+                <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-32 mb-2" />
+                    <Skeleton className="h-4 w-48" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <Skeleton className="h-10 w-10 rounded-lg" />
+                          <div className="flex-1 space-y-1">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-3 w-2/3" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </LiquidGlassCard>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="professor" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <p className="text-red-600 dark:text-red-400">{error}</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="professor" />
@@ -203,6 +362,36 @@ export default function ProfessorDashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                {loading || semestres.length === 0 ? (
+                  <Skeleton className="h-10 w-40" />
+                ) : (
+                  <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                    <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                      isLiquidGlass
+                        ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                        : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                    }`}>
+                      <SelectValue placeholder="Selecionar semestre" />
+                    </SelectTrigger>
+                    <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                      {semestres.map((semestre) => (
+                        <SelectItem key={semestre.id} value={semestre.id}>
+                          <div className="flex items-center space-x-2">
+                            <span>{semestre.nome}</span>
+                            {semestre.ativo && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                Atual
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'

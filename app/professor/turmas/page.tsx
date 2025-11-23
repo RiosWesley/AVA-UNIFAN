@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { Sidebar } from "@/components/layout/sidebar"
-import { Users, BookOpen, FileText, CheckCircle, Calendar, TrendingUp, Clock, ChevronRight } from "lucide-react"
+import { Users, BookOpen, FileText, CheckCircle, Calendar, TrendingUp, Clock, ChevronRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
@@ -15,9 +15,11 @@ import { FrequencyModal } from "@/components/modals"
 import { getTurmasProfessor, Turma, Aluno, Aula } from "@/src/services/ProfessorTurmasService"
 import { lancarFrequencia } from "@/src/services/ProfessorFrequenciaService"
 import { toastSuccess, toastError } from "@/components/ui/toast"
-
-// ID mockado do professor para desenvolvimento
-const MOCK_TEACHER_ID = '3f259c81-4a5c-4ae8-8b81-6d59f5eb3028'
+import { getCurrentUser, getSemestresDisponiveisProfessor } from "@/src/services/professor-dashboard"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { GraduationCap } from "lucide-react"
+import { useMemo } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ProfessorTurmasPage() {
   const [turmas, setTurmas] = useState<Turma[]>([])
@@ -28,24 +30,112 @@ export default function ProfessorTurmasPage() {
   const [frequenciaData, setFrequenciaData] = useState<Record<string, Record<string, boolean>>>({})
   const [saving, setSaving] = useState(false)
   const [isRetificacao, setIsRetificacao] = useState(false)
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [teacherId, setTeacherId] = useState<string | null>(null)
+  const [loadingUser, setLoadingUser] = useState(true)
+  const [loadingSemestres, setLoadingSemestres] = useState(false)
+  const [loadingTurmas, setLoadingTurmas] = useState(false)
+
+  // Buscar usuário atual
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setLoadingUser(true)
+        const user = await getCurrentUser()
+        if (user?.id) {
+          setTeacherId(user.id)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+      } finally {
+        setLoadingUser(false)
+      }
+    }
+    init()
+  }, [])
+
+  // Buscar semestres disponíveis
+  useEffect(() => {
+    const buscarSemestres = async () => {
+      if (!teacherId) return
+      try {
+        setLoadingSemestres(true)
+        const semestresDisponiveis = await getSemestresDisponiveisProfessor(teacherId)
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar semestres:", error)
+      } finally {
+        setLoadingSemestres(false)
+      }
+    }
+    buscarSemestres()
+  }, [teacherId])
 
   // Buscar turmas do professor ao carregar
   useEffect(() => {
     const loadTurmas = async () => {
+      if (!teacherId) return
       try {
-        setLoading(true)
-        // Usando ID mockado do professor
-        const turmasData = await getTurmasProfessor(MOCK_TEACHER_ID)
+        setLoadingTurmas(true)
+        const turmasData = await getTurmasProfessor(teacherId)
         setTurmas(turmasData)
       } catch (error) {
         console.error('Erro ao carregar turmas:', error)
       } finally {
-        setLoading(false)
+        setLoadingTurmas(false)
       }
     }
 
     loadTurmas()
-  }, [])
+  }, [teacherId])
+
+  // Controlar loading geral - só desativa quando tudo estiver carregado
+  useEffect(() => {
+    // Só desativa loading quando:
+    // 1. Usuário foi carregado (ou falhou)
+    // 2. Semestres foram carregados (ou não há teacherId ainda)
+    // 3. Turmas foram carregadas (ou não há teacherId ainda)
+    // 4. Se há teacherId, espera que semestres e turmas estejam prontos
+    const tudoCarregado = !loadingUser && 
+      (!teacherId || (!loadingSemestres && !loadingTurmas))
+    
+    if (tudoCarregado) {
+      setLoading(false)
+    } else {
+      setLoading(true)
+    }
+  }, [loadingUser, loadingSemestres, loadingTurmas, teacherId])
+
+  // Filtrar turmas por semestre
+  const turmasFiltradas = useMemo(() => {
+    if (!semestreSelecionado) return turmas
+    return turmas.filter(turma => {
+      const periodo = turma.semestre
+      // Normalizar formato de semestre (2025.1 ou 2025-1)
+      const periodoNormalizado = periodo?.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+  }, [turmas, semestreSelecionado])
+
+  // Recalcular estatísticas baseadas nas turmas filtradas
+  const estatisticas = useMemo(() => {
+    const totalAlunos = turmasFiltradas.reduce((acc, turma) => acc + turma.alunos, 0)
+    const mediaGeral = turmasFiltradas.length > 0
+      ? turmasFiltradas.reduce((acc, turma) => acc + turma.mediaGeral, 0) / turmasFiltradas.length
+      : 0
+    const atividadesPendentes = turmasFiltradas.reduce((acc, turma) => acc + turma.atividades, 0)
+    return { totalAlunos, mediaGeral, atividadesPendentes }
+  }, [turmasFiltradas])
 
   const isToday = (date: Date) => {
     const today = new Date()
@@ -167,8 +257,10 @@ export default function ProfessorTurmasPage() {
       await lancarFrequencia(frequencias)
       
       // Recarregar turmas para atualizar dados
-      const turmasData = await getTurmasProfessor(MOCK_TEACHER_ID)
-      setTurmas(turmasData)
+      if (teacherId) {
+        const turmasData = await getTurmasProfessor(teacherId)
+        setTurmas(turmasData)
+      }
       
       // Mostrar toast de sucesso
       const totalAlunos = selectedTurma.listaAlunos.length
@@ -242,21 +334,111 @@ export default function ProfessorTurmasPage() {
               <h1 className="text-3xl font-bold text-foreground">Minhas Turmas</h1>
               <p className="text-muted-foreground">Gerencie suas turmas e acompanhe o desempenho</p>
             </div>
-            <div className="flex gap-2">
-              <LiquidGlassButton>
-                <FileText className="h-4 w-4 mr-2" />
-                Lançar Notas
-              </LiquidGlassButton>
-              <LiquidGlassButton variant="outline">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Registrar Frequência
-              </LiquidGlassButton>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                {loadingSemestres || semestres.length === 0 ? (
+                  <Skeleton className="h-10 w-40" />
+                ) : (
+                  <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Selecionar semestre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {semestres.map((semestre) => (
+                        <SelectItem key={semestre.id} value={semestre.id}>
+                          <div className="flex items-center space-x-2">
+                            <span>{semestre.nome}</span>
+                            {semestre.ativo && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                Atual
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <LiquidGlassButton>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Lançar Notas
+                </LiquidGlassButton>
+                <LiquidGlassButton variant="outline">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Registrar Frequência
+                </LiquidGlassButton>
+              </div>
             </div>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-muted-foreground">Carregando turmas...</p>
+            <div className="space-y-6">
+              {/* Skeleton do Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-9 w-64" />
+                  <Skeleton className="h-5 w-96" />
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Skeleton className="h-5 w-5 rounded" />
+                    <Skeleton className="h-10 w-40" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-10 w-32" />
+                    <Skeleton className="h-10 w-40" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Skeleton das Estatísticas */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {[1, 2, 3].map((i) => (
+                  <LiquidGlassCard key={i} intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-4 rounded" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-8 w-16 mb-2" />
+                      <Skeleton className="h-3 w-24" />
+                    </CardContent>
+                  </LiquidGlassCard>
+                ))}
+              </div>
+
+              {/* Skeleton das Turmas */}
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="rounded-xl border border-border/50 px-6 py-5 bg-gray-50/60 dark:bg-gray-800/40">
+                    <div className="flex items-center justify-between gap-6">
+                      <Skeleton className="w-14 h-14 rounded-xl" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-6 w-48" />
+                        <Skeleton className="h-4 w-32" />
+                        <div className="flex gap-4">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                      </div>
+                      <div className="flex gap-6">
+                        <div className="text-center space-y-1">
+                          <Skeleton className="h-5 w-8" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                        <div className="text-center space-y-1">
+                          <Skeleton className="h-5 w-8" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
           <Tabs defaultValue="overview" className="space-y-6">
@@ -274,9 +456,9 @@ export default function ProfessorTurmasPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-primary">
-                      {turmas.reduce((acc, turma) => acc + turma.alunos, 0)}
+                      {estatisticas.totalAlunos}
                     </div>
-                    <p className="text-xs text-muted-foreground">Distribuídos em {turmas.length} turmas</p>
+                    <p className="text-xs text-muted-foreground">Distribuídos em {turmasFiltradas.length} turmas</p>
                   </CardContent>
                 </LiquidGlassCard>
 
@@ -287,10 +469,7 @@ export default function ProfessorTurmasPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-primary">
-                      {turmas.length > 0 
-                        ? (turmas.reduce((acc, turma) => acc + turma.mediaGeral, 0) / turmas.length).toFixed(1)
-                        : '0.0'
-                      }
+                      {estatisticas.mediaGeral.toFixed(1)}
                     </div>
                     <p className="text-xs text-muted-foreground">Média de todas as turmas</p>
                   </CardContent>
@@ -303,7 +482,7 @@ export default function ProfessorTurmasPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-destructive">
-                      {turmas.reduce((acc, turma) => acc + turma.atividades, 0)}
+                      {estatisticas.atividadesPendentes}
                     </div>
                     <p className="text-xs text-muted-foreground">Para correção</p>
                   </CardContent>
@@ -311,7 +490,7 @@ export default function ProfessorTurmasPage() {
               </div>
 
               <div className="space-y-3">
-                {turmas.map((turma) => (
+                {turmasFiltradas.map((turma) => (
                   <Link 
                     key={turma.id} 
                     href={`/professor/turmas/${turma.id}`}
@@ -384,7 +563,7 @@ export default function ProfessorTurmasPage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {turmas.map((turma) => (
+                {turmasFiltradas.map((turma) => (
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={turma.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">

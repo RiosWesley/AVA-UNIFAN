@@ -26,6 +26,9 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { getCurrentUser, getSemestresDisponiveisProfessor } from "@/src/services/professor-dashboard"
+import { GraduationCap } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type Turno = 'manha' | 'tarde' | 'noite'
 
@@ -59,7 +62,9 @@ const TURNOS: Array<{
 
 export default function DisponibilizacaoHorariosPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
-  const [semestreSelecionado, setSemestreSelecionado] = useState("2024.1")
+  const [semestreSelecionado, setSemestreSelecionado] = useState("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [teacherId, setTeacherId] = useState<string | null>(null)
   const [status, setStatus] = useState<'rascunho' | 'enviada' | 'aprovada'>('rascunho')
   const [observacoes, setObservacoes] = useState("")
   const [turnos, setTurnos] = useState<DisponibilidadeTurnos>({
@@ -68,6 +73,7 @@ export default function DisponibilizacaoHorariosPage() {
     noite: false
   })
   const [historico, setHistorico] = useState<DisponibilizacaoHorarios[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -85,11 +91,48 @@ export default function DisponibilizacaoHorariosPage() {
     return () => observer.disconnect()
   }, [])
 
-  const semestres = [
-    { id: "2024.1", nome: "2024.1", ativo: true },
-    { id: "2023.2", nome: "2023.2", ativo: false },
-    { id: "2023.1", nome: "2023.1", ativo: false }
-  ]
+  // Buscar usuário atual e semestres disponíveis
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setLoading(true)
+        const user = await getCurrentUser()
+        if (user?.id) {
+          setTeacherId(user.id)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    init()
+  }, [])
+
+  // Buscar semestres disponíveis
+  useEffect(() => {
+    const buscarSemestres = async () => {
+      if (!teacherId) return
+      try {
+        setLoading(true)
+        const semestresDisponiveis = await getSemestresDisponiveisProfessor(teacherId)
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar semestres:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    buscarSemestres()
+  }, [teacherId])
 
   const toggleTurno = (turno: Turno) => {
     setTurnos(prev => ({
@@ -190,6 +233,71 @@ export default function DisponibilizacaoHorariosPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className={cn("flex h-screen", isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background')}>
+        <Sidebar userRole="professor" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            {/* Skeleton do Header */}
+            <div className={cn(
+              "flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-xl border gap-4",
+              isLiquidGlass
+                ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+            )}>
+              <div className="flex items-center space-x-4">
+                <Skeleton className="w-16 h-16 rounded-2xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-9 w-80" />
+                  <Skeleton className="h-5 w-96" />
+                  <div className="flex gap-2 mt-2">
+                    <Skeleton className="h-6 w-24" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                </div>
+              </div>
+              <Skeleton className="h-10 w-40" />
+            </div>
+
+            {/* Skeleton dos Tabs */}
+            <div className="mb-6">
+              <div className={cn(
+                "grid w-full grid-cols-2 gap-1 backdrop-blur-sm",
+                isLiquidGlass
+                  ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                  : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+              )}>
+                <Skeleton className="h-10" />
+                <Skeleton className="h-10" />
+              </div>
+            </div>
+
+            {/* Skeleton do Conteúdo */}
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
+              <CardHeader>
+                <Skeleton className="h-7 w-48 mb-2" />
+                <Skeleton className="h-4 w-96" />
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-48 rounded-xl" />
+                  ))}
+                </div>
+                <Skeleton className="h-24 w-full rounded-lg" />
+                <div className="flex gap-3 pt-4 border-t">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 flex-1" />
+                </div>
+              </CardContent>
+            </LiquidGlassCard>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className={cn("flex h-screen", isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background')}>
       <Sidebar userRole="professor" />
@@ -245,30 +353,34 @@ export default function DisponibilizacaoHorariosPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                  <SelectTrigger className={cn(
-                    "w-40 backdrop-blur-sm",
-                    isLiquidGlass
-                      ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
-                      : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
-                  )}>
-                    <SelectValue placeholder="Selecionar semestre" />
-                  </SelectTrigger>
-                  <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
-                    {semestres.map((semestre) => (
-                      <SelectItem key={semestre.id} value={semestre.id}>
-                        <div className="flex items-center space-x-2">
-                          <span>{semestre.nome}</span>
-                          {semestre.ativo && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
-                              Atual
-                            </Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {loading || semestres.length === 0 ? (
+                  <Skeleton className="h-10 w-40" />
+                ) : (
+                  <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                    <SelectTrigger className={cn(
+                      "w-40 backdrop-blur-sm",
+                      isLiquidGlass
+                        ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                        : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                    )}>
+                      <SelectValue placeholder="Selecionar semestre" />
+                    </SelectTrigger>
+                    <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                      {semestres.map((semestre) => (
+                        <SelectItem key={semestre.id} value={semestre.id}>
+                          <div className="flex items-center space-x-2">
+                            <span>{semestre.nome}</span>
+                            {semestre.ativo && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                Atual
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           </div>

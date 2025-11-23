@@ -7,7 +7,7 @@ import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config
 import { Calendar, Clock, Plus, Bell, BookOpen, Zap, ChevronLeft, ChevronRight, CheckCircle, Info, Users, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { getCurrentUser, getTeacherClassesWithDetails, TeacherClassDetail } from '@/src/services/professor-dashboard'
+import { getCurrentUser, getTeacherClassesWithDetails, TeacherClassDetail, getSemestresDisponiveisProfessor } from '@/src/services/professor-dashboard'
 import { 
   getTeacherAgendaData, 
   groupSchedulesByDay, 
@@ -16,6 +16,9 @@ import {
   EventosPorDia
 } from '@/src/services/professor-agenda'
 import { ScheduleWithRelations } from '@/lib/api-client'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { GraduationCap } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface DayInfo {
   day: number
@@ -33,6 +36,10 @@ export default function AgendaPage() {
   const [teacherId, setTeacherId] = useState<string | null>(null)
   const [classes, setClasses] = useState<TeacherClassDetail[]>([])
   const [schedules, setSchedules] = useState<ScheduleWithRelations[]>([])
+  const [lessonPlans, setLessonPlans] = useState<any[]>([])
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [loadingSemestres, setLoadingSemestres] = useState(false)
   const [eventosPorDiaGrade, setEventosPorDiaGrade] = useState<EventosPorDia>({
     Seg: [],
     Ter: [],
@@ -60,6 +67,31 @@ export default function AgendaPage() {
     return () => observer.disconnect()
   }, [])
 
+  // Buscar semestres disponíveis
+  useEffect(() => {
+    const buscarSemestres = async () => {
+      if (!teacherId) return
+      try {
+        setLoadingSemestres(true)
+        const semestresDisponiveis = await getSemestresDisponiveisProfessor(teacherId)
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar semestres:", error)
+      } finally {
+        setLoadingSemestres(false)
+      }
+    }
+    buscarSemestres()
+  }, [teacherId])
+
   // Carregar dados do professor e agenda
   useEffect(() => {
     let mounted = true
@@ -85,6 +117,7 @@ export default function AgendaPage() {
 
         setClasses(agendaData.classes)
         setSchedules(agendaData.schedules)
+        setLessonPlans(agendaData.lessonPlans)
 
         // Agrupar schedules por dia da semana para grade horária
         const eventosGrade = groupSchedulesByDay(agendaData.schedules, agendaData.classes)
@@ -113,28 +146,56 @@ export default function AgendaPage() {
     }
   }, [])
 
-  // Atualizar calendário quando mês/ano mudar
+  // Filtrar classes, schedules e lesson plans por semestre
+  const classesFiltradas = useMemo(() => {
+    if (!semestreSelecionado) return classes
+    return classes.filter(classe => {
+      const periodo = classe.semestre
+      // Normalizar formato de semestre (2025.1 ou 2025-1)
+      const periodoNormalizado = periodo?.replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      return periodoNormalizado === semestreNormalizado
+    })
+  }, [classes, semestreSelecionado])
+
+  const schedulesFiltrados = useMemo(() => {
+    if (!semestreSelecionado) return schedules
+    const classIdsFiltradas = new Set(classesFiltradas.map(c => c.id))
+    return schedules.filter(schedule => {
+      return classIdsFiltradas.has(schedule.class?.id || '')
+    })
+  }, [schedules, classesFiltradas, semestreSelecionado])
+
+  // Atualizar eventos quando dados ou semestre mudarem
   useEffect(() => {
-    if (!teacherId) return
+    if (!teacherId || classes.length === 0) return
 
-    async function updateCalendar() {
-      if (!teacherId) return
-      try {
-        const agendaData = await getTeacherAgendaData(teacherId)
-        const eventosCalendario = groupLessonPlansByDate(
-          agendaData.lessonPlans,
-          agendaData.classes,
-          currentMonth,
-          currentYear
-        )
-        setEventosPorDataCalendario(eventosCalendario)
-      } catch (err) {
-        console.error('Erro ao atualizar calendário:', err)
-      }
-    }
+    // Agrupar schedules por dia da semana para grade horária
+    const eventosGrade = groupSchedulesByDay(schedulesFiltrados, classesFiltradas)
+    setEventosPorDiaGrade(eventosGrade)
+  }, [schedulesFiltrados, classesFiltradas, teacherId])
 
-    updateCalendar()
-  }, [currentMonth, currentYear, teacherId])
+  // Filtrar lesson plans por semestre
+  const lessonPlansFiltrados = useMemo(() => {
+    if (!semestreSelecionado) return lessonPlans
+    const classIdsFiltradas = new Set(classesFiltradas.map(c => c.id))
+    return lessonPlans.filter(lp => {
+      return classIdsFiltradas.has(lp.class?.id || '')
+    })
+  }, [lessonPlans, classesFiltradas, semestreSelecionado])
+
+  // Atualizar calendário quando mês/ano/semestre mudar
+  useEffect(() => {
+    if (!teacherId || lessonPlans.length === 0) return
+
+    const eventosCalendario = groupLessonPlansByDate(
+      lessonPlansFiltrados,
+      classesFiltradas,
+      currentMonth,
+      currentYear
+    )
+    setEventosPorDataCalendario(eventosCalendario)
+  }, [currentMonth, currentYear, teacherId, semestreSelecionado, classesFiltradas, lessonPlansFiltrados])
 
   const diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
   const diasSemanaGrade = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -287,10 +348,94 @@ export default function AgendaPage() {
     return (
       <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
         <Sidebar userRole="professor" />
-        <main className="flex-1 overflow-y-auto flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
-            <p className="text-muted-foreground">Carregando agenda...</p>
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-8">
+            {/* Skeleton do Header */}
+            <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm ${
+              isLiquidGlass
+                ? 'bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 dark:from-green-900/30 dark:via-emerald-900/30 dark:to-green-900/30 border-green-200/30 dark:border-green-700/50'
+                : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+            }`}>
+              <div className="p-8">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-3">
+                    <Skeleton className="h-10 w-64" />
+                    <Skeleton className="h-6 w-96" />
+                    <div className="flex items-center gap-6 pt-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-6 w-24" />
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <Skeleton className="h-5 w-5 rounded" />
+                      <Skeleton className="h-10 w-40" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Skeleton da Grade Horária */}
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50' : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'}>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-12 h-12 rounded-2xl" />
+                    <div>
+                      <Skeleton className="h-7 w-48 mb-2" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                    <Skeleton className="h-9 w-16 rounded-full" />
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex gap-4">
+                      <Skeleton className="h-16 w-24" />
+                      {[1, 2, 3, 4, 5, 6].map((j) => (
+                        <Skeleton key={j} className="h-16 flex-1 rounded-lg" />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </LiquidGlassCard>
+
+            {/* Skeleton do Calendário */}
+            <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20 border-green-200/30 dark:border-green-700/50' : 'bg-gray-50/60 dark:bg-gray-800/40 border-green-200 dark:border-green-700'}>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="w-12 h-12 rounded-2xl" />
+                    <div>
+                      <Skeleton className="h-7 w-32 mb-2" />
+                      <Skeleton className="h-4 w-48" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                    <Skeleton className="h-9 w-32" />
+                    <Skeleton className="h-9 w-9 rounded-full" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-7 gap-2 mb-4">
+                  {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <Skeleton key={i} className="h-10" />
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {Array.from({ length: 35 }).map((_, i) => (
+                    <Skeleton key={i} className="h-24 rounded-2xl" />
+                  ))}
+                </div>
+              </div>
+            </LiquidGlassCard>
           </div>
         </main>
       </div>
@@ -351,6 +496,38 @@ export default function AgendaPage() {
                         Atualizado
                       </Badge>
                     </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    {loadingSemestres || semestres.length === 0 ? (
+                      <Skeleton className="h-10 w-40" />
+                    ) : (
+                      <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                        <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                          isLiquidGlass
+                            ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                            : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                        }`}>
+                          <SelectValue placeholder="Selecionar semestre" />
+                        </SelectTrigger>
+                        <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                          {semestres.map((semestre) => (
+                            <SelectItem key={semestre.id} value={semestre.id}>
+                              <div className="flex items-center space-x-2">
+                                <span>{semestre.nome}</span>
+                                {semestre.ativo && (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                    Atual
+                                  </Badge>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                 </div>
                 <div className="hidden md:flex items-center space-x-4">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
