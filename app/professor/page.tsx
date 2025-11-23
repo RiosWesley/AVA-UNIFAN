@@ -14,6 +14,7 @@ import { getTeacherClassesWithDetails, getTeacherActivitiesAggregated, getTeache
 import api from "@/src/services/api"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getMurals } from "@/src/services/muralsService"
 
 export default function ProfessorDashboard() {
   const router = useRouter()
@@ -37,6 +38,7 @@ export default function ProfessorDashboard() {
   const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
   const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
   const [allClasses, setAllClasses] = useState<any[]>([])
+  const [carouselImages, setCarouselImages] = useState<Array<{ src: string; alt: string }>>([])
 
   useEffect(() => {
     const checkTheme = () => {
@@ -160,6 +162,31 @@ export default function ProfessorDashboard() {
     }
   }, [comunicados, comunicadosPage])
 
+  // Buscar imagens do mural
+  useEffect(() => {
+    const carregarMural = async () => {
+      try {
+        const murais = await getMurals('professor')
+        const imagensAtivas = murais
+          .filter(m => m.isActive)
+          .map(m => ({
+            src: m.imageUrl,
+            alt: m.title
+          }))
+        setCarouselImages(imagensAtivas)
+      } catch (error) {
+        console.error("Erro ao carregar mural:", error)
+        // Fallback para imagens padrão em caso de erro
+        setCarouselImages([
+          { src: "/placeholder.jpg", alt: "Aviso 1" },
+          { src: "/placeholder-user.jpg", alt: "Aviso 2" },
+          { src: "/placeholder-logo.png", alt: "Aviso 3" },
+        ])
+      }
+    }
+    carregarMural()
+  }, [])
+
   const paginatedAtividades = useMemo(() => {
     const start = (activitiesPage - 1) * ACTIVITIES_PAGE_SIZE
     const end = start + ACTIVITIES_PAGE_SIZE
@@ -192,12 +219,6 @@ export default function ProfessorDashboard() {
     () => Math.max(1, Math.ceil((comunicados?.length || 0) / COMUNICADOS_PAGE_SIZE)),
     [comunicados]
   )
-
-  const carouselImages = [
-    { src: "/placeholder.jpg", alt: "Aviso 1" },
-    { src: "/placeholder-user.jpg", alt: "Aviso 2" },
-    { src: "/placeholder-logo.png", alt: "Aviso 3" },
-  ]
 
   if (loading) {
     return (

@@ -1,14 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, Calendar } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Edit, Trash2, Calendar, Image as ImageIcon, Upload, X } from "lucide-react"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 import {
   getAcademicPeriods,
@@ -19,9 +21,20 @@ import {
   type CreateAcademicPeriodDto,
   type UpdateAcademicPeriodDto,
 } from "@/src/services/academicPeriodsService"
+import {
+  getMurals,
+  createMural,
+  updateMural,
+  deleteMural,
+  type Mural,
+  type MuralTargetRole,
+  type CreateMuralDto,
+  type UpdateMuralDto,
+} from "@/src/services/muralsService"
 import { toast } from "@/components/ui/toast"
 import { getCurrentUser } from "@/src/services/professor-dashboard"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 export default function ConfiguracoesAdministradorPage() {
   const router = useRouter()
@@ -34,6 +47,33 @@ export default function ConfiguracoesAdministradorPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [form, setForm] = useState<{ period: string }>({ period: "" })
   const [formError, setFormError] = useState<string | null>(null)
+
+  // Estados para Mural
+  const [murals, setMurals] = useState<Mural[]>([])
+  const [muralLoading, setMuralLoading] = useState(true)
+  const [muralError, setMuralError] = useState<string | null>(null)
+  const [muralFiltro, setMuralFiltro] = useState<MuralTargetRole | "todos">("todos")
+  const [muralEditando, setMuralEditando] = useState<Mural | null>(null)
+  const [muralExcluindo, setMuralExcluindo] = useState<Mural | null>(null)
+  const [isMuralCreateModalOpen, setIsMuralCreateModalOpen] = useState(false)
+  const [isMuralEditModalOpen, setIsMuralEditModalOpen] = useState(false)
+  const [muralForm, setMuralForm] = useState<{
+    title: string
+    description: string
+    targetRole: MuralTargetRole | "ambos"
+    order: string
+    isActive: boolean
+  }>({
+    title: "",
+    description: "",
+    targetRole: "aluno",
+    order: "",
+    isActive: true,
+  })
+  const [muralImageFile, setMuralImageFile] = useState<File | null>(null)
+  const [muralImagePreview, setMuralImagePreview] = useState<string | null>(null)
+  const [muralFormError, setMuralFormError] = useState<string | null>(null)
+  const muralFileInputRef = useRef<HTMLInputElement>(null)
 
   // Verificar autenticação e role
   useEffect(() => {
@@ -60,6 +100,11 @@ export default function ConfiguracoesAdministradorPage() {
   useEffect(() => {
     carregarPeriodos()
   }, [])
+
+  // Carregar murais
+  useEffect(() => {
+    carregarMurals()
+  }, [muralFiltro])
 
   async function carregarPeriodos() {
     try {
@@ -252,6 +297,280 @@ export default function ConfiguracoesAdministradorPage() {
     }
   }
 
+  // ========== FUNÇÕES DO MURAL ==========
+
+  async function carregarMurals() {
+    try {
+      setMuralLoading(true)
+      setMuralError(null)
+      const targetRole = muralFiltro === "todos" ? undefined : muralFiltro
+      const murais = await getMurals(targetRole)
+      setMurals(murais)
+    } catch (err: any) {
+      setMuralError(err.message || "Erro ao carregar murais")
+      console.error("Erro ao carregar murais:", err)
+      toast({
+        variant: 'error',
+        title: 'Erro ao carregar murais',
+        description: err.message || "Não foi possível carregar os murais."
+      })
+    } finally {
+      setMuralLoading(false)
+    }
+  }
+
+  // Abrir modal de criação de mural
+  function handleOpenMuralCreateModal() {
+    setMuralForm({
+      title: "",
+      description: "",
+      targetRole: "aluno",
+      order: "",
+      isActive: true,
+    })
+    setMuralImageFile(null)
+    setMuralImagePreview(null)
+    setMuralFormError(null)
+    setIsMuralCreateModalOpen(true)
+  }
+
+  // Fechar modal de criação de mural
+  function handleCloseMuralCreateModal() {
+    setIsMuralCreateModalOpen(false)
+    setMuralForm({
+      title: "",
+      description: "",
+      targetRole: "aluno",
+      order: "",
+      isActive: true,
+    })
+    setMuralImageFile(null)
+    setMuralImagePreview(null)
+    setMuralFormError(null)
+    if (muralFileInputRef.current) {
+      muralFileInputRef.current.value = ""
+    }
+  }
+
+  // Abrir modal de edição de mural
+  function handleOpenMuralEditModal(mural: Mural) {
+    setMuralEditando(mural)
+    setMuralForm({
+      title: mural.title,
+      description: mural.description || "",
+      targetRole: mural.targetRole,
+      order: mural.order?.toString() || "",
+      isActive: mural.isActive,
+    })
+    setMuralImageFile(null)
+    setMuralImagePreview(mural.imageUrl)
+    setMuralFormError(null)
+    setIsMuralEditModalOpen(true)
+  }
+
+  // Fechar modal de edição de mural
+  function handleCloseMuralEditModal() {
+    setIsMuralEditModalOpen(false)
+    setMuralEditando(null)
+    setMuralForm({
+      title: "",
+      description: "",
+      targetRole: "aluno",
+      order: "",
+      isActive: true,
+    })
+    setMuralImageFile(null)
+    setMuralImagePreview(null)
+    setMuralFormError(null)
+    if (muralFileInputRef.current) {
+      muralFileInputRef.current.value = ""
+    }
+  }
+
+  // Handler para mudança de imagem
+  function handleMuralImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setMuralFormError("Tipo de arquivo não permitido. Apenas imagens (jpg, jpeg, png, webp) são aceitas.")
+      return
+    }
+
+    // Validar tamanho (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      setMuralFormError("O arquivo deve ter no máximo 10MB.")
+      return
+    }
+
+    setMuralImageFile(file)
+    setMuralFormError(null)
+
+    // Criar preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setMuralImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Remover imagem selecionada
+  function handleRemoveMuralImage() {
+    setMuralImageFile(null)
+    if (muralEditando) {
+      setMuralImagePreview(muralEditando.imageUrl)
+    } else {
+      setMuralImagePreview(null)
+    }
+    if (muralFileInputRef.current) {
+      muralFileInputRef.current.value = ""
+    }
+  }
+
+  // Criar mural
+  async function handleCreateMural() {
+    if (!muralForm.title.trim()) {
+      setMuralFormError("O título é obrigatório")
+      return
+    }
+
+    if (!muralImageFile && !isMuralEditModalOpen) {
+      setMuralFormError("A imagem é obrigatória")
+      return
+    }
+
+    if (!muralImageFile) {
+      setMuralFormError("A imagem é obrigatória")
+      return
+    }
+
+    try {
+      setMuralFormError(null)
+      
+      // Se "ambos" foi selecionado, criar dois murais
+      if (muralForm.targetRole === "ambos") {
+        const basePayload = {
+          title: muralForm.title.trim(),
+          description: muralForm.description.trim() || undefined,
+          order: muralForm.order ? parseInt(muralForm.order) : undefined,
+          isActive: muralForm.isActive,
+        }
+
+        // Criar para aluno
+        const payloadAluno: CreateMuralDto = {
+          ...basePayload,
+          targetRole: "aluno",
+        }
+        await createMural(payloadAluno, muralImageFile)
+
+        // Criar para professor (usar a mesma imagem)
+        const payloadProfessor: CreateMuralDto = {
+          ...basePayload,
+          targetRole: "professor",
+        }
+        await createMural(payloadProfessor, muralImageFile)
+
+        await carregarMurals()
+        handleCloseMuralCreateModal()
+        toast({
+          variant: 'success',
+          title: 'Murais criados',
+          description: `Os murais "${muralForm.title.trim()}" foram criados com sucesso para aluno e professor.`,
+        })
+      } else {
+        // Criar para um único role
+        const payload: CreateMuralDto = {
+          title: muralForm.title.trim(),
+          description: muralForm.description.trim() || undefined,
+          targetRole: muralForm.targetRole as MuralTargetRole,
+          order: muralForm.order ? parseInt(muralForm.order) : undefined,
+          isActive: muralForm.isActive,
+        }
+
+        const novo = await createMural(payload, muralImageFile)
+        await carregarMurals()
+        handleCloseMuralCreateModal()
+        toast({
+          variant: 'success',
+          title: 'Mural criado',
+          description: `O mural "${novo.title}" foi criado com sucesso.`,
+        })
+      }
+    } catch (err: any) {
+      setMuralFormError(err.message || "Erro ao criar mural")
+      toast({
+        variant: 'error',
+        title: 'Erro ao criar mural',
+        description: err.message || "Não foi possível criar o mural."
+      })
+    }
+  }
+
+  // Atualizar mural
+  async function handleUpdateMural() {
+    if (!muralEditando) return
+
+    if (!muralForm.title.trim()) {
+      setMuralFormError("O título é obrigatório")
+      return
+    }
+
+    try {
+      setMuralFormError(null)
+      const payload: UpdateMuralDto = {
+        title: muralForm.title.trim(),
+        description: muralForm.description.trim() || undefined,
+        targetRole: muralForm.targetRole,
+        order: muralForm.order ? parseInt(muralForm.order) : undefined,
+        isActive: muralForm.isActive,
+      }
+
+      const atualizado = await updateMural(muralEditando.id, payload, muralImageFile || undefined)
+      await carregarMurals()
+      handleCloseMuralEditModal()
+      toast({
+        variant: 'success',
+        title: 'Mural atualizado',
+        description: `O mural foi atualizado com sucesso.`,
+      })
+    } catch (err: any) {
+      setMuralFormError(err.message || "Erro ao atualizar mural")
+      toast({
+        variant: 'error',
+        title: 'Erro ao atualizar mural',
+        description: err.message || "Não foi possível atualizar o mural."
+      })
+    }
+  }
+
+  // Excluir mural
+  async function confirmarExclusaoMural() {
+    if (!muralExcluindo) return
+
+    try {
+      setMuralError(null)
+      await deleteMural(muralExcluindo.id)
+      await carregarMurals()
+      setMuralExcluindo(null)
+      toast({
+        variant: 'success',
+        title: 'Mural excluído',
+        description: `O mural "${muralExcluindo.title}" foi excluído com sucesso.`,
+      })
+    } catch (err: any) {
+      setMuralError(err.message || "Erro ao excluir mural")
+      toast({
+        variant: 'error',
+        title: 'Erro ao excluir mural',
+        description: err.message || "Não foi possível excluir o mural."
+      })
+      setMuralExcluindo(null)
+    }
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar userRole="administrador" />
@@ -266,6 +585,7 @@ export default function ConfiguracoesAdministradorPage() {
           <Tabs defaultValue="periodo-letivo" className="space-y-6">
             <TabsList>
               <TabsTrigger value="periodo-letivo">Período Letivo</TabsTrigger>
+              <TabsTrigger value="mural-institucional">Mural Institucional</TabsTrigger>
             </TabsList>
 
             <TabsContent value="periodo-letivo" className="space-y-6">
@@ -339,6 +659,125 @@ export default function ConfiguracoesAdministradorPage() {
                             </CardContent>
                           </Card>
                         ))
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="mural-institucional" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5" />
+                        Mural Institucional
+                      </CardTitle>
+                      <CardDescription>Gerencie as imagens exibidas nos dashboards de alunos e professores</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Select value={muralFiltro} onValueChange={(value) => setMuralFiltro(value as MuralTargetRole | "todos")}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="aluno">Aluno</SelectItem>
+                          <SelectItem value="professor">Professor</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={handleOpenMuralCreateModal}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Imagem
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {muralError && (
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-400 text-sm">
+                      {muralError}
+                    </div>
+                  )}
+
+                  {muralLoading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Carregando murais...
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {murals.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>Nenhum mural cadastrado.</p>
+                          <p className="text-sm mt-2">Clique em "Adicionar Imagem" para criar o primeiro.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {murals.map((mural) => (
+                            <Card key={mural.id} className="border-l-4 border-l-blue-500 overflow-hidden">
+                              <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-800">
+                                <Image
+                                  src={mural.imageUrl}
+                                  alt={mural.title}
+                                  fill
+                                  className="object-cover"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                />
+                                {!mural.isActive && (
+                                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                    <span className="text-white font-semibold">Inativo</span>
+                                  </div>
+                                )}
+                              </div>
+                              <CardContent className="p-4">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <h3 className="font-semibold text-lg line-clamp-1">{mural.title}</h3>
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      mural.targetRole === 'aluno' 
+                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                                        : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+                                    }`}>
+                                      {mural.targetRole === 'aluno' ? 'Aluno' : 'Professor'}
+                                    </span>
+                                  </div>
+                                  {mural.description && (
+                                    <p className="text-sm text-muted-foreground line-clamp-2">{mural.description}</p>
+                                  )}
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>Ordem: {mural.order ?? 'N/A'}</span>
+                                    <span>{formatarData(mural.createdAt)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 pt-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleOpenMuralEditModal(mural)}
+                                      title="Editar mural"
+                                      className="flex-1"
+                                    >
+                                      <Edit className="w-4 h-4 mr-1" />
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setMuralExcluindo(mural)}
+                                      title="Excluir mural"
+                                      className="flex-1"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-1" />
+                                      Excluir
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
                       )}
                     </div>
                   )}
@@ -448,6 +887,333 @@ export default function ConfiguracoesAdministradorPage() {
         cancelLabel="Cancelar"
         onConfirm={confirmarExclusao}
         onClose={() => setPeriodoExcluindo(null)}
+      />
+
+      {/* Modal de Criação de Mural */}
+      <Dialog open={isMuralCreateModalOpen} onOpenChange={(open) => {
+        if (!open) handleCloseMuralCreateModal()
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Adicionar Imagem ao Mural</DialogTitle>
+            <DialogDescription>
+              Adicione uma nova imagem para exibir nos dashboards
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="mural-title-create">Título *</Label>
+              <Input
+                id="mural-title-create"
+                placeholder="Título do mural"
+                value={muralForm.title}
+                onChange={(e) => {
+                  setMuralForm({ ...muralForm, title: e.target.value })
+                  setMuralFormError(null)
+                }}
+                className={muralFormError && !muralForm.title.trim() ? "border-red-500" : ""}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mural-description-create">Descrição</Label>
+              <Textarea
+                id="mural-description-create"
+                placeholder="Descrição do mural (opcional)"
+                value={muralForm.description}
+                onChange={(e) => {
+                  setMuralForm({ ...muralForm, description: e.target.value })
+                  setMuralFormError(null)
+                }}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mural-targetRole-create">Destino *</Label>
+              <Select
+                value={muralForm.targetRole}
+                onValueChange={(value) => {
+                  setMuralForm({ ...muralForm, targetRole: value as MuralTargetRole | "ambos" })
+                  setMuralFormError(null)
+                }}
+              >
+                <SelectTrigger id="mural-targetRole-create">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aluno">Aluno</SelectItem>
+                  <SelectItem value="professor">Professor</SelectItem>
+                  <SelectItem value="ambos">Ambos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="mural-order-create">Ordem</Label>
+                <Input
+                  id="mural-order-create"
+                  type="number"
+                  placeholder="Ordem de exibição"
+                  value={muralForm.order}
+                  onChange={(e) => {
+                    setMuralForm({ ...muralForm, order: e.target.value })
+                    setMuralFormError(null)
+                  }}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mural-isActive-create" className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    id="mural-isActive-create"
+                    type="checkbox"
+                    checked={muralForm.isActive}
+                    onChange={(e) => {
+                      setMuralForm({ ...muralForm, isActive: e.target.checked })
+                      setMuralFormError(null)
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span>Ativo</span>
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mural-image-create">Imagem *</Label>
+              <div className="space-y-3">
+                {muralImagePreview && (
+                  <div className="relative w-full h-48 border rounded-md overflow-hidden">
+                    <Image
+                      src={muralImagePreview}
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleRemoveMuralImage}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={muralFileInputRef}
+                    id="mural-image-create"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleMuralImageChange}
+                    className={muralFormError && !muralImageFile ? "border-red-500" : ""}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => muralFileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Selecionar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Formatos aceitos: JPG, JPEG, PNG, WEBP (máximo 10MB)
+                </p>
+              </div>
+            </div>
+
+            {muralFormError && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-400 text-sm">
+                {muralFormError}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseMuralCreateModal}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateMural}>
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Edição de Mural */}
+      <Dialog open={isMuralEditModalOpen} onOpenChange={(open) => {
+        if (!open) handleCloseMuralEditModal()
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Mural</DialogTitle>
+            <DialogDescription>
+              Atualize as informações do mural
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="mural-title-edit">Título *</Label>
+              <Input
+                id="mural-title-edit"
+                placeholder="Título do mural"
+                value={muralForm.title}
+                onChange={(e) => {
+                  setMuralForm({ ...muralForm, title: e.target.value })
+                  setMuralFormError(null)
+                }}
+                className={muralFormError && !muralForm.title.trim() ? "border-red-500" : ""}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mural-description-edit">Descrição</Label>
+              <Textarea
+                id="mural-description-edit"
+                placeholder="Descrição do mural (opcional)"
+                value={muralForm.description}
+                onChange={(e) => {
+                  setMuralForm({ ...muralForm, description: e.target.value })
+                  setMuralFormError(null)
+                }}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mural-targetRole-edit">Destino *</Label>
+              <Select
+                value={muralForm.targetRole}
+                onValueChange={(value) => {
+                  setMuralForm({ ...muralForm, targetRole: value as MuralTargetRole })
+                  setMuralFormError(null)
+                }}
+              >
+                <SelectTrigger id="mural-targetRole-edit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aluno">Aluno</SelectItem>
+                  <SelectItem value="professor">Professor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="mural-order-edit">Ordem</Label>
+                <Input
+                  id="mural-order-edit"
+                  type="number"
+                  placeholder="Ordem de exibição"
+                  value={muralForm.order}
+                  onChange={(e) => {
+                    setMuralForm({ ...muralForm, order: e.target.value })
+                    setMuralFormError(null)
+                  }}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mural-isActive-edit" className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    id="mural-isActive-edit"
+                    type="checkbox"
+                    checked={muralForm.isActive}
+                    onChange={(e) => {
+                      setMuralForm({ ...muralForm, isActive: e.target.checked })
+                      setMuralFormError(null)
+                    }}
+                    className="w-4 h-4"
+                  />
+                  <span>Ativo</span>
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mural-image-edit">Imagem {muralImageFile ? "(nova)" : "(atual)"}</Label>
+              <div className="space-y-3">
+                {muralImagePreview && (
+                  <div className="relative w-full h-48 border rounded-md overflow-hidden">
+                    <Image
+                      src={muralImagePreview}
+                      alt="Preview"
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                    />
+                    {muralImageFile && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={handleRemoveMuralImage}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={muralFileInputRef}
+                    id="mural-image-edit"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleMuralImageChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => muralFileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {muralImageFile ? "Alterar" : "Selecionar Nova"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Deixe em branco para manter a imagem atual. Formatos aceitos: JPG, JPEG, PNG, WEBP (máximo 10MB)
+                </p>
+              </div>
+            </div>
+
+            {muralFormError && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-400 text-sm">
+                {muralFormError}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseMuralEditModal}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateMural}>
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmação de Exclusão de Mural */}
+      <ModalConfirmacao
+        isOpen={!!muralExcluindo}
+        title="Excluir Mural"
+        description={
+          muralExcluindo
+            ? `Tem certeza que deseja excluir o mural "${muralExcluindo.title}"? Esta ação não pode ser desfeita.`
+            : ""
+        }
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        onConfirm={confirmarExclusaoMural}
+        onClose={() => setMuralExcluindo(null)}
       />
     </div>
   )
