@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
+import { format } from "date-fns"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,7 +9,9 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
+import { PageSpinner } from "@/components/ui/page-spinner"
 import {
   BarChart,
   Bar,
@@ -24,176 +27,197 @@ import {
   Line,
   Legend,
 } from "recharts"
-import { DollarSign, TrendingUp, AlertTriangle, Users, Download, FileText, Search, Mail, Phone } from "lucide-react"
+import {
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
+  Users,
+  Download,
+  FileText,
+  Search,
+  Mail,
+  Phone,
+} from "lucide-react"
+import {
+  useAdminFinancialSummary,
+  useRevenueEvolution,
+  useRevenueByCategory,
+  useExpensesByCategory,
+  useDefaultingStudents,
+  useCashFlow,
+  useGenerateReport,
+  useRegisterContact,
+  useStudentInstallments,
+  useCreatePayment,
+} from "@/hooks/use-financeiro"
+import type {
+  PeriodFilter,
+  ReportType,
+  ReportPeriod,
+  ReportFormat,
+  CashFlowGroupBy,
+  PaymentMethod,
+} from "@/src/types/Financeiro"
+import { toast } from "sonner"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { CreditCard } from "lucide-react"
 
-type ReceitaCategoria = {
-  categoria: string
-  valor: number
-  cor: string
-}
-
-type DespesaCategoria = {
-  categoria: string
-  valor: number
-  cor: string
-}
-
-type AlunoInadimplente = {
-  id: number
-  nome: string
-  email: string
-  telefone: string
-  turma: string
-  valorDevido: number
-  mesesAtraso: number
-  ultimoContato: string
-}
-
-type FluxoCaixaItem = {
-  data: string
-  entrada: number
-  saida: number
-  saldo: number
-}
-
-type ReceitaMes = {
-  mes: string
-  receita: number
-  despesas: number
-  lucro: number
-}
-
-type ResumoFinanceiro = {
-  receitaMensal: number
-  despesasMensais: number
-  lucroLiquido: number
-  inadimplencia: number
-  totalAlunos: number
-  alunosInadimplentes: number
-}
-
-type RelatorioTipo = "receitas" | "despesas" | "inadimplencia" | "fluxo" | "completo"
-type PeriodoRelatorio = "mes" | "trimestre" | "semestre" | "ano"
-
-const MOCK_RESUMO: ResumoFinanceiro = {
-  receitaMensal: 125000,
-  despesasMensais: 89000,
-  lucroLiquido: 36000,
-  inadimplencia: 8.5,
-  totalAlunos: 870,
-  alunosInadimplentes: 74,
-}
-
-const MOCK_RECEITAS_MES: ReceitaMes[] = [
-  { mes: "Jan", receita: 118000, despesas: 85000, lucro: 33000 },
-  { mes: "Fev", receita: 122000, despesas: 87000, lucro: 35000 },
-  { mes: "Mar", receita: 125000, despesas: 89000, lucro: 36000 },
-  { mes: "Abr", receita: 128000, despesas: 91000, lucro: 37000 },
-  { mes: "Mai", receita: 130000, despesas: 92000, lucro: 38000 },
-  { mes: "Jun", receita: 132000, despesas: 94000, lucro: 38000 },
-]
-
-const MOCK_RECEITAS_CATEGORIA: ReceitaCategoria[] = [
-  { categoria: "Mensalidades", valor: 105000, cor: "#15803d" },
-  { categoria: "Matrículas", valor: 12000, cor: "#84cc16" },
-  { categoria: "Cursos Extras", valor: 5000, cor: "#f97316" },
-  { categoria: "Material Didático", valor: 3000, cor: "#be123c" },
-]
-
-const MOCK_DESPESAS_CATEGORIA: DespesaCategoria[] = [
-  { categoria: "Salários", valor: 45000, cor: "#15803d" },
-  { categoria: "Infraestrutura", valor: 18000, cor: "#84cc16" },
-  { categoria: "Material", valor: 12000, cor: "#f97316" },
-  { categoria: "Serviços", valor: 8000, cor: "#be123c" },
-  { categoria: "Outros", valor: 6000, cor: "#64748b" },
-]
-
-const MOCK_ALUNOS_INADIMPLENTES: AlunoInadimplente[] = [
-  {
-    id: 1,
-    nome: "Carlos Silva",
-    email: "carlos.silva@email.com",
-    telefone: "(62) 99999-9999",
-    turma: "9º Ano A",
-    valorDevido: 1700.0,
-    mesesAtraso: 2,
-    ultimoContato: "15/03/2024",
-  },
-  {
-    id: 2,
-    nome: "Maria Santos",
-    email: "maria.santos@email.com",
-    telefone: "(62) 98888-8888",
-    turma: "8º Ano B",
-    valorDevido: 850.0,
-    mesesAtraso: 1,
-    ultimoContato: "10/03/2024",
-  },
-  {
-    id: 3,
-    nome: "João Oliveira",
-    email: "joao.oliveira@email.com",
-    telefone: "(62) 97777-7777",
-    turma: "7º Ano C",
-    valorDevido: 2550.0,
-    mesesAtraso: 3,
-    ultimoContato: "05/03/2024",
-  },
-  {
-    id: 4,
-    nome: "Ana Costa",
-    email: "ana.costa@email.com",
-    telefone: "(62) 96666-6666",
-    turma: "6º Ano A",
-    valorDevido: 1275.0,
-    mesesAtraso: 1,
-    ultimoContato: "12/03/2024",
-  },
-  {
-    id: 5,
-    nome: "Pedro Alves",
-    email: "pedro.alves@email.com",
-    telefone: "(62) 95555-5555",
-    turma: "9º Ano B",
-    valorDevido: 3400.0,
-    mesesAtraso: 4,
-    ultimoContato: "01/03/2024",
-  },
-]
-
-const MOCK_FLUXO_CAIXA: FluxoCaixaItem[] = [
-  { data: "01/03", entrada: 15000, saida: 8000, saldo: 7000 },
-  { data: "08/03", entrada: 25000, saida: 12000, saldo: 20000 },
-  { data: "15/03", entrada: 35000, saida: 18000, saldo: 37000 },
-  { data: "22/03", entrada: 28000, saida: 22000, saldo: 43000 },
-  { data: "29/03", entrada: 22000, saida: 29000, saldo: 36000 },
-]
+const COLORS = ["#15803d", "#84cc16", "#f97316", "#be123c", "#64748b", "#3b82f6", "#8b5cf6"]
 
 export default function AdministradorFinanceiroPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [turmaFilter, setTurmaFilter] = useState<string>("todos")
-  const [relatorioTipo, setRelatorioTipo] = useState<RelatorioTipo>("completo")
-  const [periodoRelatorio, setPeriodoRelatorio] = useState<PeriodoRelatorio>("mes")
+  const [classFilter, setClassFilter] = useState<string>("")
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("month")
+  const [reportType, setReportType] = useState<ReportType>("complete")
+  const [reportPeriod, setReportPeriod] = useState<ReportPeriod>("month")
+  const [reportFormat, setReportFormat] = useState<ReportFormat>("pdf")
+  const [cashFlowGroupBy, setCashFlowGroupBy] = useState<CashFlowGroupBy>("week")
+  const [contactDialogOpen, setContactDialogOpen] = useState(false)
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+  const [selectedStudentName, setSelectedStudentName] = useState<string>("")
+  const [contactMethod, setContactMethod] = useState<"email" | "phone" | "in_person">("email")
+  const [contactNotes, setContactNotes] = useState("")
+  const [selectedInstallmentId, setSelectedInstallmentId] = useState<string>("")
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix")
+  const [paymentValue, setPaymentValue] = useState<string>("")
 
-  const alunosFiltrados = useMemo(() => {
-    return MOCK_ALUNOS_INADIMPLENTES.filter((aluno) => {
+  const summaryParams = useMemo(
+    () => ({
+      period: periodFilter,
+    }),
+    [periodFilter]
+  )
+
+  const {
+    data: summary,
+    isLoading: isLoadingSummary,
+    error: summaryError,
+  } = useAdminFinancialSummary(summaryParams)
+
+  const {
+    data: revenueEvolution = [],
+    isLoading: isLoadingEvolution,
+  } = useRevenueEvolution(summaryParams)
+
+  const {
+    data: revenueByCategory = [],
+    isLoading: isLoadingRevenueCategory,
+  } = useRevenueByCategory(summaryParams)
+
+  const {
+    data: expensesByCategory = [],
+    isLoading: isLoadingExpensesCategory,
+  } = useExpensesByCategory(summaryParams)
+
+  const defaultingParams = useMemo(
+    () => ({
+      search: searchTerm || undefined,
+      classId: classFilter || undefined,
+    }),
+    [searchTerm, classFilter]
+  )
+
+  const {
+    data: defaultingStudents = [],
+    isLoading: isLoadingDefaulting,
+  } = useDefaultingStudents(defaultingParams)
+
+  const cashFlowParams = useMemo(() => {
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setMonth(startDate.getMonth() - 1)
+    
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      groupBy: cashFlowGroupBy,
+    }
+  }, [cashFlowGroupBy])
+
+  const {
+    data: cashFlow = [],
+    isLoading: isLoadingCashFlow,
+  } = useCashFlow(cashFlowParams)
+
+  const generateReportMutation = useGenerateReport()
+  const registerContactMutation = useRegisterContact()
+  const createPaymentMutation = useCreatePayment()
+
+  const {
+    data: studentInstallments = [],
+    isLoading: isLoadingInstallments,
+  } = useStudentInstallments(selectedStudentId ?? "")
+
+  const pendingInstallments = useMemo(() => {
+    return studentInstallments.filter(
+      (inst) => inst.status === "pending" || inst.status === "overdue"
+    )
+  }, [studentInstallments])
+
+  const isLoading =
+    isLoadingSummary ||
+    isLoadingEvolution ||
+    isLoadingRevenueCategory ||
+    isLoadingExpensesCategory ||
+    isLoadingDefaulting ||
+    isLoadingCashFlow
+
+  const uniqueClasses = useMemo(() => {
+    return Array.from(new Set(defaultingStudents.map((s) => s.className).filter((c): c is string => c !== null))).sort()
+  }, [defaultingStudents])
+
+  const filteredDefaultingStudents = useMemo(() => {
+    return defaultingStudents.filter((student) => {
       const matchesSearch =
         searchTerm === "" ||
-        aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        aluno.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        aluno.turma.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesTurma = turmaFilter === "todos" || aluno.turma === turmaFilter
-      return matchesSearch && matchesTurma
+        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (student.className && student.className.toLowerCase().includes(searchTerm.toLowerCase()))
+      const matchesClass = classFilter === "" || student.className === classFilter
+      return matchesSearch && matchesClass
     })
-  }, [searchTerm, turmaFilter])
+  }, [defaultingStudents, searchTerm, classFilter])
 
-  const turmasUnicas = useMemo(() => {
-    return Array.from(new Set(MOCK_ALUNOS_INADIMPLENTES.map((a) => a.turma)))
-  }, [])
+  const profitMargin = useMemo(() => {
+    if (!summary || summary.monthlyRevenue === 0) return 0
+    return (summary.netProfit / summary.monthlyRevenue) * 100
+  }, [summary])
 
-  const margemLucro = useMemo(() => {
-    return (MOCK_RESUMO.lucroLiquido / MOCK_RESUMO.receitaMensal) * 100
-  }, [])
+  const chartRevenueEvolution = useMemo(() => {
+    return revenueEvolution.map((item) => ({
+      mes: item.period,
+      receita: item.revenue,
+      despesas: item.expenses,
+      lucro: item.profit,
+    }))
+  }, [revenueEvolution])
+
+  const chartRevenueCategory = useMemo(() => {
+    return revenueByCategory.map((item, index) => ({
+      categoria: item.category,
+      valor: item.value,
+      cor: COLORS[index % COLORS.length],
+    }))
+  }, [revenueByCategory])
+
+  const chartExpensesCategory = useMemo(() => {
+    return expensesByCategory.map((item, index) => ({
+      categoria: item.category,
+      valor: item.value,
+      cor: COLORS[index % COLORS.length],
+    }))
+  }, [expensesByCategory])
+
+  const chartCashFlow = useMemo(() => {
+    return cashFlow.map((item) => ({
+      data: format(new Date(item.date), "dd/MM"),
+      entrada: item.income,
+      saida: item.outcome,
+      saldo: item.balance,
+    }))
+  }, [cashFlow])
 
   function formatCurrency(value: number): string {
     return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -203,6 +227,130 @@ export default function AdministradorFinanceiroPage() {
     if (mesesAtraso >= 3) return "destructive"
     if (mesesAtraso >= 2) return "secondary"
     return "outline"
+  }
+
+  const handleGenerateReport = async () => {
+    try {
+      const response = await generateReportMutation.mutateAsync({
+        type: reportType,
+        period: reportPeriod,
+        format: reportFormat,
+      })
+      window.open(response.downloadUrl, "_blank")
+      toast.success("Relatório gerado com sucesso")
+    } catch (error) {
+      console.error("Erro ao gerar relatório:", error)
+      toast.error("Não foi possível gerar o relatório")
+    }
+  }
+
+  const handleRegisterContact = async () => {
+    if (!selectedStudentId) return
+
+    try {
+      await registerContactMutation.mutateAsync({
+        studentId: selectedStudentId,
+        data: {
+          contactDate: new Date().toISOString(),
+          contactMethod: contactMethod,
+          notes: contactNotes || undefined,
+        },
+      })
+      toast.success("Contato registrado com sucesso")
+      setContactDialogOpen(false)
+      setSelectedStudentId(null)
+      setContactNotes("")
+    } catch (error) {
+      console.error("Erro ao registrar contato:", error)
+      toast.error("Não foi possível registrar o contato")
+    }
+  }
+
+  const openContactDialog = (studentId: string) => {
+    setSelectedStudentId(studentId)
+    setContactDialogOpen(true)
+  }
+
+  const openPaymentDialog = (studentId: string, studentName: string) => {
+    setSelectedStudentId(studentId)
+    setSelectedStudentName(studentName)
+    setSelectedInstallmentId("")
+    setPaymentValue("")
+    setPaymentMethod("pix")
+    setTimeout(() => {
+      setPaymentDialogOpen(true)
+    }, 0)
+  }
+
+  const handleCreatePayment = async () => {
+    if (!selectedStudentId || !selectedInstallmentId || !paymentValue) {
+      toast.error("Preencha todos os campos obrigatórios")
+      return
+    }
+
+    const value = parseFloat(paymentValue.replace(",", "."))
+    if (isNaN(value) || value <= 0) {
+      toast.error("Valor inválido")
+      return
+    }
+
+    try {
+      await createPaymentMutation.mutateAsync({
+        studentId: selectedStudentId,
+        data: {
+          installmentId: selectedInstallmentId,
+          method: paymentMethod,
+          value: value,
+        },
+      })
+      toast.success("Pagamento lançado com sucesso")
+      setPaymentDialogOpen(false)
+      setSelectedStudentId(null)
+      setSelectedStudentName("")
+      setSelectedInstallmentId("")
+      setPaymentValue("")
+    } catch (error) {
+      console.error("Erro ao lançar pagamento:", error)
+      toast.error("Não foi possível lançar o pagamento")
+    }
+  }
+
+  const selectedInstallment = useMemo(() => {
+    return pendingInstallments.find((inst) => inst.id === selectedInstallmentId)
+  }, [pendingInstallments, selectedInstallmentId])
+
+  useEffect(() => {
+    if (selectedInstallment && paymentDialogOpen) {
+      const calculatedValue = (selectedInstallment.value - selectedInstallment.discount).toFixed(2).replace(".", ",")
+      setPaymentValue(calculatedValue)
+    }
+  }, [selectedInstallment, paymentDialogOpen])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="administrador" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    )
+  }
+
+  if (summaryError) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="administrador" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <div className="text-center py-8">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-destructive" />
+              <p className="text-destructive">Erro ao carregar dados financeiros</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -217,13 +365,20 @@ export default function AdministradorFinanceiroPage() {
               <p className="text-muted-foreground">Dashboard financeiro completo da instituição</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline">
+              <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">Mês</SelectItem>
+                  <SelectItem value="quarter">Trimestre</SelectItem>
+                  <SelectItem value="semester">Semestre</SelectItem>
+                  <SelectItem value="year">Ano</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={handleGenerateReport} disabled={generateReportMutation.isPending}>
                 <Download className="h-4 w-4 mr-2" />
-                Exportar Relatório
-              </Button>
-              <Button>
-                <FileText className="h-4 w-4 mr-2" />
-                Novo Relatório
+                {generateReportMutation.isPending ? "Gerando..." : "Exportar Relatório"}
               </Button>
             </div>
           </div>
@@ -235,8 +390,10 @@ export default function AdministradorFinanceiroPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{formatCurrency(MOCK_RESUMO.receitaMensal)}</div>
-                <p className="text-xs text-muted-foreground">+2.4% vs mês anterior</p>
+                <div className="text-2xl font-bold text-primary">
+                  {summary ? formatCurrency(summary.monthlyRevenue) : "R$ 0,00"}
+                </div>
+                <p className="text-xs text-muted-foreground">Período selecionado</p>
               </CardContent>
             </Card>
 
@@ -246,8 +403,10 @@ export default function AdministradorFinanceiroPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{formatCurrency(MOCK_RESUMO.despesasMensais)}</div>
-                <p className="text-xs text-muted-foreground">+1.8% vs mês anterior</p>
+                <div className="text-2xl font-bold text-primary">
+                  {summary ? formatCurrency(summary.monthlyExpenses) : "R$ 0,00"}
+                </div>
+                <p className="text-xs text-muted-foreground">Período selecionado</p>
               </CardContent>
             </Card>
 
@@ -257,8 +416,10 @@ export default function AdministradorFinanceiroPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{formatCurrency(MOCK_RESUMO.lucroLiquido)}</div>
-                <p className="text-xs text-muted-foreground">+3.2% vs mês anterior</p>
+                <div className="text-2xl font-bold text-primary">
+                  {summary ? formatCurrency(summary.netProfit) : "R$ 0,00"}
+                </div>
+                <p className="text-xs text-muted-foreground">Período selecionado</p>
               </CardContent>
             </Card>
 
@@ -268,10 +429,12 @@ export default function AdministradorFinanceiroPage() {
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-destructive">{MOCK_RESUMO.inadimplencia}%</div>
-                <Progress value={MOCK_RESUMO.inadimplencia} className="mt-2" />
+                <div className="text-2xl font-bold text-destructive">
+                  {summary ? `${summary.defaultRate.toFixed(1)}%` : "0%"}
+                </div>
+                <Progress value={summary?.defaultRate || 0} className="mt-2" />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {MOCK_RESUMO.alunosInadimplentes} de {MOCK_RESUMO.totalAlunos} alunos
+                  {summary?.defaultingStudents || 0} de {summary?.totalStudents || 0} alunos
                 </p>
               </CardContent>
             </Card>
@@ -282,8 +445,8 @@ export default function AdministradorFinanceiroPage() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">{margemLucro.toFixed(1)}%</div>
-                <Progress value={margemLucro} className="mt-2" />
+                <div className="text-2xl font-bold text-primary">{profitMargin.toFixed(1)}%</div>
+                <Progress value={profitMargin} className="mt-2" />
                 <p className="text-xs text-muted-foreground mt-1">Meta: 30%</p>
               </CardContent>
             </Card>
@@ -302,21 +465,39 @@ export default function AdministradorFinanceiroPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Evolução Financeira</CardTitle>
-                    <CardDescription>Receitas, despesas e lucro por mês</CardDescription>
+                    <CardDescription>Receitas, despesas e lucro por período</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={MOCK_RECEITAS_MES}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="mes" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        <Legend />
-                        <Line type="monotone" dataKey="receita" stroke="#15803d" strokeWidth={3} name="Receita" />
-                        <Line type="monotone" dataKey="despesas" stroke="#be123c" strokeWidth={3} name="Despesas" />
-                        <Line type="monotone" dataKey="lucro" stroke="#84cc16" strokeWidth={3} name="Lucro" />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {chartRevenueEvolution.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={chartRevenueEvolution}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="mes" />
+                          <YAxis />
+                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="receita"
+                            stroke="#15803d"
+                            strokeWidth={3}
+                            name="Receita"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="despesas"
+                            stroke="#be123c"
+                            strokeWidth={3}
+                            name="Despesas"
+                          />
+                          <Line type="monotone" dataKey="lucro" stroke="#84cc16" strokeWidth={3} name="Lucro" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                        <p>Nenhum dado disponível</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -326,35 +507,43 @@ export default function AdministradorFinanceiroPage() {
                     <CardDescription>Distribuição das fontes de receita</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={MOCK_RECEITAS_CATEGORIA}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={5}
-                          dataKey="valor"
-                        >
-                          {MOCK_RECEITAS_CATEGORIA.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.cor} />
+                    {chartRevenueCategory.length > 0 ? (
+                      <>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={chartRevenueCategory}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={100}
+                              paddingAngle={5}
+                              dataKey="valor"
+                            >
+                              {chartRevenueCategory.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.cor} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="mt-4 space-y-2">
+                          {chartRevenueCategory.map((item, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.cor }} />
+                                <span className="text-sm">{item.categoria}</span>
+                              </div>
+                              <span className="text-sm font-medium">{formatCurrency(item.valor)}</span>
+                            </div>
                           ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="mt-4 space-y-2">
-                      {MOCK_RECEITAS_CATEGORIA.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.cor }} />
-                            <span className="text-sm">{item.categoria}</span>
-                          </div>
-                          <span className="text-sm font-medium">{formatCurrency(item.valor)}</span>
                         </div>
-                      ))}
-                    </div>
+                      </>
+                    ) : (
+                      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                        <p>Nenhum dado disponível</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -365,15 +554,21 @@ export default function AdministradorFinanceiroPage() {
                   <CardDescription>Distribuição dos gastos mensais</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={MOCK_DESPESAS_CATEGORIA}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="categoria" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      <Bar dataKey="valor" fill="#15803d" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {chartExpensesCategory.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={chartExpensesCategory}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="categoria" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                        <Bar dataKey="valor" fill="#15803d" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      <p>Nenhum dado disponível</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -398,78 +593,87 @@ export default function AdministradorFinanceiroPage() {
                           />
                         </div>
                       </div>
-                      <Select value={turmaFilter} onValueChange={setTurmaFilter}>
+                      <Select value={classFilter || "all"} onValueChange={(v) => setClassFilter(v === "all" ? "" : v)}>
                         <SelectTrigger className="w-48">
                           <SelectValue placeholder="Filtrar por turma" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="todos">Todas as turmas</SelectItem>
-                          {turmasUnicas.map((turma) => (
-                            <SelectItem key={turma} value={turma}>
-                              {turma}
+                          <SelectItem value="all">Todas as turmas</SelectItem>
+                          {uniqueClasses.map((className) => (
+                            <SelectItem key={className} value={className}>
+                              {className}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button>
-                        <Users className="h-4 w-4 mr-2" />
-                        Contatar Todos
-                      </Button>
                     </div>
 
-                    {alunosFiltrados.length === 0 ? (
+                    {filteredDefaultingStudents.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
                         <p>Nenhum aluno encontrado com os filtros aplicados.</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {alunosFiltrados.map((aluno) => (
-                          <Card key={aluno.id}>
+                        {filteredDefaultingStudents.map((student) => (
+                          <Card key={student.id}>
                             <CardContent className="p-4">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-3 mb-2">
-                                    <h4 className="font-semibold text-lg">{aluno.nome}</h4>
-                                    <Badge variant="outline">{aluno.turma}</Badge>
-                                    <Badge variant={getInadimplenciaBadgeVariant(aluno.mesesAtraso)}>
-                                      {aluno.mesesAtraso} {aluno.mesesAtraso === 1 ? "mês" : "meses"} em atraso
+                                    <h4 className="font-semibold text-lg">{student.name}</h4>
+                                    {student.className && <Badge variant="outline">{student.className}</Badge>}
+                                    <Badge variant={getInadimplenciaBadgeVariant(student.monthsOverdue)}>
+                                      {student.monthsOverdue} {student.monthsOverdue === 1 ? "mês" : "meses"} em atraso
                                     </Badge>
                                   </div>
                                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                                     <div>
                                       <p className="text-muted-foreground">Valor devido</p>
                                       <p className="font-semibold text-destructive text-lg">
-                                        {formatCurrency(aluno.valorDevido)}
+                                        {formatCurrency(student.totalDue)}
                                       </p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Último contato</p>
-                                      <p className="font-medium">{aluno.ultimoContato}</p>
+                                      <p className="font-medium">
+                                        {student.lastContactDate
+                                          ? format(new Date(student.lastContactDate), "dd/MM/yyyy")
+                                          : "Nunca"}
+                                      </p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Email</p>
                                       <p className="font-medium flex items-center gap-1">
                                         <Mail className="h-3 w-3" />
-                                        {aluno.email}
+                                        {student.email}
                                       </p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Telefone</p>
                                       <p className="font-medium flex items-center gap-1">
                                         <Phone className="h-3 w-3" />
-                                        {aluno.telefone}
+                                        {student.phone || "Não informado"}
                                       </p>
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openContactDialog(student.studentId)}
+                                  >
                                     <Mail className="h-4 w-4 mr-2" />
                                     Contatar
                                   </Button>
-                                  <Button variant="outline" size="sm">
-                                    Negociar
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openPaymentDialog(student.studentId, student.name)}
+                                  >
+                                    <CreditCard className="h-4 w-4 mr-2" />
+                                    Lançar Pagamento
                                   </Button>
                                   <Button size="sm">Ver Detalhes</Button>
                                 </div>
@@ -487,21 +691,41 @@ export default function AdministradorFinanceiroPage() {
             <TabsContent value="fluxo">
               <Card>
                 <CardHeader>
-                  <CardTitle>Fluxo de Caixa</CardTitle>
-                  <CardDescription>Entradas e saídas semanais</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Fluxo de Caixa</CardTitle>
+                      <CardDescription>Entradas e saídas</CardDescription>
+                    </div>
+                    <Select value={cashFlowGroupBy} onValueChange={(v) => setCashFlowGroupBy(v as CashFlowGroupBy)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="day">Dia</SelectItem>
+                        <SelectItem value="week">Semana</SelectItem>
+                        <SelectItem value="month">Mês</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={MOCK_FLUXO_CAIXA}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="data" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                      <Legend />
-                      <Bar dataKey="entrada" fill="#15803d" name="Entradas" />
-                      <Bar dataKey="saida" fill="#be123c" name="Saídas" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {chartCashFlow.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={chartCashFlow}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="data" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                        <Legend />
+                        <Bar dataKey="entrada" fill="#15803d" name="Entradas" />
+                        <Bar dataKey="saida" fill="#be123c" name="Saídas" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+                      <p>Nenhum dado disponível</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -514,46 +738,58 @@ export default function AdministradorFinanceiroPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Tipo de Relatório</label>
-                        <Select value={relatorioTipo} onValueChange={(v) => setRelatorioTipo(v as RelatorioTipo)}>
+                        <Label>Tipo de Relatório</Label>
+                        <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o tipo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="receitas">Relatório de Receitas</SelectItem>
-                            <SelectItem value="despesas">Relatório de Despesas</SelectItem>
-                            <SelectItem value="inadimplencia">Relatório de Inadimplência</SelectItem>
-                            <SelectItem value="fluxo">Relatório de Fluxo de Caixa</SelectItem>
-                            <SelectItem value="completo">Relatório Completo</SelectItem>
+                            <SelectItem value="revenue">Relatório de Receitas</SelectItem>
+                            <SelectItem value="expenses">Relatório de Despesas</SelectItem>
+                            <SelectItem value="defaulting">Relatório de Inadimplência</SelectItem>
+                            <SelectItem value="cash_flow">Relatório de Fluxo de Caixa</SelectItem>
+                            <SelectItem value="complete">Relatório Completo</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Período</label>
-                        <Select
-                          value={periodoRelatorio}
-                          onValueChange={(v) => setPeriodoRelatorio(v as PeriodoRelatorio)}
-                        >
+                        <Label>Período</Label>
+                        <Select value={reportPeriod} onValueChange={(v) => setReportPeriod(v as ReportPeriod)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o período" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="mes">Último mês</SelectItem>
-                            <SelectItem value="trimestre">Último trimestre</SelectItem>
-                            <SelectItem value="semestre">Último semestre</SelectItem>
-                            <SelectItem value="ano">Último ano</SelectItem>
+                            <SelectItem value="month">Último mês</SelectItem>
+                            <SelectItem value="quarter">Último trimestre</SelectItem>
+                            <SelectItem value="semester">Último semestre</SelectItem>
+                            <SelectItem value="year">Último ano</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Formato</Label>
+                        <Select value={reportFormat} onValueChange={(v) => setReportFormat(v as ReportFormat)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o formato" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pdf">PDF</SelectItem>
+                            <SelectItem value="excel">Excel</SelectItem>
+                            <SelectItem value="csv">CSV</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
 
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline">Visualizar</Button>
-                      <Button>
+                      <Button
+                        onClick={handleGenerateReport}
+                        disabled={generateReportMutation.isPending}
+                      >
                         <Download className="h-4 w-4 mr-2" />
-                        Gerar Relatório
+                        {generateReportMutation.isPending ? "Gerando..." : "Gerar Relatório"}
                       </Button>
                     </div>
                   </div>
@@ -563,6 +799,178 @@ export default function AdministradorFinanceiroPage() {
           </Tabs>
         </div>
       </main>
+
+      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar Contato</DialogTitle>
+            <DialogDescription>Registre o contato realizado com o aluno inadimplente</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Método de Contato</Label>
+              <Select value={contactMethod} onValueChange={(v) => setContactMethod(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Telefone</SelectItem>
+                  <SelectItem value="in_person">Presencial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Observações (opcional)</Label>
+              <Textarea
+                value={contactNotes}
+                onChange={(e) => setContactNotes(e.target.value)}
+                placeholder="Adicione observações sobre o contato..."
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setContactDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleRegisterContact} disabled={registerContactMutation.isPending}>
+                {registerContactMutation.isPending ? "Registrando..." : "Registrar Contato"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={paymentDialogOpen} onOpenChange={(open) => {
+        setPaymentDialogOpen(open)
+        if (!open) {
+          setTimeout(() => {
+            setSelectedStudentId(null)
+            setSelectedStudentName("")
+            setSelectedInstallmentId("")
+            setPaymentValue("")
+            setPaymentMethod("pix")
+          }, 200)
+        }
+      }}>
+        <DialogContent className="max-w-2xl" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Lançar Pagamento</DialogTitle>
+            <DialogDescription>
+              Lançar pagamento para {selectedStudentName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Parcela/Mensalidade</Label>
+              <Select
+                value={selectedInstallmentId}
+                onValueChange={setSelectedInstallmentId}
+                disabled={isLoadingInstallments || !paymentDialogOpen}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a parcela" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pendingInstallments.length === 0 ? (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      {isLoadingInstallments ? "Carregando..." : "Nenhuma parcela pendente"}
+                    </div>
+                  ) : (
+                    pendingInstallments.map((installment) => (
+                      <SelectItem key={installment.id} value={installment.id}>
+                        {installment.month} {installment.year} - R$ {installment.value.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                        })} - Vencimento: {format(new Date(installment.dueDate), "dd/MM/yyyy")}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedInstallment && (
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Valor Original:</span>
+                  <span className="font-medium">
+                    R$ {selectedInstallment.value.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+                {selectedInstallment.discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span className="text-sm">Desconto:</span>
+                    <span className="font-medium">
+                      -R$ {selectedInstallment.discount.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-2 border-t">
+                  <span className="text-sm font-semibold">Valor a Pagar:</span>
+                  <span className="font-bold text-lg">
+                    R$ {(selectedInstallment.value - selectedInstallment.discount).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Valor do Pagamento</Label>
+              <Input
+                type="text"
+                value={paymentValue}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^\d,]/g, "")
+                  setPaymentValue(value)
+                }}
+                placeholder="0,00"
+                disabled={!selectedInstallmentId}
+              />
+              <p className="text-xs text-muted-foreground">
+                Digite o valor a ser pago (use vírgula para decimais)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Método de Pagamento</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                  <SelectItem value="bank_slip">Boleto Bancário</SelectItem>
+                  <SelectItem value="bank_transfer">Transferência Bancária</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreatePayment}
+                disabled={
+                  createPaymentMutation.isPending ||
+                  !selectedInstallmentId ||
+                  !paymentValue ||
+                  isLoadingInstallments
+                }
+              >
+                {createPaymentMutation.isPending ? "Lançando..." : "Lançar Pagamento"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

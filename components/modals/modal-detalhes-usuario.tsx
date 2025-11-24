@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   User,
   Mail,
@@ -20,6 +22,8 @@ import {
   FileText,
   Award
 } from "lucide-react"
+import { useCreateCharge } from "@/hooks/use-financeiro"
+import { toast } from "sonner"
 
 type Role = "aluno" | "professor" | "coordenador" | "administrador"
 
@@ -50,6 +54,10 @@ export function ModalDetalhesUsuario({
   usuario
 }: ModalDetalhesUsuarioProps) {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
+  const [chargeAmount, setChargeAmount] = useState("")
+  const [chargeDueDate, setChargeDueDate] = useState("")
+
+  const createChargeMutation = useCreateCharge()
 
   useEffect(() => {
     const checkTheme = () => {
@@ -223,6 +231,71 @@ export function ModalDetalhesUsuario({
                         Informações acadêmicas do aluno serão exibidas aqui.
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Gerar Cobrança
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Valor (R$)</Label>
+                        <Input
+                          placeholder="0,00"
+                          value={chargeAmount}
+                          onChange={(event) => {
+                            const numeric = event.target.value.replace(/[^\d,]/g, "")
+                            setChargeAmount(numeric)
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Data de vencimento</Label>
+                        <Input
+                          type="date"
+                          value={chargeDueDate}
+                          onChange={(event) => setChargeDueDate(event.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      A cobrança será criada com status pendente e aparecerá automaticamente no
+                      painel financeiro do aluno.
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        if (!chargeAmount || !chargeDueDate) {
+                          toast.error("Informe valor e vencimento")
+                          return
+                        }
+                        const normalized = chargeAmount.replace(".", "").replace(",", ".")
+                        const amount = Number(normalized)
+                        if (Number.isNaN(amount) || amount <= 0) {
+                          toast.error("Valor inválido")
+                          return
+                        }
+                        try {
+                          await createChargeMutation.mutateAsync({
+                            studentId: usuario.id,
+                            amount,
+                            dueDate: chargeDueDate,
+                          })
+                          toast.success("Cobrança criada com sucesso")
+                          setChargeAmount("")
+                          setChargeDueDate("")
+                        } catch (error) {
+                          console.error(error)
+                          toast.error("Não foi possível criar a cobrança")
+                        }
+                      }}
+                      disabled={createChargeMutation.isPending}
+                    >
+                      {createChargeMutation.isPending ? "Gerando..." : "Gerar cobrança"}
+                    </Button>
                   </CardContent>
                 </Card>
               </TabsContent>
