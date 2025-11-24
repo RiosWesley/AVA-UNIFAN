@@ -14,6 +14,8 @@ import { ArrowLeft, Video, Upload, Save, X, Clock, FileVideo, Link as LinkIcon, 
 import Link from "next/link"
 import { toast } from "@/components/ui/toast"
 import { useMutation } from "@tanstack/react-query"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
 
 type VideoAulaFormData = {
   titulo: string
@@ -25,6 +27,7 @@ type VideoAulaFormData = {
 }
 
 export default function AdministradorVideoAulasPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [tipoEntrada, setTipoEntrada] = useState<'url' | 'arquivo'>('url')
@@ -63,6 +66,27 @@ export default function AdministradorVideoAulasPage() {
 
     return () => observer.disconnect()
   }, [])
+
+  // Verificar autenticação e role
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id || !user?.roles?.includes("admin")) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   const validarCampos = () => {
     const novosErros: Record<string, string> = {}

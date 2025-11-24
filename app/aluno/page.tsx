@@ -18,6 +18,7 @@ import { useStudentAgendaSchedules } from "@/hooks/use-dashboard"
 import { me } from "@/src/services/auth"
 import { getSemestresDisponiveis } from "@/src/services/ClassesService"
 import { getStudentGradebook } from "@/src/services/BoletimService"
+import { getMurals } from "@/src/services/muralsService"
 
 export default function AlunoDashboard() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
@@ -26,6 +27,7 @@ export default function AlunoDashboard() {
   const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
   const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
   const [gradebookData, setGradebookData] = useState<any>(null)
+  const [carouselImages, setCarouselImages] = useState<Array<{ src: string; alt: string }>>([])
 
   // Dashboard data with React Query
   const {
@@ -108,6 +110,31 @@ export default function AlunoDashboard() {
     }
     buscarSemestres()
   }, [studentId])
+
+  // Buscar imagens do mural
+  useEffect(() => {
+    const carregarMural = async () => {
+      try {
+        const murais = await getMurals('aluno')
+        const imagensAtivas = murais
+          .filter(m => m.isActive)
+          .map(m => ({
+            src: m.imageUrl,
+            alt: m.title
+          }))
+        setCarouselImages(imagensAtivas)
+      } catch (error) {
+        console.error("Erro ao carregar mural:", error)
+        // Fallback para imagens padrão em caso de erro
+        setCarouselImages([
+          { src: "/placeholder.jpg", alt: "Aviso 1" },
+          { src: "/placeholder-user.jpg", alt: "Aviso 2" },
+          { src: "/placeholder-logo.png", alt: "Aviso 3" },
+        ])
+      }
+    }
+    carregarMural()
+  }, [])
 
   // Filtrar dados por semestre
   const atividadesFiltradas = useMemo(() => {
@@ -238,13 +265,6 @@ export default function AlunoDashboard() {
     )
   }
 
-  const carouselImages = [
-    { src: "/placeholder.jpg", alt: "Aviso 1" },
-    { src: "/placeholder-user.jpg", alt: "Aviso 2" },
-    { src: "/placeholder-logo.png", alt: "Aviso 3" },
-  ]
-
-  
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />

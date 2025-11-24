@@ -13,6 +13,7 @@ export type TeacherClassDetail = {
   sala?: string
   atividades?: number
   avaliacoes?: number
+  semestre?: string
   aulas?: Array<{
     id: string
     data: string
@@ -271,6 +272,54 @@ export function calculateStats(classes: TeacherClassDetail[], activities: Dashbo
   const atividadesPendentes = activities.filter((a) => a.status === 'Pendente').length
   const corrigindo = activities.filter((a) => a.status === 'Corrigindo').length
   return { totalTurmas, totalAlunos, aulasHoje, atividadesPendentes, corrigindo }
+}
+
+/**
+ * Obtém a lista de semestres disponíveis para um professor
+ * @param teacherId ID do professor
+ * @returns Array de objetos com id e nome do semestre
+ */
+export const getSemestresDisponiveisProfessor = async (teacherId: string): Promise<Array<{ id: string; nome: string; ativo: boolean }>> => {
+  try {
+    const classes = await getTeacherClassesWithDetails(teacherId)
+    
+    // Extrair semestres únicos das classes
+    const semestresMap = new Map<string, { id: string; nome: string; ativo: boolean }>()
+    
+    classes.forEach(classe => {
+      if (classe.semestre) {
+        const semestreId = classe.semestre
+        if (!semestresMap.has(semestreId)) {
+          // Verificar se é o semestre ativo (pode usar lógica similar ao aluno)
+          // Por enquanto, considerar ativo se for o mais recente
+          semestresMap.set(semestreId, {
+            id: semestreId,
+            nome: semestreId,
+            ativo: false // Será atualizado depois
+          })
+        }
+      }
+    })
+    
+    // Ordenar semestres (mais recente primeiro) e marcar o primeiro como ativo
+    const semestres = Array.from(semestresMap.values()).sort((a, b) => {
+      // Comparar formato YYYY.N (ex: 2025.1)
+      const [yearA, semA] = a.id.split('.').map(Number)
+      const [yearB, semB] = b.id.split('.').map(Number)
+      if (yearA !== yearB) return yearB - yearA
+      return semB - semA
+    })
+    
+    // Marcar o primeiro (mais recente) como ativo
+    if (semestres.length > 0) {
+      semestres[0].ativo = true
+    }
+    
+    return semestres
+  } catch (error) {
+    console.error("Erro ao buscar semestres disponíveis:", error)
+    return []
+  }
 }
 
 

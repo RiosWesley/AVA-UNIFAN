@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
 import { ModalRealizarProva, ModalResultadoProva } from '@/components/modals'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -21,21 +21,39 @@ import { listExams, listAttemptsByStudent, getExamById, ExamDTO, ExamAttemptDTO 
 import { useLiveSession } from "@/src/hooks/useLiveSession"
 import { listLiveSessionsByClass } from "@/src/services/liveSessionsService"
 import RemoteVideo from "@/components/layout/RemoteVideo"
+import { me } from '@/src/services/auth'
 
 export default function DisciplinaDetalhePage() {
   const params = useParams() as { id: string }
   const classId = params.id
   const router = useRouter()
+  const [studentId, setStudentId] = useState<string | null>(null)
 
-  // Fallback: obter studentId do localStorage se existir ou usar um mock UUID consistente com outras telas
-  const getStudentId = () => {
-    if (typeof window !== 'undefined') {
-      const ls = localStorage.getItem('ava:studentId')
-      if (ls) return ls
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
     }
-    return '29bc17a4-0b68-492b-adef-82718898d9eb'
-  }
-  const studentId = getStudentId()
+    init()
+  }, [router])
 
   // Detalhes da turma para preencher cabeçalho
   const classDetailsQuery = useQuery({
@@ -86,7 +104,7 @@ export default function DisciplinaDetalhePage() {
       if (!activitiesQuery.data || !studentId) return
       try {
         const results = await Promise.all(
-          activitiesQuery.data.map((a) => apiClient.getActivitySubmissionStatus(String(a.id), studentId).catch(() => null))
+          activitiesQuery.data.map((a) => apiClient.getActivitySubmissionStatus(String(a.id), studentId!).catch(() => null))
         )
         const map: Record<string, ActivitySubmissionStatus> = {}
         results.forEach((status) => {
@@ -121,6 +139,7 @@ export default function DisciplinaDetalhePage() {
   // Upload activity mutation
   const uploadActivityMutation = useMutation({
     mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment: string }) => {
+      if (!studentId) throw new Error("Usuário não autenticado")
       const res = await apiClient.uploadActivitySubmission({
         studentId,
         activityId,
@@ -130,6 +149,7 @@ export default function DisciplinaDetalhePage() {
       return res
     },
     onSuccess: (data, variables) => {
+      if (!studentId) return
       toast({
         title: "Atividade enviada com sucesso! 🎉",
         description: `${data.fileName} foi enviada para a atividade.`,
@@ -273,6 +293,7 @@ export default function DisciplinaDetalhePage() {
   // Mutation for marking video as watched
   const markAsWatchedMutation = useMutation({
     mutationFn: async (videoId: number) => {
+      if (!studentId) throw new Error("Usuário não autenticado")
       const original = videoLessonsQuery.data?.find(v => Number(v.id) === videoId || v.id === String(videoId))
       const idStr = original?.id ? String(original.id) : String(videoId)
       await apiClient.markVideoLessonWatched(idStr, studentId)
@@ -345,11 +366,18 @@ export default function DisciplinaDetalhePage() {
     joinSession, 
     leaveSession, 
     isConnected,
+    isScreenSharing,
+    isMuted,
+    isVideoOff,
+    startScreenSharing,
+    stopScreenSharing,
+    toggleMute,
+    toggleVideo,
     localVideoRef,
     remoteStreams
   } = useLiveSession();
 
-  type VideoChamada = { id: number; titulo: string; dataHora: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
+  type VideoChamada = { id: string; titulo: string; dataHora: string; startAt: string; endAt: string; status: 'agendada' | 'disponivel' | 'encerrada'; link: string }
   
   const [modalVideoChamadaAberto, setModalVideoChamadaAberto] = useState(false)
   const [videoChamadaSelecionada, setVideoChamadaSelecionada] = useState<VideoChamada | null>(null)
@@ -363,7 +391,7 @@ export default function DisciplinaDetalhePage() {
 
   const attemptsQuery = useQuery({
     queryKey: ['exam-attempts-student', studentId],
-    queryFn: () => listAttemptsByStudent(studentId),
+    queryFn: () => listAttemptsByStudent(studentId!),
     enabled: !!studentId,
   })
 
@@ -377,10 +405,45 @@ export default function DisciplinaDetalhePage() {
   // Estado para controlar aba ativa
   const [activeTab, setActiveTab] = useState<string>('avisos')
 
-  const entrarNaVideoChamada = (reuniao: VideoChamada) => {
-    if (reuniao.status !== 'disponivel') return;
+  // Estado para menu de compartilhamento de tela
+  const [screenShareMenuOpen, setScreenShareMenuOpen] = useState(false)
+  const screenShareMenuRef = useRef<HTMLDivElement>(null)
+  const [hasRaisedHand, setHasRaisedHand] = useState(false)
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (screenShareMenuRef.current && !screenShareMenuRef.current.contains(event.target as Node)) {
+        setScreenShareMenuOpen(false)
+      }
+    }
+
+    if (screenShareMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [screenShareMenuOpen])
+
+  const entrarNaVideoChamada = async (reuniao: VideoChamada) => {
+    if (reuniao.status !== 'disponivel' || !studentId) return;
     setIsJoining(true);
-    joinSession(classId, studentId);
+    
+    // Obter nome do usuário
+    let userName: string | undefined;
+    try {
+      const current = await me();
+      userName = current?.name;
+      if (userName) {
+        localStorage.setItem('ava:userName', userName);
+      }
+    } catch {
+      userName = localStorage.getItem('ava:userName') || undefined;
+    }
+    
+    joinSession(classId, studentId, 'student', userName);
     setVideoChamadaSelecionada(reuniao);
     setModalVideoChamadaAberto(true);
 };
@@ -407,7 +470,7 @@ export default function DisciplinaDetalhePage() {
             now < start ? 'agendada' : 
             (now >= start && now <= end) ? 'disponivel' : 
             'encerrada';
-        return { id: s.id, titulo: s.title, dataHora: s.startAt, status, link: '#' };
+        return { id: s.id, titulo: s.title, dataHora: s.startAt, startAt: s.startAt, endAt: s.endAt || new Date(start + 2 * 60 * 60 * 1000).toISOString(), status, link: s.meetingUrl || '#' };
     });
   }, [liveSessionsQuery.data]);
 
@@ -478,7 +541,7 @@ export default function DisciplinaDetalhePage() {
   }
 
   const handleResponderDiscussao = (texto: string, parentId?: number) => {
-    if (!forumSelecionado) return
+    if (!forumSelecionado || !studentId) return
     ;(async () => {
       try {
         const realParentId = parentId ? postIdMap[parentId] : undefined
@@ -1056,25 +1119,38 @@ export default function DisciplinaDetalhePage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center"><CalendarClock className="h-5 w-5 mr-2"/>Vídeo-chamadas</h3>
                 {videoChamadas.map((reuniao) => {
-                  const data = new Date(reuniao.dataHora)
-                  const agora = new Date()
+                  const dataInicio = new Date(reuniao.startAt)
+                  const dataTermino = new Date(reuniao.endAt)
                   const podeEntrar = reuniao.status === 'disponivel'
                   const statusLabel = reuniao.status === 'agendada' ? 'Agendada' : reuniao.status === 'disponivel' ? 'Disponível' : 'Encerrada'
                   const statusVariant = reuniao.status === 'disponivel' ? 'default' : reuniao.status === 'agendada' ? 'secondary' : 'destructive'
                   return (
                     <Card key={reuniao.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">{reuniao.titulo}</h4>
-                            <p className="text-xs text-muted-foreground">{data.toLocaleString('pt-BR')}</p>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg">{reuniao.titulo}</CardTitle>
+                            <CardDescription className="mt-2 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                <span>Início: {dataInicio.toLocaleString('pt-BR')}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                <span>Término: {dataTermino.toLocaleString('pt-BR')}</span>
+                              </div>
+                            </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant={statusVariant as any}>{statusLabel}</Badge>
-                            <Button size="sm" variant={podeEntrar ? 'default' : 'outline'} disabled={!podeEntrar} onClick={() => entrarNaVideoChamada(reuniao)}>
-                              <Video className="h-4 w-4 mr-2"/> Entrar
-                            </Button>
                           </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex justify-end">
+                          <Button size="sm" variant={podeEntrar ? 'default' : 'outline'} disabled={!podeEntrar} onClick={() => entrarNaVideoChamada(reuniao)}>
+                            <Video className="h-4 w-4 mr-2"/> Entrar
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -1232,6 +1308,7 @@ export default function DisciplinaDetalhePage() {
                             {!isFinalized && canStart && attempt?.status !== 'submitted' && attempt?.status !== 'graded' && (
                               <Button
                                 onClick={async () => {
+                                  if (!studentId) return
                                   try {
                                     // Verificar novamente se não há tentativa finalizada antes de abrir
                                     const currentAttempts = await listAttemptsByStudent(studentId)
@@ -1306,29 +1383,116 @@ export default function DisciplinaDetalhePage() {
         titulo={videoChamadaSelecionada?.titulo}
         dataHora={videoChamadaSelecionada?.dataHora}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-          {/* Vídeo Local */}
-          <div className="relative">
-            <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
-            <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">Sua Câmera</div>
-          </div>
-          
-          {/* Grid para Vídeos Remotos */}
-          <div className="grid grid-cols-2 grid-rows-2 gap-2">
-            {remoteStreams.size > 0 ? (
-              Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
-                <div key={socketId} className="relative">
-                  <RemoteVideo stream={stream} />
-                  <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
-                    Participante
-                  </div>
+        <div className="flex flex-col h-full gap-4">
+          {/* Controles */}
+          <div className="flex items-center justify-between gap-2">
+            {/* Controles do Aluno */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={isMuted ? "destructive" : "outline"}
+                size="sm"
+                onClick={toggleMute}
+              >
+                {isMuted ? <MicOff className="h-4 w-4 mr-2" /> : <Mic className="h-4 w-4 mr-2" />}
+                {isMuted ? "Microfone Desligado" : "Silenciar"}
+              </Button>
+              <Button
+                variant={isVideoOff ? "destructive" : "outline"}
+                size="sm"
+                onClick={toggleVideo}
+              >
+                {isVideoOff ? <VideoOff className="h-4 w-4 mr-2" /> : <Video className="h-4 w-4 mr-2" />}
+                {isVideoOff ? "Câmera Desligada" : "Desligar Câmera"}
+              </Button>
+            </div>
+
+            {/* Controles de Compartilhamento */}
+            <div className="flex items-center gap-2">
+              {!isScreenSharing ? (
+                <div className="relative" ref={screenShareMenuRef}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setScreenShareMenuOpen(!screenShareMenuOpen)}
+                  >
+                    <Monitor className="h-4 w-4 mr-2" />
+                    Compartilhar Tela
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                  {screenShareMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-popover border rounded-md shadow-lg z-50">
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-t-md"
+                        onClick={() => {
+                          startScreenSharing('screen');
+                          setScreenShareMenuOpen(false);
+                        }}
+                      >
+                        Tela Inteira
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent"
+                        onClick={() => {
+                          startScreenSharing('window');
+                          setScreenShareMenuOpen(false);
+                        }}
+                      >
+                        Janela
+                      </button>
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent rounded-b-md"
+                        onClick={() => {
+                          startScreenSharing('browser');
+                          setScreenShareMenuOpen(false);
+                        }}
+                      >
+                        Aba do Navegador
+                      </button>
+                    </div>
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
-                <p className="text-muted-foreground">Aguardando participantes...</p>
+              ) : (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    stopScreenSharing();
+                    setScreenShareMenuOpen(false);
+                  }}
+                >
+                  <MonitorStop className="h-4 w-4 mr-2" />
+                  Parar Compartilhamento
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+            {/* Vídeo Local */}
+            <div className="relative">
+              <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
+              <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                {isScreenSharing ? 'Sua Tela' : 'Sua Câmera'}
               </div>
-            )}
+            </div>
+            
+            {/* Grid para Vídeos Remotos */}
+            <div className="grid grid-cols-2 grid-rows-2 gap-2">
+              {remoteStreams.size > 0 ? (
+                Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
+                  <div key={socketId} className="relative">
+                    <RemoteVideo stream={stream} />
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
+                      Participante
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
+                  <p className="text-muted-foreground">Aguardando participantes...</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </ModalVideoChamada>

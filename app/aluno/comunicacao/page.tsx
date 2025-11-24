@@ -8,16 +8,19 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { MessageSquare, Megaphone, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useMemo, useState, useEffect } from "react"
 import { useStudentNotices } from "@/hooks/use-comunicacao"
 import { useCurrentStudent } from "@/hooks/use-dashboard"
 import { ModalNovaMensagem } from "@/components/modals"
+import { me } from '@/src/services/auth'
 
 export default function AlunoComunicacaoPage() {
+  const router = useRouter()
   const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
   const [defaultDestinatarioId, setDefaultDestinatarioId] = useState<string | null>(null)
   const { data: currentStudent } = useCurrentStudent()
-  const studentId = "29bc17a4-0b68-492b-adef-82718898d9eb"
+  const [studentId, setStudentId] = useState<string | null>(null)
   const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
 
   type InboxItem = {
@@ -130,11 +133,39 @@ export default function AlunoComunicacaoPage() {
     }
   }
 
-  const notices = useStudentNotices(studentId)
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
+
+  const notices = useStudentNotices(studentId || "")
 
   useEffect(() => {
-    fetchInbox()
-  }, [])
+    if (studentId) {
+      fetchInbox()
+    }
+  }, [studentId])
 
   return (
     <div className="flex h-screen bg-background">

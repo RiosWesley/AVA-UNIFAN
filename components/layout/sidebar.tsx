@@ -12,7 +12,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { logout } from "@/src/services/auth"
+import { logout, me } from "@/src/services/auth"
 import {
   Home,
   BookOpen,
@@ -87,6 +87,7 @@ const menuItems = {
     { icon: Building2, label: "Departamentos", href: "/administrador/departamentos" },
     { icon: CreditCard, label: "Financeiro", href: "/administrador/financeiro" },
     { icon: MessageSquare, label: "Comunicação", href: "/administrador/comunicacao" },
+    { icon: Settings, label: "Configurações", href: "/administrador/configuracoes" },
   ],
 }
 
@@ -127,6 +128,8 @@ export function Sidebar({ userRole }: SidebarProps) {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => getInitialOpenGroups(userRole))
   const [mounted, setMounted] = useState(false)
+  const [userData, setUserData] = useState<{ name: string; id: string } | null>(null)
+  const [isLoadingUser, setIsLoadingUser] = useState(true)
   const { theme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
@@ -142,6 +145,23 @@ export function Sidebar({ userRole }: SidebarProps) {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Buscar dados do usuário autenticado
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setIsLoadingUser(true)
+        const user = await me()
+        setUserData({ name: user.name, id: user.id })
+      } catch (error) {
+        console.error('Erro ao buscar dados do usuário:', error)
+        // Em caso de erro, manter null para usar valores padrão
+      } finally {
+        setIsLoadingUser(false)
+      }
+    }
+    fetchUserData()
   }, [])
 
   if (typeof window !== "undefined") {
@@ -456,13 +476,15 @@ export function Sidebar({ userRole }: SidebarProps) {
               <TooltipContent side="right" className="ml-2">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-semibold">
-                    {userRole === "aluno"
-                      ? "João Silva"
-                      : userRole === "professor"
-                        ? "Prof. Maria Santos"
-                        : userRole === "coordenador"
-                          ? "Coord. Ana Costa"
-                          : "Admin Sistema"}
+                    {isLoadingUser 
+                      ? "Carregando..." 
+                      : userData?.name || (userRole === "aluno"
+                        ? "Aluno"
+                        : userRole === "professor"
+                          ? "Professor"
+                          : userRole === "coordenador"
+                            ? "Coordenador"
+                            : "Administrador")}
                   </p>
                   <p className="text-xs text-muted-foreground capitalize flex items-center">
                     <Activity className="h-3 w-3 mr-1" />
@@ -484,13 +506,15 @@ export function Sidebar({ userRole }: SidebarProps) {
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-sidebar-foreground truncate">
-                {userRole === "aluno"
-                  ? "João Silva"
-                  : userRole === "professor"
-                    ? "Prof. Maria Santos"
-                    : userRole === "coordenador"
-                      ? "Coord. Ana Costa"
-                      : "Admin Sistema"}
+                {isLoadingUser 
+                  ? "Carregando..." 
+                  : userData?.name || (userRole === "aluno"
+                    ? "Aluno"
+                    : userRole === "professor"
+                      ? "Professor"
+                      : userRole === "coordenador"
+                        ? "Coordenador"
+                        : "Administrador")}
               </p>
               <p className="text-xs text-sidebar-foreground/60 capitalize flex items-center">
                 <Activity className="h-3 w-3 mr-1" />

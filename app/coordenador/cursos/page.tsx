@@ -15,8 +15,7 @@ import { BookOpen, Plus, Search, Users, Eye, X, Loader2, GraduationCap } from "l
 import { toast } from "@/components/ui/toast"
 import { getDepartments, type Department } from "@/src/services/departmentsService"
 import { createCourse, getCourses, getCourseClasses, type BackendCourse } from "@/src/services/coursesService"
-
-const MOCK_COORDINATOR_ID = "5f634e5c-d028-434d-af46-cc9ea23eb77b"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 
 type FormStatus = 'Ativo' | 'Inativo';
 
@@ -69,6 +68,7 @@ export default function CoordenadorCursosPage() {
 
   const [cursos, setCursos] = useState<Curso[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [coordinatorId, setCoordinatorId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -254,12 +254,36 @@ export default function CoordenadorCursosPage() {
     }
   }
 
+  // Buscar usuário autenticado
   useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (user?.id) {
+          setCoordinatorId(user.id)
+        } else {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
+
+  useEffect(() => {
+    if (!coordinatorId) return
+
     async function bootstrap() {
       try {
         setIsLoading(true)
-        const coordinatorId = MOCK_COORDINATOR_ID
-        const depts = await getDepartments(coordinatorId)
+        const depts = await getDepartments(coordinatorId ?? undefined)
         if (!depts || depts.length === 0) {
           throw new Error("Nenhum departamento encontrado para este coordenador")
         }
@@ -279,7 +303,7 @@ export default function CoordenadorCursosPage() {
     }
     bootstrap()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [coordinatorId])
 
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>

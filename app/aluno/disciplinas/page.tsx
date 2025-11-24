@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -8,13 +9,16 @@ import { BookOpen, User, ChevronRight, Sparkles, GraduationCap } from "lucide-re
 import Link from "next/link"
 import { Semestre } from "@/src/types/Classe"
 import { getDisciplinasPorAluno, transformarDadosParaComponente } from "@/src/services/ClassesService"
+import { me } from '@/src/services/auth'
 
 export default function AlunodisciplinasPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [semestreSelecionado, setSemestreSelecionado] = useState("2025.1")
   const [semestres, setSemestres] = useState<Semestre[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [studentId, setStudentId] = useState<string | null>(null)
   
   useEffect(() => {
     const checkTheme = () => {
@@ -32,13 +36,37 @@ export default function AlunodisciplinasPage() {
     return () => observer.disconnect()
   }, [])
 
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
+
   useEffect(() => {
     const buscarDados = async () => {
+      if (!studentId) return
       try {
-        // MOCKADO POR ENQUANTO, TEM QUE PASSAR O ID DO ALUNO LOGADO DEPOIS
-        const alunoId = "29bc17a4-0b68-492b-adef-82718898d9eb";
-        
-        const dadosDaApi = await getDisciplinasPorAluno(alunoId);
+        const dadosDaApi = await getDisciplinasPorAluno(studentId);
         const dadosTransformados = transformarDadosParaComponente(dadosDaApi);
         
         setSemestres(dadosTransformados);
@@ -58,7 +86,7 @@ export default function AlunodisciplinasPage() {
     };
 
     buscarDados();
-  }, []);
+  }, [studentId]);
 
   const disciplinasAtuais = semestres.find(s => s.id === semestreSelecionado)?.disciplinas || []
 

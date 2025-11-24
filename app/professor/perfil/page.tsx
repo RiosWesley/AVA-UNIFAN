@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { Button } from "@/components/ui/button"
@@ -12,13 +13,36 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Settings, Bell, Shield, Camera, GraduationCap } from "lucide-react"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 
 export default function PerfilProfessorPage() {
+  const router = useRouter()
   const [notificacoes, setNotificacoes] = useState({
     email: true,
     push: true,
     sms: false,
   })
+
+  // Verificar autenticação
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   return (
     <div className="p-6 space-y-6">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
@@ -11,8 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, MapPin, Users, BookOpen, Plus, Search, Trash2, AlertCircle, CheckCircle, X } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, BookOpen, Plus, Search, Trash2, AlertCircle, CheckCircle, X, GraduationCap, Loader2 } from "lucide-react"
 import { toast } from "@/components/ui/toast"
+import { getSemestresDisponiveisCoordenador } from "@/src/services/coordenador-dashboard"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type HorarioAula = {
   id: string
@@ -26,6 +30,7 @@ type HorarioAula = {
   sala: string
   tipo: "Teórica" | "Prática" | "Laboratório"
   cargaHoraria: number
+  semestre?: string
 }
 
 type ConflitoHorario = {
@@ -43,10 +48,15 @@ const HORARIOS_DISPONIVEIS = [
 ]
 
 export default function GradeHorariaPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroCurso, setFiltroCurso] = useState<string>("todos")
   const [filtroTurma, setFiltroTurma] = useState<string>("todos")
+  const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
+  const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [loadingSemestres, setLoadingSemestres] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalData, setModalData] = useState<Partial<HorarioAula>>({
     disciplina: "",
@@ -74,7 +84,8 @@ export default function GradeHorariaPage() {
       horarioFim: "10:00",
       sala: "Lab 1",
       tipo: "Prática",
-      cargaHoraria: 4
+      cargaHoraria: 4,
+      semestre: "2025.1"
     },
     {
       id: "2",
@@ -87,7 +98,8 @@ export default function GradeHorariaPage() {
       horarioFim: "16:00",
       sala: "Sala 201",
       tipo: "Teórica",
-      cargaHoraria: 4
+      cargaHoraria: 4,
+      semestre: "2025.1"
     },
     {
       id: "3",
@@ -100,7 +112,8 @@ export default function GradeHorariaPage() {
       horarioFim: "21:00",
       sala: "Sala 301",
       tipo: "Teórica",
-      cargaHoraria: 4
+      cargaHoraria: 4,
+      semestre: "2024.2"
     },
     {
       id: "4",
@@ -113,7 +126,8 @@ export default function GradeHorariaPage() {
       horarioFim: "10:00",
       sala: "Lab 2",
       tipo: "Laboratório",
-      cargaHoraria: 4
+      cargaHoraria: 4,
+      semestre: "2025.1"
     }
   ])
 
@@ -138,6 +152,57 @@ export default function GradeHorariaPage() {
     return () => observer.disconnect()
   }, [])
 
+  // Buscar semestres disponíveis
+  useEffect(() => {
+    let mounted = true
+
+    async function loadSemestres() {
+      try {
+        setLoading(true)
+        setLoadingSemestres(true)
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!mounted || !user?.id) {
+          router.push("/")
+          return
+        }
+
+        const semestresDisponiveis = await getSemestresDisponiveisCoordenador(user.id)
+        if (!mounted) return
+
+        setSemestres(semestresDisponiveis)
+        
+        // Selecionar semestre ativo ou o primeiro disponível
+        const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
+        if (semestreAtivo) {
+          setSemestreSelecionado(semestreAtivo.id)
+        } else if (semestresDisponiveis.length > 0) {
+          setSemestreSelecionado(semestresDisponiveis[0].id)
+        }
+      } catch (err) {
+        console.error('Erro ao buscar semestres:', err)
+        if (mounted) {
+          router.push("/")
+        }
+      } finally {
+        if (mounted) {
+          setLoadingSemestres(false)
+          setLoading(false)
+        }
+      }
+    }
+
+    loadSemestres()
+
+    return () => {
+      mounted = false
+    }
+  }, [router])
+
   const horariosFiltrados = horarios.filter(horario => {
     const matchesSearch = 
       horario.disciplina.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -145,7 +210,8 @@ export default function GradeHorariaPage() {
       horario.turma.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCurso = filtroCurso === "todos" || horario.curso === filtroCurso
     const matchesTurma = filtroTurma === "todos" || horario.turma === filtroTurma
-    return matchesSearch && matchesCurso && matchesTurma
+    const matchesSemestre = !semestreSelecionado || horario.semestre === semestreSelecionado
+    return matchesSearch && matchesCurso && matchesTurma && matchesSemestre
   })
 
   const detectarConflitos = (): ConflitoHorario[] => {
@@ -271,7 +337,8 @@ export default function GradeHorariaPage() {
       horarioFim: modalData.horarioFim!,
       sala: modalData.sala!,
       tipo: modalData.tipo!,
-      cargaHoraria: modalData.cargaHoraria || 0
+      cargaHoraria: modalData.cargaHoraria || 0,
+      semestre: semestreSelecionado || undefined
     }
 
     setHorarios([...horarios, novoHorario])
@@ -292,7 +359,8 @@ export default function GradeHorariaPage() {
       horarioFim: "10:00",
       sala: "",
       tipo: "Teórica",
-      cargaHoraria: 0
+      cargaHoraria: 0,
+      semestre: semestreSelecionado || undefined
     })
     setErrors({})
   }
@@ -308,7 +376,8 @@ export default function GradeHorariaPage() {
       horarioFim: "10:00",
       sala: "",
       tipo: "Teórica",
-      cargaHoraria: 0
+      cargaHoraria: 0,
+      semestre: semestreSelecionado || undefined
     })
     setErrors({})
     setIsModalOpen(true)
@@ -335,6 +404,20 @@ export default function GradeHorariaPage() {
 
   const horariosPorDia = organizarPorDia()
 
+  if (loading) {
+    return (
+      <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
+        <Sidebar userRole="coordenador" />
+        <main className="flex-1 overflow-y-auto flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            <p className="text-muted-foreground">Carregando grade horária...</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-black/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="coordenador" />
@@ -359,7 +442,7 @@ export default function GradeHorariaPage() {
                 </p>
                 <div className="flex items-center mt-2 space-x-2">
                   <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                    {horarios.length} horário{horarios.length !== 1 ? 's' : ''} cadastrado{horarios.length !== 1 ? 's' : ''}
+                    {horariosFiltrados.length} horário{horariosFiltrados.length !== 1 ? 's' : ''} cadastrado{horariosFiltrados.length !== 1 ? 's' : ''}
                   </Badge>
                   {conflitos.length > 0 && (
                     <Badge variant="destructive" className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
@@ -370,10 +453,42 @@ export default function GradeHorariaPage() {
                 </div>
               </div>
             </div>
-            <LiquidGlassButton onClick={handleAbrirModal} size="lg">
-              <Plus className="h-5 w-5 mr-2" />
-              Novo Horário
-            </LiquidGlassButton>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                {loadingSemestres || semestres.length === 0 ? (
+                  <Skeleton className="h-10 w-40" />
+                ) : (
+                  <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
+                    <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                      isLiquidGlass
+                        ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
+                        : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
+                    }`}>
+                      <SelectValue placeholder="Selecionar semestre" />
+                    </SelectTrigger>
+                    <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
+                      {semestres.map((semestre) => (
+                        <SelectItem key={semestre.id} value={semestre.id}>
+                          <div className="flex items-center space-x-2">
+                            <span>{semestre.nome}</span>
+                            {semestre.ativo && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                Atual
+                              </Badge>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <LiquidGlassButton onClick={handleAbrirModal} size="lg">
+                <Plus className="h-5 w-5 mr-2" />
+                Novo Horário
+              </LiquidGlassButton>
+            </div>
           </div>
 
           <Tabs defaultValue="grade" className="space-y-6">

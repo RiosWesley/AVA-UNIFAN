@@ -36,7 +36,6 @@ export type BackendCourse = {
 export type BackendClass = {
   id: string;
   code: string;
-  semester?: string;
   year?: number;
   period?: string;
   schedule?: string;
@@ -48,6 +47,7 @@ export type BackendClass = {
   course?: { id: string; name: string } | null;
   discipline?: { id: string; name: string } | null;
   teacher?: { id: string; name: string } | null;
+  academicPeriod?: { id: string; period: string } | null;
 };
 
 export type BackendCourseStudent = {
@@ -79,10 +79,15 @@ export interface CreateDisciplinePayload {
 
 export interface CreateClassPayload {
   code: string;
-  semester: string;
+  academicPeriodId: string;
   year: number;
   disciplineId: string;
   teacherId?: string;
+  // Campos opcionais para criação automática de schedule e lesson plans
+  dayOfWeek?: string;
+  startTime?: string;
+  endTime?: string;
+  room?: string;
 }
 
 export type UpdateClassPayload = Partial<CreateClassPayload>;

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiClient, VideoLesson, Discipline, VideoLessonOrderUpdate } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { ModalEditarVideoAula } from "@/components/modals/modal-editar-video-aula"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 import {
   DndContext,
   closestCenter,
@@ -212,6 +214,7 @@ function SortableVideoLessonItem({
 }
 
 export default function CoordenadorVideoAulasPage() {
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState<VideoAulaFormData>({
@@ -228,15 +231,37 @@ export default function CoordenadorVideoAulasPage() {
   const [isModalEditarOpen, setIsModalEditarOpen] = useState(false)
   const [localVideoAulas, setLocalVideoAulas] = useState<VideoLesson[]>([])
   const [saveOrderTimeout, setSaveOrderTimeout] = useState<NodeJS.Timeout | null>(null)
-  
-  // ID mockado do coordenador
-  const coordinatorId = '5f634e5c-d028-434d-af46-cc9ea23eb77b'
+  const [coordinatorId, setCoordinatorId] = useState<string | null>(null)
   const queryClient = useQueryClient()
+
+  // Buscar usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (user?.id) {
+          setCoordinatorId(user.id)
+        } else {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   // Query para buscar disciplinas do departamento do coordenador
   const disciplinesQuery = useQuery({
     queryKey: ['disciplines', 'coordinator', coordinatorId],
-    queryFn: () => apiClient.getDisciplinesByCoordinatorDepartment(coordinatorId),
+    queryFn: () => apiClient.getDisciplinesByCoordinatorDepartment(coordinatorId!),
+    enabled: !!coordinatorId,
   })
 
   useEffect(() => {

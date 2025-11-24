@@ -10,6 +10,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { MessageSquare, Users, TrendingUp, Eye, Plus, Shield, Settings } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { ModalNovaMensagem } from "@/components/modals"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 type OverviewData = {
   totalMessages: number
@@ -28,8 +31,10 @@ type InboxItem = {
 }
 
 export default function AdministradorComunicacaoPage() {
+  const router = useRouter()
   const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
-  const currentUserId = "8bdcb155-3db3-4611-a9c7-db4db488ac5f"
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
   const [defaultDestinatarioId, setDefaultDestinatarioId] = useState<string | null>(null)
@@ -58,11 +63,11 @@ export default function AdministradorComunicacaoPage() {
 
   const formatNumber = (value: number) => value.toLocaleString('pt-BR')
 
-  const fetchInbox = async () => {
-    if (!API_URL) return
+  const fetchInbox = async (userId: string) => {
+    if (!API_URL || !userId) return
     try {
       const res = await fetch(`${API_URL}/messages/inbox`, {
-        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
       })
       if (!res.ok) throw new Error('Erro ao carregar inbox')
       const data = await res.json()
@@ -76,11 +81,11 @@ export default function AdministradorComunicacaoPage() {
     }
   }
 
-  const fetchConversation = async (otherId: string) => {
-    if (!API_URL) return
+  const fetchConversation = async (otherId: string, userId: string) => {
+    if (!API_URL || !userId) return
     try {
       const res = await fetch(`${API_URL}/messages/conversation/${otherId}`, {
-        headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+        headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
       })
       if (!res.ok) throw new Error('Erro ao carregar conversa')
       const list = await res.json()
@@ -117,27 +122,28 @@ export default function AdministradorComunicacaoPage() {
       }
       setOtherUserRole(detectedRole)
 
-      const unreadReceived = (Array.isArray(list) ? list : []).filter((m: any) => m.receiver?.id === currentUserId && !m.isRead)
+      const unreadReceived = (Array.isArray(list) ? list : []).filter((m: any) => m.receiver?.id === userId && !m.isRead)
       await Promise.all(unreadReceived.map((m: any) => (
         fetch(`${API_URL}/messages/${m.id}/read`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'x-user-id': currentUserId },
+          headers: { 'Content-Type': 'application/json', 'x-user-id': userId },
           body: JSON.stringify({ read: true }),
         })
       )))
-      fetchInbox()
+      fetchInbox(userId)
     } catch {
       setConversation([])
     }
   }
 
   const handleSelectInboxItem = (otherId: string) => {
+    if (!currentUserId) return
     setSelectedOtherUserId(otherId)
-    fetchConversation(otherId)
+    fetchConversation(otherId, currentUserId)
   }
 
   const handleReply = async () => {
-    if (!selectedOtherUserId || !replyText.trim()) return
+    if (!API_URL || !currentUserId || !selectedOtherUserId || !replyText.trim()) return
     try {
       await fetch(`${API_URL}/messages`, {
         method: 'POST',
@@ -148,15 +154,48 @@ export default function AdministradorComunicacaoPage() {
         }),
       })
       setReplyText("")
-      await fetchConversation(selectedOtherUserId)
+      await fetchConversation(selectedOtherUserId, currentUserId)
     } catch {
       // ignore erro
     }
   }
 
+  // Buscar usuário atual e dados
   useEffect(() => {
-    fetchInbox()
-  }, [])
+    const init = async () => {
+      try {
+        setLoading(true)
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id || !user?.roles?.includes("admin")) {
+          router.push("/")
+          return
+        }
+        setCurrentUserId(user.id)
+        const userId = user.id
+
+        // Carregar dados após obter o userId
+        try {
+          if (API_URL && userId) {
+            await fetchInbox(userId)
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados:', error)
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      } finally {
+        setLoading(false)
+      }
+    }
+    init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
 
   const dateRange = useMemo(() => {
     const end = new Date()
@@ -253,6 +292,17 @@ export default function AdministradorComunicacaoPage() {
       mensagens: item.total,
     }))
   }, [overTime])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="administrador" />
+        <main className="flex-1 overflow-y-auto">
+          <PageSpinner />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -410,8 +460,8 @@ export default function AdministradorComunicacaoPage() {
                         <div className="space-y-4">
                           <div className="h-80 overflow-y-auto pr-2 space-y-4">
                             {conversation.map((m) => (
-                              <div key={m.id} className={`flex ${m.senderId === currentUserId ? "justify-end" : "justify-start"}`}>
-                                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${m.senderId === currentUserId ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                              <div key={m.id} className={`flex ${m.senderId === (currentUserId || '') ? "justify-end" : "justify-start"}`}>
+                                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${m.senderId === (currentUserId || '') ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                                   <p>{m.content}</p>
                                   <p className="mt-1 text-[10px] opacity-70">{new Date(m.sentAt).toLocaleString("pt-BR")}</p>
                                 </div>
@@ -515,20 +565,24 @@ export default function AdministradorComunicacaoPage() {
           </Tabs>
         </div>
       </main>
-      <ModalNovaMensagem
-        isOpen={isNovaMensagemOpen}
-        onClose={() => setIsNovaMensagemOpen(false)}
-        currentUserId={currentUserId}
-        context="admin"
-        defaultDestinatarioId={defaultDestinatarioId}
-        onSend={({ destinatarioId }) => {
-          setIsNovaMensagemOpen(false)
-          fetchInbox()
-          if (destinatarioId) {
-            handleSelectInboxItem(destinatarioId)
-          }
-        }}
-      />
+      {currentUserId && (
+        <ModalNovaMensagem
+          isOpen={isNovaMensagemOpen}
+          onClose={() => setIsNovaMensagemOpen(false)}
+          currentUserId={currentUserId}
+          context="admin"
+          defaultDestinatarioId={defaultDestinatarioId}
+          onSend={({ destinatarioId }) => {
+            setIsNovaMensagemOpen(false)
+            if (currentUserId) {
+              fetchInbox(currentUserId)
+              if (destinatarioId) {
+                handleSelectInboxItem(destinatarioId)
+              }
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

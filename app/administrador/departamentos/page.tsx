@@ -32,8 +32,11 @@ import { getCourses } from "@/src/services/coursesService"
 import { usuariosService } from "@/src/services/usuariosService"
 import { PageSpinner } from "@/components/ui/page-spinner"
 import { toast } from "@/components/ui/toast"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { useRouter } from "next/navigation"
 
 export default function DepartamentosAdministradorPage() {
+  const router = useRouter()
   const queryClient = useQueryClient()
 
   // Estados da UI
@@ -47,6 +50,27 @@ export default function DepartamentosAdministradorPage() {
   const [isManageTeachersModalOpen, setIsManageTeachersModalOpen] = useState(false)
   const [departmentTeachers, setDepartmentTeachers] = useState<Teacher[]>([])
   const [availableTeachers, setAvailableTeachers] = useState<any[]>([])
+
+  // Verificar autenticação e role
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+        if (!token) {
+          router.push("/")
+          return
+        }
+        const user = await getCurrentUser()
+        if (!user?.id || !user?.roles?.includes("admin")) {
+          router.push("/")
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error)
+        router.push("/")
+      }
+    }
+    init()
+  }, [router])
 
   useEffect(() => {
     const handler = setTimeout(() => {

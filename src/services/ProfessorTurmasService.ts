@@ -29,6 +29,7 @@ export interface Turma {
   sala: string;
   atividades: number;
   avaliacoes: number;
+  semestre?: string;
   listaAlunos: Aluno[];
   aulas: Aula[];
 }

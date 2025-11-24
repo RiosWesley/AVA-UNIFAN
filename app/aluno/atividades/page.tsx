@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
@@ -16,27 +17,54 @@ import { StudentActivity } from "@/src/Atividade"
 import { completeStudentActivity, getStudentActivities, uploadStudentActivity } from "@/src/services/atividadeService"
 import { PageSpinner } from "@/components/ui/page-spinner"
 import { getSemestresDisponiveis } from "@/src/services/ClassesService"
+import { me } from '@/src/services/auth'
 
 export default function AtividadesPage() {
-
+  const router = useRouter()
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [modalEnviarAtividadeOpen, setModalEnviarAtividadeOpen] = useState(false)
   const [atividadeSelecionada, setAtividadeSelecionada] = useState<StudentActivity | null>(null)
   const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
   const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
+  const [studentId, setStudentId] = useState<string | null>(null)
   
 
   const queryClient = useQueryClient()
 
-  const getStudentId = () => {
-    if (typeof window !== 'undefined') {
-      const ls = localStorage.getItem('ava:studentId')
-      if (ls) return ls
+  useEffect(() => {
+    const checkTheme = () => setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"));
+    checkTheme();
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  // Obter ID do usuário autenticado
+  useEffect(() => {
+    const init = async () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
+      if (!token) {
+        router.push("/")
+        return
+      }
+      const storedUserId = localStorage.getItem("ava:userId")
+      if (storedUserId) {
+        setStudentId(storedUserId)
+        return
+      }
+      try {
+        const current = await me()
+        if (current?.id) {
+          localStorage.setItem("ava:userId", current.id)
+          setStudentId(current.id)
+        }
+      } catch {
+        router.push("/")
+      }
     }
-    return '29bc17a4-0b68-492b-adef-82718898d9eb'
-  }
-  const studentId = getStudentId()
+    init()
+  }, [router])
 
   // Buscar semestres disponíveis
   useEffect(() => {
@@ -60,17 +88,9 @@ export default function AtividadesPage() {
     buscarSemestres()
   }, [studentId])
 
-  useEffect(() => {
-    const checkTheme = () => setIsLiquidGlass(document.documentElement.classList.contains("liquid-glass"));
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-
   const { data: allActivities = [], isLoading, error } = useQuery({
     queryKey: ['studentActivities', studentId],
-    queryFn: () => getStudentActivities(studentId),
+    queryFn: () => getStudentActivities(studentId!),
     enabled: !!studentId,
   });
 
