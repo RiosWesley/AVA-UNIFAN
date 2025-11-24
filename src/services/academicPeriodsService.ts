@@ -3,15 +3,21 @@ import api from './api';
 export interface AcademicPeriod {
   id: string;
   period: string; // Formato: "YYYY.1" ou "YYYY.2" (ex: "2025.1")
+  startDate: string; // ISO date string
+  endDate: string; // ISO date string
   createdAt: string;
 }
 
 export interface CreateAcademicPeriodDto {
   period: string; // Formato: "YYYY.1" ou "YYYY.2"
+  startDate: string; // ISO date string (YYYY-MM-DD)
+  endDate: string; // ISO date string (YYYY-MM-DD)
 }
 
 export interface UpdateAcademicPeriodDto {
   period?: string; // Formato: "YYYY.1" ou "YYYY.2"
+  startDate?: string; // ISO date string (YYYY-MM-DD)
+  endDate?: string; // ISO date string (YYYY-MM-DD)
 }
 
 export async function getAcademicPeriods(): Promise<AcademicPeriod[]> {
@@ -70,4 +76,5 @@ export async function deleteAcademicPeriod(id: string): Promise<void> {
     throw new Error(message);
   }
 }
+
 

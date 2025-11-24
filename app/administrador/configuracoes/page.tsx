@@ -45,7 +45,11 @@ export default function ConfiguracoesAdministradorPage() {
   const [periodoExcluindo, setPeriodoExcluindo] = useState<AcademicPeriod | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [form, setForm] = useState<{ period: string }>({ period: "" })
+  const [form, setForm] = useState<{ period: string; startDate: string; endDate: string }>({ 
+    period: "",
+    startDate: "",
+    endDate: ""
+  })
   const [formError, setFormError] = useState<string | null>(null)
 
   // Estados para Mural
@@ -132,7 +136,7 @@ export default function ConfiguracoesAdministradorPage() {
 
   // Abrir modal de criação
   function handleOpenCreateModal() {
-    setForm({ period: "" })
+    setForm({ period: "", startDate: "", endDate: "" })
     setFormError(null)
     setIsCreateModalOpen(true)
   }
@@ -140,14 +144,21 @@ export default function ConfiguracoesAdministradorPage() {
   // Fechar modal de criação
   function handleCloseCreateModal() {
     setIsCreateModalOpen(false)
-    setForm({ period: "" })
+    setForm({ period: "", startDate: "", endDate: "" })
     setFormError(null)
   }
 
   // Abrir modal de edição
   function handleOpenEditModal(periodo: AcademicPeriod) {
     setPeriodoEditando(periodo)
-    setForm({ period: periodo.period })
+    // Formatar datas para input type="date" (YYYY-MM-DD)
+    const startDate = periodo.startDate ? new Date(periodo.startDate).toISOString().split('T')[0] : ""
+    const endDate = periodo.endDate ? new Date(periodo.endDate).toISOString().split('T')[0] : ""
+    setForm({ 
+      period: periodo.period,
+      startDate: startDate,
+      endDate: endDate
+    })
     setFormError(null)
     setIsEditModalOpen(true)
   }
@@ -156,7 +167,7 @@ export default function ConfiguracoesAdministradorPage() {
   function handleCloseEditModal() {
     setIsEditModalOpen(false)
     setPeriodoEditando(null)
-    setForm({ period: "" })
+    setForm({ period: "", startDate: "", endDate: "" })
     setFormError(null)
   }
 
@@ -169,6 +180,24 @@ export default function ConfiguracoesAdministradorPage() {
 
     if (!validarPeriodo(form.period.trim())) {
       setFormError("O período deve estar no formato YYYY.1 ou YYYY.2 (ex: 2025.1)")
+      return
+    }
+
+    if (!form.startDate) {
+      setFormError("A data de início é obrigatória")
+      return
+    }
+
+    if (!form.endDate) {
+      setFormError("A data de fim é obrigatória")
+      return
+    }
+
+    // Validar que a data de fim é posterior à data de início
+    const startDate = new Date(form.startDate)
+    const endDate = new Date(form.endDate)
+    if (endDate <= startDate) {
+      setFormError("A data de fim deve ser posterior à data de início")
       return
     }
 
@@ -185,6 +214,8 @@ export default function ConfiguracoesAdministradorPage() {
       setFormError(null)
       const payload: CreateAcademicPeriodDto = {
         period: form.period.trim(),
+        startDate: form.startDate,
+        endDate: form.endDate,
       }
       const novo = await createAcademicPeriod(payload)
       setAcademicPeriods((prev) => [novo, ...prev].sort((a, b) => b.period.localeCompare(a.period)))
@@ -218,6 +249,24 @@ export default function ConfiguracoesAdministradorPage() {
       return
     }
 
+    if (!form.startDate) {
+      setFormError("A data de início é obrigatória")
+      return
+    }
+
+    if (!form.endDate) {
+      setFormError("A data de fim é obrigatória")
+      return
+    }
+
+    // Validar que a data de fim é posterior à data de início
+    const startDate = new Date(form.startDate)
+    const endDate = new Date(form.endDate)
+    if (endDate <= startDate) {
+      setFormError("A data de fim deve ser posterior à data de início")
+      return
+    }
+
     // Verificar duplicata localmente (exceto o próprio período sendo editado)
     const periodoExiste = academicPeriods.some(
       (p) => p.period === form.period.trim() && p.id !== periodoEditando.id
@@ -231,6 +280,8 @@ export default function ConfiguracoesAdministradorPage() {
       setFormError(null)
       const payload: UpdateAcademicPeriodDto = {
         period: form.period.trim(),
+        startDate: form.startDate,
+        endDate: form.endDate,
       }
       const atualizado = await updateAcademicPeriod(periodoEditando.id, payload)
       setAcademicPeriods((prev) =>
@@ -633,8 +684,13 @@ export default function ConfiguracoesAdministradorPage() {
                                   <div className="flex items-center gap-3">
                                     <h3 className="font-semibold text-lg">{periodo.period}</h3>
                                   </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    Criado em {formatarData(periodo.createdAt)}
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                    <div>
+                                      {formatarData(periodo.startDate)} - {formatarData(periodo.endDate)}
+                                    </div>
+                                    <div>
+                                      Criado em {formatarData(periodo.createdAt)}
+                                    </div>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -807,7 +863,7 @@ export default function ConfiguracoesAdministradorPage() {
                 placeholder="2025.1"
                 value={form.period}
                 onChange={(e) => {
-                  setForm({ period: e.target.value })
+                  setForm({ ...form, period: e.target.value })
                   setFormError(null)
                 }}
                 className={formError ? "border-red-500" : ""}
@@ -818,6 +874,36 @@ export default function ConfiguracoesAdministradorPage() {
               <p className="text-xs text-muted-foreground">
                 Formato: YYYY.1 (primeiro semestre) ou YYYY.2 (segundo semestre)
               </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate-create">Data de Início *</Label>
+                <Input
+                  id="startDate-create"
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => {
+                    setForm({ ...form, startDate: e.target.value })
+                    setFormError(null)
+                  }}
+                  className={formError && !form.startDate ? "border-red-500" : ""}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endDate-create">Data de Fim *</Label>
+                <Input
+                  id="endDate-create"
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => {
+                    setForm({ ...form, endDate: e.target.value })
+                    setFormError(null)
+                  }}
+                  className={formError && !form.endDate ? "border-red-500" : ""}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -850,7 +936,7 @@ export default function ConfiguracoesAdministradorPage() {
                 placeholder="2025.1"
                 value={form.period}
                 onChange={(e) => {
-                  setForm({ period: e.target.value })
+                  setForm({ ...form, period: e.target.value })
                   setFormError(null)
                 }}
                 className={formError ? "border-red-500" : ""}
@@ -861,6 +947,36 @@ export default function ConfiguracoesAdministradorPage() {
               <p className="text-xs text-muted-foreground">
                 Formato: YYYY.1 (primeiro semestre) ou YYYY.2 (segundo semestre)
               </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate-edit">Data de Início *</Label>
+                <Input
+                  id="startDate-edit"
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => {
+                    setForm({ ...form, startDate: e.target.value })
+                    setFormError(null)
+                  }}
+                  className={formError && !form.startDate ? "border-red-500" : ""}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endDate-edit">Data de Fim *</Label>
+                <Input
+                  id="endDate-edit"
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => {
+                    setForm({ ...form, endDate: e.target.value })
+                    setFormError(null)
+                  }}
+                  className={formError && !form.endDate ? "border-red-500" : ""}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
