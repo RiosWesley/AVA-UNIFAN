@@ -34,6 +34,8 @@ import {
 } from "@/src/services/coursesService"
 import { Combobox } from "@/components/ui/combobox"
 import { getCurrentUser } from "@/src/services/professor-dashboard"
+import { getDepartmentTeachers, type Teacher } from "@/src/services/departmentsService"
+import { findByPeriod as findAcademicPeriodByPeriod } from "@/src/services/academicPeriodsService"
 
 type Disciplina = {
   id: string
@@ -113,7 +115,7 @@ const mapDiscipline = (d: BackendDiscipline): Disciplina => ({
 })
 
 const mapClass = (c: BackendClass): Turma => {
-  // Extrair semestre de academicPeriod.period, period ou semester
+  // Extrair semestre de academicPeriod.period ou period
   let semestre: string | undefined
   if (c.academicPeriod?.period) {
     semestre = c.academicPeriod.period
@@ -124,8 +126,6 @@ const mapClass = (c: BackendClass): Turma => {
     } else {
       semestre = c.period.replace('-', '.')
     }
-  } else if (c.semester) {
-    semestre = c.semester.replace('-', '.')
   }
 
   return {
@@ -161,7 +161,9 @@ export default function CursoDetalhePage() {
   const [curso, setCurso] = useState<Curso | null>(null)
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([])
   const [turmas, setTurmas] = useState<Turma[]>([])
+  const [turmasBackend, setTurmasBackend] = useState<BackendClass[]>([])
   const [alunos, setAlunos] = useState<Aluno[]>([])
+  const [professores, setProfessores] = useState<Teacher[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const [searchDisciplinas, setSearchDisciplinas] = useState("")
@@ -187,7 +189,12 @@ export default function CursoDetalhePage() {
     codigo: "",
     semestre: "",
     ano: new Date().getFullYear().toString(),
-    disciplinaId: ""
+    disciplinaId: "",
+    teacherId: "",
+    dayOfWeek: "",
+    startTime: "",
+    endTime: "",
+    room: ""
   })
 
   useEffect(() => {
@@ -245,14 +252,27 @@ export default function CursoDetalhePage() {
         .map((disciplina) => mapDiscipline(disciplina))
         .filter((d) => d.status === "ativa")
 
+      const cursoMapeado = mapCourse(courseData)
       setCurso({
-        ...mapCourse(courseData),
+        ...cursoMapeado,
         alunos: mappedStudents.length,
         turmas: mappedClasses.length,
       })
       setDisciplinas(mappedDisciplines)
       setTurmas(mappedClasses)
+      setTurmasBackend(classesData)
       setAlunos(mappedStudents)
+
+      // Buscar professores do departamento do curso
+      if (courseData.department?.id) {
+        try {
+          const teachers = await getDepartmentTeachers(courseData.department.id)
+          setProfessores(teachers)
+        } catch (error) {
+          console.error("Erro ao buscar professores:", error)
+          setProfessores([])
+        }
+      }
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.message || "Nao foi possivel carregar o curso"
       toast({
@@ -271,16 +291,31 @@ export default function CursoDetalhePage() {
 
   // Buscar semestres disponíveis baseados nas turmas do curso
   useEffect(() => {
-    if (turmas.length === 0) return
+    if (isLoading) return
 
     const semestresMap = new Map<string, { id: string; nome: string; ativo: boolean }>()
     
+    // Buscar semestres das turmas
     turmas.forEach(turma => {
       if (turma.semestre) {
         if (!semestresMap.has(turma.semestre)) {
           semestresMap.set(turma.semestre, {
             id: turma.semestre,
             nome: turma.semestre,
+            ativo: false
+          })
+        }
+      }
+    })
+
+    // Também buscar semestres diretamente das turmasBackend (caso o mapClass não tenha capturado)
+    turmasBackend.forEach(turma => {
+      if (turma.academicPeriod?.period) {
+        const period = turma.academicPeriod.period
+        if (!semestresMap.has(period)) {
+          semestresMap.set(period, {
+            id: period,
+            nome: period,
             ativo: false
           })
         }
@@ -300,13 +335,16 @@ export default function CursoDetalhePage() {
       
       // Selecionar semestre ativo ou o primeiro disponível
       const semestreAtivo = semestresArray.find(s => s.ativo)
-      if (semestreAtivo) {
+      if (semestreAtivo && !semestreSelecionado) {
         setSemestreSelecionado(semestreAtivo.id)
-      } else if (semestresArray.length > 0) {
+      } else if (semestresArray.length > 0 && !semestreSelecionado) {
         setSemestreSelecionado(semestresArray[0].id)
       }
+    } else {
+      // Garantir que a lista de semestres seja limpa se não houver nenhum
+      setSemestres([])
     }
-  }, [turmas])
+  }, [turmas, turmasBackend, isLoading])
 
   useEffect(() => {
     if (!novaTurma.disciplinaId && disciplinas.length > 0) {
@@ -368,6 +406,11 @@ export default function CursoDetalhePage() {
       semestre: "",
       ano: new Date().getFullYear().toString(),
       disciplinaId: disciplinas[0]?.id ?? "",
+      teacherId: "",
+      dayOfWeek: "",
+      startTime: "",
+      endTime: "",
+      room: ""
     })
   }
 
@@ -437,29 +480,100 @@ export default function CursoDetalhePage() {
       return
     }
 
+    // Validar semestre apenas para criação de nova turma
+    if (!turmaEditandoId && !semestreSelecionado) {
+      toast({
+        variant: "error",
+        title: "Semestre não selecionado",
+        description: "Selecione um semestre na aba de turmas antes de criar uma nova turma.",
+      })
+      return
+    }
+
     try {
       setIsSavingTurma(true)
       if (turmaEditandoId) {
-        const updated = await updateClass(turmaEditandoId, {
+        // Converter formato "YYYY.S" para "YYYY-S" para o backend (usar semestre da turma editada se disponível)
+        // Buscar academicPeriodId da turma sendo editada
+        const turmaBackendParaEdicao = turmasBackend.find((t) => t.id === turmaEditandoId)
+        const academicPeriodIdParaEdicao = turmaBackendParaEdicao?.academicPeriod?.id
+
+        if (!academicPeriodIdParaEdicao) {
+          toast({
+            variant: "error",
+            title: "Período letivo não encontrado",
+            description: "Não foi possível determinar o período letivo da turma.",
+          })
+          setIsSavingTurma(false)
+          return
+        }
+
+        // Extrair ano do semestre da turma ou usar o ano atual
+        const semestreFromTurma = novaTurma.semestre || turmaBackendParaEdicao?.academicPeriod?.period || ''
+        const [yearFromSemester] = semestreFromTurma.split(/[.-]/).map(Number)
+
+        const updatePayload: any = {
           code: novaTurma.codigo.trim(),
-          semester: novaTurma.semestre.trim() || `${new Date().getFullYear()}-1`,
-          year: Number(novaTurma.ano || new Date().getFullYear()),
+          academicPeriodId: academicPeriodIdParaEdicao,
+          year: yearFromSemester || Number(novaTurma.ano || new Date().getFullYear()),
           disciplineId: novaTurma.disciplinaId,
-        })
+        }
+
+        if (novaTurma.teacherId) {
+          updatePayload.teacherId = novaTurma.teacherId
+        }
+
+        const updated = await updateClass(turmaEditandoId, updatePayload)
         const mapped = mapClass(updated)
         setTurmas((prev) => prev.map((t) => (t.id === turmaEditandoId ? mapped : t)))
+        // Atualizar também turmasBackend para manter sincronizado
+        setTurmasBackend((prev) => prev.map((t) => (t.id === turmaEditandoId ? updated : t)))
       toast({
         variant: "success",
         title: "Turma atualizada",
         description: "Turma atualizada com sucesso.",
       })
       } else {
-        const created = await createClass({
+        // Buscar academicPeriodId baseado no semestre selecionado
+        const normalizedPeriod = semestreSelecionado.replace('-', '.')
+        const academicPeriod = await findAcademicPeriodByPeriod(normalizedPeriod)
+        
+        if (!academicPeriod) {
+          toast({
+            variant: "error",
+            title: "Período letivo não encontrado",
+            description: `O período letivo "${semestreSelecionado}" não foi encontrado.`,
+          })
+          setIsSavingTurma(false)
+          return
+        }
+
+        // Extrair ano do semestre (formato: "YYYY.S")
+        const [yearFromSemester] = semestreSelecionado.split('.').map(Number)
+
+        const payload: any = {
           code: novaTurma.codigo.trim(),
-          semester: novaTurma.semestre.trim() || `${new Date().getFullYear()}-1`,
-          year: Number(novaTurma.ano || new Date().getFullYear()),
+          academicPeriodId: academicPeriod.id,
+          year: yearFromSemester || new Date().getFullYear(),
           disciplineId: novaTurma.disciplinaId,
-        })
+        }
+
+        // Incluir teacherId se selecionado
+        if (novaTurma.teacherId) {
+          payload.teacherId = novaTurma.teacherId
+        }
+
+        // Incluir campos de schedule se preenchidos
+        if (novaTurma.dayOfWeek && novaTurma.startTime && novaTurma.endTime) {
+          payload.dayOfWeek = novaTurma.dayOfWeek
+          payload.startTime = novaTurma.startTime
+          payload.endTime = novaTurma.endTime
+          if (novaTurma.room) {
+            payload.room = novaTurma.room.trim()
+          }
+        }
+
+        const created = await createClass(payload)
 
         const mapped = mapClass(created)
         setTurmas((prev) => {
@@ -467,6 +581,8 @@ export default function CursoDetalhePage() {
           setCurso((current) => (current ? { ...current, turmas: updated.length } : current))
           return updated
         })
+        // Atualizar também turmasBackend para manter sincronizado
+        setTurmasBackend((prev) => [...prev, created])
 
         toast({
           variant: "success",
@@ -531,13 +647,22 @@ export default function CursoDetalhePage() {
   }
 
   const handleEditarTurma = (turma: Turma) => {
-    const [semestreParte, anoParte] = (turma.periodo || "").split("/") as [string, string?]
     setTurmaEditandoId(turma.id)
+    // Usar o semestre diretamente da turma (formato: "2025.1")
+    const semestreFromTurma = turma.semestre || ""
+    // Buscar professor da turma (se houver) no mapeamento BackendClass
+    const turmaBackend = turmasBackend.find((t) => t.id === turma.id)
+    const teacherId = turmaBackend?.teacher?.id || ""
     setNovaTurma({
       codigo: turma.codigo,
-      semestre: semestreParte || "",
-      ano: anoParte || new Date().getFullYear().toString(),
+      semestre: semestreFromTurma,
+      ano: semestreFromTurma ? semestreFromTurma.split('.')[0] : new Date().getFullYear().toString(),
       disciplinaId: disciplinas.find((d) => d.nome === turma.disciplina)?.id ?? disciplinas[0]?.id ?? "",
+      teacherId: teacherId,
+      dayOfWeek: "",
+      startTime: "",
+      endTime: "",
+      room: turma.sala || ""
     })
     setIsTurmaModalOpen(true)
   }
@@ -685,7 +810,7 @@ export default function CursoDetalhePage() {
                             {disciplinasFiltradas.length !== 1 ? "s" : ""}
                           </CardDescription>
                         </div>
-                        <LiquidGlassButton size="sm">
+                        <LiquidGlassButton size="sm" onClick={() => setIsDisciplinaModalOpen(true)}>
                           <Plus className="h-4 w-4 mr-2" />
                           Nova disciplina
                         </LiquidGlassButton>
@@ -765,7 +890,7 @@ export default function CursoDetalhePage() {
                                 </div>
                               </div>
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="sm" onClick={() => handleEditarDisciplina(disciplina)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
@@ -810,7 +935,7 @@ export default function CursoDetalhePage() {
                             {turmasFiltradas.length !== 1 ? "s" : ""}
                           </CardDescription>
                         </div>
-                        <LiquidGlassButton size="sm">
+                        <LiquidGlassButton size="sm" onClick={() => setIsTurmaModalOpen(true)}>
                           <Plus className="h-4 w-4 mr-2" />
                           Nova turma
                         </LiquidGlassButton>
@@ -827,8 +952,12 @@ export default function CursoDetalhePage() {
                             className="pl-10"
                           />
                         </div>
-                        {isLoading || semestres.length === 0 ? (
+                        {isLoading ? (
                           <Skeleton className="h-10 w-40" />
+                        ) : semestres.length === 0 ? (
+                          <div className="px-3 py-2 border rounded-md bg-muted text-muted-foreground text-sm">
+                            Nenhum semestre
+                          </div>
                         ) : (
                           <div className="flex items-center space-x-2">
                             <GraduationCap className="h-5 w-5 text-muted-foreground" />
@@ -917,7 +1046,7 @@ export default function CursoDetalhePage() {
                                 </div>
                               </div>
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="sm" onClick={() => handleEditarTurma(turma)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -1097,27 +1226,34 @@ export default function CursoDetalhePage() {
                 placeholder="Ex: TURMA-01"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="semestre-turma">Semestre</Label>
+            <div>
+              <Label htmlFor="semestre-turma">Semestre</Label>
+              {turmaEditandoId ? (
+                // Em modo de edição, mostrar o semestre da turma sendo editada
                 <Input
                   id="semestre-turma"
-                  value={novaTurma.semestre}
-                  onChange={(e) => setNovaTurma({ ...novaTurma, semestre: e.target.value })}
-                  placeholder="Ex: 2025-1"
+                  value={novaTurma.semestre ? novaTurma.semestre.replace('.', '-') : novaTurma.semestre || ''}
+                  disabled
+                  className="bg-muted cursor-not-allowed"
                 />
-              </div>
-              <div>
-                <Label htmlFor="ano-turma">Ano</Label>
+              ) : semestreSelecionado ? (
+                // Em modo de criação, usar o semestre selecionado no filtro
                 <Input
-                  id="ano-turma"
-                  type="number"
-                  value={novaTurma.ano}
-                  onChange={(e) => setNovaTurma({ ...novaTurma, ano: e.target.value })}
-                  placeholder={new Date().getFullYear().toString()}
-                  min="2000"
+                  id="semestre-turma"
+                  value={semestreSelecionado.replace('.', '-')}
+                  disabled
+                  className="bg-muted cursor-not-allowed"
                 />
-              </div>
+              ) : (
+                <div className="px-3 py-2 border rounded-md bg-muted text-muted-foreground text-sm">
+                  Nenhum semestre disponível. Selecione um semestre na aba de turmas primeiro.
+                </div>
+              )}
+              {!turmaEditandoId && !semestreSelecionado && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Nenhum semestre selecionado. É necessário ter turmas no curso ou selecionar um semestre.
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="disciplina-turma">Disciplina</Label>
@@ -1141,6 +1277,82 @@ export default function CursoDetalhePage() {
                 </p>
               )}
             </div>
+            <div>
+              <Label htmlFor="professor-turma">Professor (opcional)</Label>
+              <select
+                id="professor-turma"
+                className="w-full border rounded-md px-3 py-2 bg-background"
+                value={novaTurma.teacherId}
+                onChange={(e) => setNovaTurma({ ...novaTurma, teacherId: e.target.value })}
+              >
+                <option value="">Sem professor</option>
+                {professores.map((professor) => (
+                  <option key={professor.id} value={professor.id}>
+                    {professor.name}
+                  </option>
+                ))}
+              </select>
+              {professores.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Nenhum professor cadastrado no departamento deste curso.
+                </p>
+              )}
+            </div>
+            <div className="border-t pt-4 mt-4">
+              <p className="text-sm font-medium mb-3 text-muted-foreground">Horário da aula (opcional)</p>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="dia-semana-turma">Dia da semana</Label>
+                  <select
+                    id="dia-semana-turma"
+                    className="w-full border rounded-md px-3 py-2 bg-background"
+                    value={novaTurma.dayOfWeek}
+                    onChange={(e) => setNovaTurma({ ...novaTurma, dayOfWeek: e.target.value })}
+                  >
+                    <option value="">Selecione o dia</option>
+                    <option value="segunda-feira">Segunda-feira</option>
+                    <option value="terca-feira">Terça-feira</option>
+                    <option value="quarta-feira">Quarta-feira</option>
+                    <option value="quinta-feira">Quinta-feira</option>
+                    <option value="sexta-feira">Sexta-feira</option>
+                    <option value="sabado">Sábado</option>
+                    <option value="domingo">Domingo</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="horario-inicio-turma">Horário de início</Label>
+                    <Input
+                      id="horario-inicio-turma"
+                      type="time"
+                      value={novaTurma.startTime}
+                      onChange={(e) => setNovaTurma({ ...novaTurma, startTime: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="horario-fim-turma">Horário de fim</Label>
+                    <Input
+                      id="horario-fim-turma"
+                      type="time"
+                      value={novaTurma.endTime}
+                      onChange={(e) => setNovaTurma({ ...novaTurma, endTime: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="sala-turma">Sala</Label>
+                  <Input
+                    id="sala-turma"
+                    value={novaTurma.room}
+                    onChange={(e) => setNovaTurma({ ...novaTurma, room: e.target.value })}
+                    placeholder="Ex: Lab 101"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Se preenchido, será criado automaticamente um horário e planos de aula para todas as semanas do semestre.
+                </p>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="gap-2">
@@ -1153,7 +1365,10 @@ export default function CursoDetalhePage() {
             >
               Cancelar
             </Button>
-            <Button onClick={handleCreateTurma} disabled={isSavingTurma || disciplinas.length === 0}>
+            <Button 
+              onClick={handleCreateTurma} 
+              disabled={isSavingTurma || disciplinas.length === 0 || (!turmaEditandoId && !semestreSelecionado)}
+            >
               {isSavingTurma && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {turmaEditandoId ? "Salvar alterações" : "Criar turma"}
             </Button>

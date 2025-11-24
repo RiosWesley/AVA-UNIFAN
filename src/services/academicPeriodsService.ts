@@ -30,6 +30,19 @@ export async function getAcademicPeriods(): Promise<AcademicPeriod[]> {
   }
 }
 
+export async function findByPeriod(period: string): Promise<AcademicPeriod | null> {
+  try {
+    const { data } = await api.get<AcademicPeriod>(`/academic-periods/by-period/${period}`);
+    return data;
+  } catch (error: any) {
+    if (error.response?.status === 404) {
+      return null;
+    }
+    console.error('Erro ao buscar período letivo por period:', error);
+    throw error;
+  }
+}
+
 export async function getAcademicPeriod(id: string): Promise<AcademicPeriod> {
   try {
     const { data } = await api.get<AcademicPeriod>(`/academic-periods/${id}`);
