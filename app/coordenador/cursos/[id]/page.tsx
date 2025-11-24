@@ -134,8 +134,19 @@ const mapClass = (c: BackendClass): Turma => {
     disciplina: c.discipline?.name ?? "Sem disciplina",
     professor: c.teacher?.name ?? "Sem professor",
     periodo: c.period ?? "Periodo nao informado",
-    horario: c.schedule ?? "Horario nao informado",
-    sala: c.room ?? "Sala nao informada",
+    horario: (() => {
+      const scheduleFromArray = c.schedules?.[0]
+      if (scheduleFromArray) {
+        return `${scheduleFromArray.dayOfWeek} ${scheduleFromArray.startTime}-${scheduleFromArray.endTime}`
+      }
+      return c.schedule ?? "Horario nao informado"
+    })(),
+    sala: (() => {
+      const scheduleFromArray = c.schedules?.[0]
+      if (scheduleFromArray?.room) return scheduleFromArray.room
+      if (c.room) return c.room
+      return "Sala nao informada"
+    })(),
     alunos: c.studentsCount ?? 0,
     capacidade: c.capacity ?? c.studentsCount ?? 0,
     status: c.status === "inactive" ? "inativa" : "ativa",
@@ -523,6 +534,25 @@ export default function CursoDetalhePage() {
           updatePayload.teacherId = novaTurma.teacherId
         }
 
+
+        const hasScheduleFields = [novaTurma.dayOfWeek, novaTurma.startTime, novaTurma.endTime, novaTurma.room]
+          .some((value) => (value ?? '').toString().trim() !== '')
+
+        if (hasScheduleFields) {
+          if (novaTurma.dayOfWeek) {
+            updatePayload.dayOfWeek = novaTurma.dayOfWeek
+          }
+          if (novaTurma.startTime) {
+            updatePayload.startTime = novaTurma.startTime
+          }
+          if (novaTurma.endTime) {
+            updatePayload.endTime = novaTurma.endTime
+          }
+          if (novaTurma.room) {
+            updatePayload.room = novaTurma.room.trim()
+          }
+        }
+
         const updated = await updateClass(turmaEditandoId, updatePayload)
         const mapped = mapClass(updated)
         setTurmas((prev) => prev.map((t) => (t.id === turmaEditandoId ? mapped : t)))
@@ -653,6 +683,8 @@ export default function CursoDetalhePage() {
     // Buscar professor da turma (se houver) no mapeamento BackendClass
     const turmaBackend = turmasBackend.find((t) => t.id === turma.id)
     const teacherId = turmaBackend?.teacher?.id || ""
+    const roomFromBackend = (turmaBackend as any)?.room as string | undefined
+    const normalizedRoom = roomFromBackend || (turma.sala !== "Sala nao informada" ? turma.sala : "") || ""
     setNovaTurma({
       codigo: turma.codigo,
       semestre: semestreFromTurma,
@@ -662,7 +694,7 @@ export default function CursoDetalhePage() {
       dayOfWeek: "",
       startTime: "",
       endTime: "",
-      room: turma.sala || ""
+      room: normalizedRoom
     })
     setIsTurmaModalOpen(true)
   }
@@ -1378,3 +1410,5 @@ export default function CursoDetalhePage() {
     </div>
   )
 }
+
+

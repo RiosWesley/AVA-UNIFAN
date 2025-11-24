@@ -37,6 +37,7 @@ export default function ProfessoresCoordenadorPage() {
   const [statusFilter, setStatusFilter] = useState<"todos" | "Ativo" | "Inativo">("todos")
   const [activeTab, setActiveTab] = useState<"lista" | "cadastro">("lista")
   const [coordinatorId, setCoordinatorId] = useState<string | null>(null)
+  const [editingProfessorId, setEditingProfessorId] = useState<string | null>(null)
 
   const [form, setForm] = useState<{
     nome: string
@@ -205,10 +206,42 @@ export default function ProfessoresCoordenadorPage() {
     })
   }, [professores, statusFilter, search])
 
-  async function handleCreate(e: React.FormEvent) {
+  const isEditing = Boolean(editingProfessorId)
+
+  const resetForm = () => {
+    setForm({
+      nome: "",
+      email: "",
+      usuario: "",
+      telefone: "",
+      cpf: "",
+      senha: "",
+      confirmarSenha: "",
+      status: "Ativo",
+    })
+    setEditingProfessorId(null)
+  }
+
+  const startEdit = (professor: Professor) => {
+    setEditingProfessorId(professor.id)
+    setForm({
+      nome: professor.nome,
+      email: professor.email,
+      usuario: professor.usuario ?? "",
+      telefone: professor.telefone ?? "",
+      cpf: professor.cpf ?? "",
+      senha: "",
+      confirmarSenha: "",
+      status: professor.status,
+    })
+    setActiveTab("cadastro")
+  }
+
+  
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.nome.trim() || !form.email.trim()) {
-      toastError("Erro", "Nome e email são obrigatórios")
+      toastError("Erro", "Nome e email s?o obrigat?rios")
       return
     }
 
@@ -217,59 +250,70 @@ export default function ProfessoresCoordenadorPage() {
       return
     }
 
-    // Validar CPF se preenchido (mesma regra da página de usuários do admin)
+    // Validar CPF se preenchido (mesma regra da p?gina de usu?rios do admin)
     const cpfDigits = form.cpf.replace(/\D/g, "")
     if (form.cpf) {
       if (cpfDigits.length !== 11) {
-        setCpfError("CPF deve conter 11 dígitos")
+        setCpfError("CPF deve conter 11 d?gitos")
         return
       }
       if (!validarCPF(form.cpf)) {
-        setCpfError("CPF inválido")
+        setCpfError("CPF inv?lido")
         return
       }
     }
 
-    if (form.senha !== form.confirmarSenha) {
-      toastError("Erro", "As senhas não coincidem")
-      return
-    }
+    const isPasswordFilled = form.senha.trim().length > 0 || form.confirmarSenha.trim().length > 0
+    if (isPasswordFilled) {
+      if (form.senha !== form.confirmarSenha) {
+        toastError("Erro", "As senhas n?o coincidem")
+        return
+      }
 
-    if (form.senha && form.senha.length < 6) {
-      toastError("Erro", "A senha deve ter pelo menos 6 caracteres")
-      return
+      if (form.senha && form.senha.length < 6) {
+        toastError("Erro", "A senha deve ter pelo menos 6 caracteres")
+        return
+      }
     }
 
     try {
       setIsLoading(true)
-      // Criar usuário
-      const novoUsuario = await usuariosService.criar({
-        nome: form.nome.trim(),
-        email: form.email.trim(),
-        usuario: form.usuario.trim() || undefined,
-        telefone: form.telefone.trim() || undefined,
-        cpf: cpfDigits || undefined,
-        senha: form.senha,
-        confirmarSenha: form.confirmarSenha,
-        role: "professor",
-        status: form.status,
-      })
+      if (isEditing && editingProfessorId) {
+        const payload: any = {
+          nome: form.nome.trim(),
+          email: form.email.trim(),
+          usuario: form.usuario.trim() || undefined,
+          telefone: form.telefone.trim() || undefined,
+          cpf: cpfDigits || undefined,
+          status: form.status,
+        }
 
-      // Vincular ao departamento
-      await addTeachersToDepartment(selectedDepartmentId, [novoUsuario.id])
+        if (isPasswordFilled) {
+          payload.senha = form.senha
+        }
 
-      toastSuccess("Sucesso", "Professor cadastrado e vinculado ao departamento com sucesso!")
+        await usuariosService.atualizar(editingProfessorId, payload)
+        toastSuccess("Sucesso", "Professor atualizado com sucesso!")
+      } else {
+        const novoUsuario = await usuariosService.criar({
+          nome: form.nome.trim(),
+          email: form.email.trim(),
+          usuario: form.usuario.trim() || undefined,
+          telefone: form.telefone.trim() || undefined,
+          cpf: cpfDigits || undefined,
+          senha: form.senha,
+          confirmarSenha: form.confirmarSenha,
+          role: "professor",
+          status: form.status,
+        })
 
-      setForm({
-        nome: "",
-        email: "",
-        usuario: "",
-        telefone: "",
-        cpf: "",
-        senha: "",
-        confirmarSenha: "",
-        status: "Ativo",
-      })
+        // Vincular ao departamento
+        await addTeachersToDepartment(selectedDepartmentId, [novoUsuario.id])
+
+        toastSuccess("Sucesso", "Professor cadastrado e vinculado ao departamento com sucesso!")
+      }
+
+      resetForm()
       setActiveTab("lista")
 
       // Recarregar professores
@@ -285,12 +329,13 @@ export default function ProfessoresCoordenadorPage() {
       }))
       setProfessores(professoresMapeados)
     } catch (error: any) {
-      console.error("Erro ao criar professor:", error)
-      toastError("Erro", error.message || "Não foi possível criar o professor")
+      console.error("Erro ao salvar professor:", error)
+      toastError("Erro", error.message || "N?o foi poss?vel salvar o professor")
     } finally {
       setIsLoading(false)
     }
   }
+
 
   async function handleDelete(id: string) {
     if (!confirm("Tem certeza que deseja remover este professor do departamento?")) {
@@ -338,7 +383,12 @@ export default function ProfessoresCoordenadorPage() {
               <h1 className="text-3xl font-bold text-foreground">Gestão de Professores</h1>
               <p className="text-muted-foreground">Cadastrar, listar e gerenciar professores</p>
             </div>
-            <Button onClick={() => setActiveTab("cadastro")}>
+            <Button
+              onClick={() => {
+                resetForm()
+                setActiveTab("cadastro")
+              }}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Novo Professor
             </Button>
@@ -411,7 +461,12 @@ export default function ProfessoresCoordenadorPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge variant={p.status === "Ativo" ? "default" : "secondary"}>{p.status}</Badge>
-                                <Button variant="outline" size="sm" className="bg-transparent">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-transparent"
+                                  onClick={() => startEdit(p)}
+                                >
                                   <Edit className="w-4 h-4" />
                                 </Button>
                                 <Button
@@ -442,11 +497,15 @@ export default function ProfessoresCoordenadorPage() {
             <TabsContent value="cadastro" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Novo Professor</CardTitle>
-                  <CardDescription>Preencha os dados para cadastrar um novo professor</CardDescription>
+                  <CardTitle>{isEditing ? "Editar Professor" : "Novo Professor"}</CardTitle>
+                  <CardDescription>
+                    {isEditing
+                      ? "Atualize os dados do professor selecionado"
+                      : "Preencha os dados para cadastrar um novo professor"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
+                  <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="nome">Nome</Label>
                       <Input
@@ -513,7 +572,7 @@ export default function ProfessoresCoordenadorPage() {
                         type="password"
                         value={form.senha}
                         onChange={(e) => setForm({ ...form, senha: e.target.value })}
-                        required
+                        required={!isEditing}
                       />
                     </div>
                     <div className="space-y-2">
@@ -523,30 +582,31 @@ export default function ProfessoresCoordenadorPage() {
                         type="password"
                         value={form.confirmarSenha}
                         onChange={(e) => setForm({ ...form, confirmarSenha: e.target.value })}
-                        required
+                        required={!isEditing}
                       />
                     </div>
                     <div className="md:col-span-2 flex justify-end gap-2">
                       <Button
                         type="reset"
                         variant="outline"
-                        onClick={() =>
-                          setForm({
-                            nome: "",
-                            email: "",
-                            usuario: "",
-                            telefone: "",
-                            cpf: "",
-                            senha: "",
-                            confirmarSenha: "",
-                            status: "Ativo",
-                          })
-                        }
+                        onClick={() => {
+                          resetForm()
+                          setActiveTab("lista")
+                        }}
                       >
-                        Limpar
+                        {isEditing ? "Cancelar edição" : "Limpar"}
                       </Button>
                       <Button type="submit">
-                        <Plus className="w-4 h-4 mr-2" /> Cadastrar
+                        {isEditing ? (
+                          <>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Salvar alterações
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-2" /> Cadastrar
+                          </>
+                        )}
                       </Button>
                     </div>
                   </form>
