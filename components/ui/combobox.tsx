@@ -27,6 +27,7 @@ export function Combobox({
 }: ComboboxProps) {
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
+  const [isDark, setIsDark] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
 
   const selectedLabel = useMemo(() => options.find(o => o.id === value)?.label ?? "", [options, value])
@@ -46,6 +47,19 @@ export function Combobox({
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDark(document.documentElement.classList.contains('dark'))
+    }
+    checkDarkMode()
+    const observer = new MutationObserver(checkDarkMode)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className="relative" ref={containerRef}>
       <Input
@@ -59,6 +73,11 @@ export function Combobox({
           onSearch?.(next)
         }}
         onFocus={() => setOpen(true)}
+        style={{ 
+          borderColor: isDark ? '#4a5568' : '#e5e7eb', 
+          borderWidth: '1px', 
+          borderStyle: 'solid' 
+        }}
       />
       {open && (
         <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md">

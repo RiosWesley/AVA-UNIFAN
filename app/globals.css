@@ -737,7 +737,7 @@ html:not(.dark):not(.liquid-glass) [class*="backdrop-blur"] {
 
 /* Cards com bordas - aumentar visibilidade no modo claro */
 html:not(.dark) .border {
-  border-color: #d1d5db !important;
+  border-color: #d2dbd1 !important;
 }
 
 /* Cards com border-gray-200 - aumentar contraste no modo claro (exceto sidebar) */

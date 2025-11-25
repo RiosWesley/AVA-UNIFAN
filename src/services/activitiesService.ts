@@ -34,6 +34,11 @@ export async function listActivitiesByClass(classId: string): Promise<ActivityDT
   return data;
 }
 
+export async function getActivityById(id: string): Promise<ActivityDTO> {
+  const { data } = await api.get(`/activities/${id}`);
+  return data;
+}
+
 export async function createActivity(payload: CreateActivityPayload): Promise<ActivityDTO> {
   try {
     const { data } = await api.post('/activities', payload);
