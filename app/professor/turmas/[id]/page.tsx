@@ -1740,7 +1740,7 @@ export default function TurmaDetalhePage() {
                           variant="outline"
                         >
                           <Plus className="h-6 w-6 mb-2" />
-                          <span className="font-semibold">Criar Nova Atividade</span>
+                          <span className="font-semibold">Criar nova atividade</span>
                         </LiquidGlassButton>
                         <LiquidGlassButton
                           onClick={() => setModoOperacao('associar')}
@@ -1748,7 +1748,7 @@ export default function TurmaDetalhePage() {
                           variant="outline"
                         >
                           <FileText className="h-6 w-6 mb-2" />
-                          <span className="font-semibold">Associar a Atividade Existente</span>
+                          <span className="font-semibold">Avaliar uma atividade ou prova existente</span>
                         </LiquidGlassButton>
                       </div>
                     )}
@@ -1757,7 +1757,7 @@ export default function TurmaDetalhePage() {
                     {modoOperacao === 'criar' && (
                       <div className="space-y-4">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold">Criar Nova Atividade</h3>
+                          <h3 className="text-lg font-semibold">Criar nova atividade</h3>
                           <LiquidGlassButton
                             onClick={() => {
                               setModoOperacao(null)
