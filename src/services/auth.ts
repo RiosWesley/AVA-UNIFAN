@@ -21,3 +21,39 @@ export function logout(): void {
   }
 }
 
+/**
+ * Verifica se o usuário está autenticado (tem token válido)
+ */
+export function isAuthenticated(): boolean {
+  if (typeof window === 'undefined') return false;
+  return !!localStorage.getItem('ava:token');
+}
+
+/**
+ * Obtém o token de autenticação
+ */
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('ava:token');
+}
+
+/**
+ * Obtém a role do usuário armazenada no localStorage
+ */
+export function getStoredUserRole(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('ava:userRole');
+}
+
+/**
+ * Verifica se o usuário tem uma role específica
+ */
+export async function hasRole(role: string): Promise<boolean> {
+  try {
+    const user = await me();
+    return (user.roles || []).includes(role);
+  } catch {
+    return false;
+  }
+}
+

@@ -12,6 +12,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { login } from "@/src/services/auth"
 import { toastError } from "@/components/ui/toast"
+import { PageSpinner } from "@/components/ui/page-spinner"
 
 export default function AuthPage() {
   const [isLiquidGlass, setIsLiquidGlass] = useState(false)
@@ -37,6 +38,7 @@ export default function AuthPage() {
     email: "",
     password: "",
   })
+  const [isLoading, setIsLoading] = useState(false)
 
   function mapRoleToRoute(roles: string[]): "administrador" | "professor" | "aluno" | "coordenador" {
     const has = (r: string) => roles.includes(r)
@@ -48,16 +50,30 @@ export default function AuthPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsLoading(true)
     try {
       const { access_token, user } = await login(loginData.email, loginData.password)
       localStorage.setItem("ava:token", access_token)
       localStorage.setItem("ava:userId", user.id)
       const route = mapRoleToRoute(user.roles || [])
       localStorage.setItem("ava:userRole", route)
+      // Manter loading até redirecionamento
       router.push(`/${route}`)
     } catch {
+      setIsLoading(false)
       toastError("Credenciais inválidas", "Verifique seu e-mail e senha e tente novamente")
     }
+  }
+
+  // Mostrar loading durante autenticação
+  if (isLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center p-4 ${
+        isLiquidGlass ? 'bg-black/90' : 'bg-gray-50 dark:bg-gray-900'
+      }`}>
+        <PageSpinner />
+      </div>
+    )
   }
 
   return (
@@ -89,6 +105,7 @@ export default function AuthPage() {
                   value={loginData.email}
                   onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -100,10 +117,11 @@ export default function AuthPage() {
                   value={loginData.password}
                   onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                   required
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Entrar
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
               <div className="text-center">
                 <Link href="/forgot-password" className="text-sm text-primary hover:underline">
@@ -118,25 +136,25 @@ export default function AuthPage() {
           <p className="text-sm text-muted-foreground">Acesso rápido para demonstração:</p>
           <div className="grid grid-cols-2 gap-2 mt-4">
             <Link href="/aluno">
-              <Button variant="outline" size="sm" className="w-full bg-transparent">
+              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
                 <Users className="h-4 w-4 mr-2" />
                 Aluno
               </Button>
             </Link>
             <Link href="/professor">
-              <Button variant="outline" size="sm" className="w-full bg-transparent">
+              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
                 <BookOpen className="h-4 w-4 mr-2" />
                 Professor
               </Button>
             </Link>
             <Link href="/coordenador">
-              <Button variant="outline" size="sm" className="w-full bg-transparent">
+              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Coordenador
               </Button>
             </Link>
             <Link href="/administrador">
-              <Button variant="outline" size="sm" className="w-full bg-transparent">
+              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
                 <Settings className="h-4 w-4 mr-2" />
                 Admin
               </Button>
