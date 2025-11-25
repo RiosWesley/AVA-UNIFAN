@@ -101,6 +101,10 @@ export interface ClassActivity {
   dueDate: string
   status?: 'pending' | 'in_progress' | 'completed'
   grade?: number | null
+  unit?: string | null
+  type?: string
+  maxScore?: number | null
+  max_score?: number | null
 }
 
 export interface ActivitySubmissionStatus {
