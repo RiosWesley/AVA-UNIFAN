@@ -131,36 +131,6 @@ export default function AuthPage() {
             </form>
           </CardContent>
         </Card>
-
-        <div className="mt-8 text-center">
-          <p className="text-sm text-muted-foreground">Acesso rápido para demonstração:</p>
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            <Link href="/aluno">
-              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
-                <Users className="h-4 w-4 mr-2" />
-                Aluno
-              </Button>
-            </Link>
-            <Link href="/professor">
-              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Professor
-              </Button>
-            </Link>
-            <Link href="/coordenador">
-              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Coordenador
-              </Button>
-            </Link>
-            <Link href="/administrador">
-              <Button variant="outline" size="sm" className="w-full bg-transparent" disabled={isLoading}>
-                <Settings className="h-4 w-4 mr-2" />
-                Admin
-              </Button>
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   )
