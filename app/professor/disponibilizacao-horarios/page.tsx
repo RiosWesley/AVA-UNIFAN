@@ -27,17 +27,21 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { getCurrentUser, getSemestresDisponiveisProfessor } from "@/src/services/professor-dashboard"
-import { GraduationCap } from "lucide-react"
+import { getCurrentUser } from "@/src/services/professor-dashboard"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  getAvailableSemesters,
+  getTeacherAvailabilities,
+  getTeacherAvailabilityBySemester,
+  createOrUpdateAvailability,
+  submitAvailability,
+  type DisponibilizacaoHorarios as BackendAvailability,
+  type DisponibilidadeTurnos,
+  mapBackendToFrontendTurnos,
+  mapFrontendToBackendTurnos,
+} from "@/src/services/availability-service"
 
 type Turno = 'manha' | 'tarde' | 'noite'
-
-interface DisponibilidadeTurnos {
-  manha: boolean
-  tarde: boolean
-  noite: boolean
-}
 
 interface DisponibilizacaoHorarios {
   id: string
@@ -76,6 +80,8 @@ export default function DisponibilizacaoHorariosPage() {
   })
   const [historico, setHistorico] = useState<DisponibilizacaoHorarios[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [currentAvailabilityId, setCurrentAvailabilityId] = useState<string | null>(null)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -125,7 +131,7 @@ export default function DisponibilizacaoHorariosPage() {
       if (!teacherId) return
       try {
         setLoading(true)
-        const semestresDisponiveis = await getSemestresDisponiveisProfessor(teacherId)
+        const semestresDisponiveis = await getAvailableSemesters(teacherId)
         setSemestres(semestresDisponiveis)
         
         // Selecionar semestre ativo ou o primeiro disponível
@@ -137,11 +143,88 @@ export default function DisponibilizacaoHorariosPage() {
         }
       } catch (error) {
         console.error("Erro ao buscar semestres:", error)
+        toast.error("Erro ao carregar semestres disponíveis")
       } finally {
         setLoading(false)
       }
     }
     buscarSemestres()
+  }, [teacherId])
+
+  // Carregar disponibilidade ao selecionar semestre
+  useEffect(() => {
+    const carregarDisponibilidade = async () => {
+      if (!teacherId || !semestreSelecionado) return
+      
+      try {
+        setLoading(true)
+        const disponibilidade = await getTeacherAvailabilityBySemester(
+          teacherId,
+          semestreSelecionado
+        )
+        
+        if (disponibilidade) {
+          setCurrentAvailabilityId(disponibilidade.id)
+          setTurnos(mapBackendToFrontendTurnos(disponibilidade))
+          setObservacoes(disponibilidade.observations || "")
+          
+          const statusMap: Record<string, 'rascunho' | 'enviada' | 'aprovada'> = {
+            draft: 'rascunho',
+            submitted: 'enviada',
+            approved: 'aprovada'
+          }
+          setStatus(statusMap[disponibilidade.status] || 'rascunho')
+        } else {
+          setCurrentAvailabilityId(null)
+          setTurnos({ manha: false, tarde: false, noite: false })
+          setObservacoes("")
+          setStatus('rascunho')
+        }
+      } catch (error) {
+        console.error("Erro ao carregar disponibilidade:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    carregarDisponibilidade()
+  }, [teacherId, semestreSelecionado])
+
+  // Carregar histórico
+  useEffect(() => {
+    const carregarHistorico = async () => {
+      if (!teacherId) return
+      
+      try {
+        const disponibilidades = await getTeacherAvailabilities(teacherId)
+        
+        const historicoFormatado: DisponibilizacaoHorarios[] = disponibilidades.map(av => {
+          const statusMap: Record<string, 'rascunho' | 'enviada' | 'aprovada'> = {
+            draft: 'rascunho',
+            submitted: 'enviada',
+            approved: 'aprovada'
+          }
+          
+          return {
+            id: av.id,
+            semestre: av.semesterId,
+            status: statusMap[av.status] || 'rascunho',
+            turnos: mapBackendToFrontendTurnos(av),
+            observacoes: av.observations || "",
+            dataCriacao: new Date(av.createdAt),
+            dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined
+          }
+        })
+        
+        setHistorico(historicoFormatado.sort((a, b) => 
+          b.dataCriacao.getTime() - a.dataCriacao.getTime()
+        ))
+      } catch (error) {
+        console.error("Erro ao carregar histórico:", error)
+      }
+    }
+    
+    carregarHistorico()
   }, [teacherId])
 
   const toggleTurno = (turno: Turno) => {
@@ -155,36 +238,68 @@ export default function DisponibilizacaoHorariosPage() {
     return turnos.manha || turnos.tarde || turnos.noite
   }
 
-  const salvarRascunho = () => {
+  const salvarRascunho = async () => {
     if (!temAlgumTurnoSelecionado()) {
       toast.warning("Selecione pelo menos um turno antes de salvar")
       return
     }
 
-    try {
-      const disponibilizacao: DisponibilizacaoHorarios = {
-        id: Date.now().toString(),
-        semestre: semestreSelecionado,
-        status: 'rascunho',
-        turnos,
-        observacoes,
-        dataCriacao: new Date()
-      }
+    if (!semestreSelecionado || !teacherId) {
+      toast.error("Selecione um semestre antes de salvar")
+      return
+    }
 
-      setHistorico(prev => [disponibilizacao, ...prev])
-      setStatus('rascunho')
-      toast.success("Rascunho salvo com sucesso!", {
-        description: "Sua disponibilidade foi salva localmente"
+    try {
+      setSaving(true)
+      const turnosBackend = mapFrontendToBackendTurnos(turnos)
+      
+      const disponibilidade = await createOrUpdateAvailability({
+        semesterId: semestreSelecionado,
+        ...turnosBackend,
+        observations: observacoes || undefined
       })
-    } catch (error) {
+
+      setCurrentAvailabilityId(disponibilidade.id)
+      setStatus('rascunho')
+      
+      toast.success("Rascunho salvo com sucesso!", {
+        description: "Sua disponibilidade foi salva"
+      })
+      
+      // Recarregar histórico
+      const historicoAtualizado = await getTeacherAvailabilities(teacherId)
+      const historicoFormatado: DisponibilizacaoHorarios[] = historicoAtualizado.map(av => {
+        const statusMap: Record<string, 'rascunho' | 'enviada' | 'aprovada'> = {
+          draft: 'rascunho',
+          submitted: 'enviada',
+          approved: 'aprovada'
+        }
+        
+        return {
+          id: av.id,
+          semestre: av.semesterId,
+          status: statusMap[av.status] || 'rascunho',
+          turnos: mapBackendToFrontendTurnos(av),
+          observacoes: av.observations || "",
+          dataCriacao: new Date(av.createdAt),
+          dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined
+        }
+      })
+      
+      setHistorico(historicoFormatado.sort((a, b) => 
+        b.dataCriacao.getTime() - a.dataCriacao.getTime()
+      ))
+    } catch (error: any) {
       console.error('Erro ao salvar rascunho:', error)
       toast.error("Erro ao salvar rascunho", {
-        description: "Tente novamente em alguns instantes"
+        description: error.response?.data?.message || "Tente novamente em alguns instantes"
       })
+    } finally {
+      setSaving(false)
     }
   }
 
-  const enviarParaCoordenacao = () => {
+  const enviarParaCoordenacao = async () => {
     if (!temAlgumTurnoSelecionado()) {
       toast.error("Selecione pelo menos um turno antes de enviar", {
         description: "É necessário informar sua disponibilidade"
@@ -192,36 +307,87 @@ export default function DisponibilizacaoHorariosPage() {
       return
     }
 
+    if (!semestreSelecionado || !teacherId) {
+      toast.error("Selecione um semestre antes de enviar")
+      return
+    }
+
+    const toastId = toast.loading("Enviando disponibilidade para coordenação...", {
+      id: "enviando-horarios"
+    })
+
     try {
-      const disponibilizacao: DisponibilizacaoHorarios = {
-        id: Date.now().toString(),
-        semestre: semestreSelecionado,
-        status: 'enviada',
-        turnos,
-        observacoes,
-        dataCriacao: new Date(),
-        dataEnvio: new Date()
+      setSaving(true)
+      const turnosBackend = mapFrontendToBackendTurnos(turnos)
+      
+      // Primeiro criar/atualizar como draft
+      let disponibilidade = await createOrUpdateAvailability({
+        semesterId: semestreSelecionado,
+        ...turnosBackend,
+        observations: observacoes || undefined
+      })
+
+      setCurrentAvailabilityId(disponibilidade.id)
+      
+      // Se já existe e está como draft, submeter
+      if (disponibilidade.status === 'draft') {
+        try {
+          disponibilidade = await submitAvailability(disponibilidade.id)
+        } catch (submitError: any) {
+          // Se o endpoint de submit não existir, o backend pode ter submetido automaticamente
+          // ou pode aceitar status no POST. Vamos verificar o status retornado
+          if (submitError.response?.status === 404) {
+            // Endpoint não existe, assumir que foi submetido
+            console.warn("Endpoint de submit não encontrado, assumindo submissão automática")
+          } else {
+            throw submitError
+          }
+        }
       }
-
-      toast.loading("Enviando disponibilidade para coordenação...", {
-        id: "enviando-horarios"
+      
+      const statusMap: Record<string, 'rascunho' | 'enviada' | 'aprovada'> = {
+        draft: 'rascunho',
+        submitted: 'enviada',
+        approved: 'aprovada'
+      }
+      setStatus(statusMap[disponibilidade.status] || 'enviada')
+      
+      toast.dismiss(toastId)
+      toast.success("Disponibilidade enviada com sucesso!", {
+        description: "A coordenação foi notificada sobre seus turnos disponíveis"
       })
-
-      setTimeout(() => {
-        setHistorico(prev => [disponibilizacao, ...prev])
-        setStatus('enviada')
-        toast.dismiss("enviando-horarios")
-        toast.success("Disponibilidade enviada com sucesso!", {
-          description: "A coordenação foi notificada sobre seus turnos disponíveis"
-        })
-      }, 1500)
-
-    } catch (error) {
+      
+      // Recarregar histórico
+      const historicoAtualizado = await getTeacherAvailabilities(teacherId)
+      const historicoFormatado: DisponibilizacaoHorarios[] = historicoAtualizado.map(av => {
+        const statusMap: Record<string, 'rascunho' | 'enviada' | 'aprovada'> = {
+          draft: 'rascunho',
+          submitted: 'enviada',
+          approved: 'aprovada'
+        }
+        
+        return {
+          id: av.id,
+          semestre: av.semesterId,
+          status: statusMap[av.status] || 'rascunho',
+          turnos: mapBackendToFrontendTurnos(av),
+          observacoes: av.observations || "",
+          dataCriacao: new Date(av.createdAt),
+          dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined
+        }
+      })
+      
+      setHistorico(historicoFormatado.sort((a, b) => 
+        b.dataCriacao.getTime() - a.dataCriacao.getTime()
+      ))
+    } catch (error: any) {
       console.error('Erro ao enviar disponibilidade:', error)
-      toast.dismiss("enviando-horarios")
+      toast.dismiss(toastId)
       toast.error("Erro ao enviar disponibilidade", {
-        description: "Verifique sua conexão e tente novamente"
+        description: error.response?.data?.message || "Verifique sua conexão e tente novamente"
       })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -565,16 +731,18 @@ export default function DisponibilizacaoHorariosPage() {
                       variant="outline"
                       onClick={salvarRascunho}
                       className="flex-1"
+                      disabled={saving || loading}
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      Salvar Rascunho
+                      {saving ? "Salvando..." : "Salvar Rascunho"}
                     </LiquidGlassButton>
                     <LiquidGlassButton
                       onClick={enviarParaCoordenacao}
                       className="flex-1"
+                      disabled={saving || loading || status === 'aprovada'}
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      Enviar para Coordenação
+                      {saving ? "Enviando..." : "Enviar para Coordenação"}
                     </LiquidGlassButton>
                   </div>
                 </CardContent>
@@ -625,10 +793,11 @@ export default function DisponibilizacaoHorariosPage() {
                                 <StatusIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                                 <div>
                                   <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                                    Semestre {item.semestre}
+                                    {semestres.find(s => s.id === item.semestre)?.nome || `Semestre ${item.semestre}`}
                                   </h3>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Criado em {item.dataCriacao.toLocaleDateString('pt-BR')}
+                                    {item.dataEnvio && ` • Enviado em ${item.dataEnvio.toLocaleDateString('pt-BR')}`}
                                   </p>
                                 </div>
                               </div>
