@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff, GraduationCap } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
@@ -18,6 +19,7 @@ import { toast } from '@/hooks/use-toast'
 import { useParams, useRouter } from 'next/navigation'
 import { apiClient, type Forum, type VideoLesson, type MaterialItem, type Notice, type ClassActivity, type ActivitySubmissionStatus } from '@/lib/api-client'
 import { listExams, listAttemptsByStudent, getExamById, ExamDTO, ExamAttemptDTO } from '@/src/services/examsService'
+import { findGrades, type GradeDTO } from '@/src/services/gradesService'
 import { useLiveSession } from "@/src/hooks/useLiveSession"
 import { listLiveSessionsByClass } from "@/src/services/liveSessionsService"
 import RemoteVideo from "@/components/layout/RemoteVideo"
@@ -95,6 +97,24 @@ export default function DisciplinaDetalhePage() {
     queryKey: ['activities-class', classId],
     queryFn: () => apiClient.getActivitiesByClass(classId as string),
     enabled: !!classId,
+  })
+
+  // Enrollment do aluno na turma
+  const enrollmentQuery = useQuery({
+    queryKey: ['enrollment', studentId, classId],
+    queryFn: async () => {
+      if (!studentId || !classId) return null
+      const enrollments = await apiClient.getStudentEnrollments(studentId)
+      return enrollments.find(e => e.classId === classId) || null
+    },
+    enabled: !!studentId && !!classId,
+  })
+
+  // Notas do aluno
+  const gradesQuery = useQuery({
+    queryKey: ['grades', enrollmentQuery.data?.id],
+    queryFn: () => findGrades({ enrollmentId: enrollmentQuery.data?.id }),
+    enabled: !!enrollmentQuery.data?.id,
   })
 
   // Status de submissão por atividade (carregado após listar atividades)
@@ -617,7 +637,7 @@ export default function DisciplinaDetalhePage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="avisos">Avisos</TabsTrigger>
               <TabsTrigger value="materiais">Materiais</TabsTrigger>
               <TabsTrigger value="atividades">Atividades</TabsTrigger>
@@ -625,6 +645,7 @@ export default function DisciplinaDetalhePage() {
               <TabsTrigger value="videoaulas">Vídeo-aulas</TabsTrigger>
               <TabsTrigger value="videochamadas">Vídeo-chamadas</TabsTrigger>
               <TabsTrigger value="provas-online">Provas Online</TabsTrigger>
+              <TabsTrigger value="notas">Notas</TabsTrigger>
             </TabsList>
 
             <TabsContent value="avisos">
@@ -890,96 +911,6 @@ export default function DisciplinaDetalhePage() {
                         </Card>
                       )
                     }
-
-                    // Para provas virtuais
-                    const startDate = atividade.exam?.activity?.startDate ? new Date(atividade.exam.activity.startDate) : null
-                    const dueDate = atividade.exam?.activity?.dueDate ? new Date(atividade.exam.activity.dueDate) : null
-                    const now = new Date()
-                    const isNotStarted = startDate && startDate > now
-                    const isPastDue = dueDate && dueDate < now
-
-                    return (
-                      <Card key={atividade.id}>
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-lg">{atividade.title}</CardTitle>
-                              <CardDescription>
-                                {startDate && (
-                                  <>Disponível a partir de: {startDate.toLocaleString('pt-BR')} • </>
-                                )}
-                                {dueDate ? `Prazo final: ${dueDate.toLocaleString('pt-BR')}` : 'Sem prazo definido'}
-                                {atividade.exam?.timeLimitMinutes && ` • Tempo limite: ${atividade.exam.timeLimitMinutes} minutos`}
-                                {atividade.exam?.questions && ` • ${atividade.exam.questions.length} questão(ões)`}
-                              </CardDescription>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {isFinalized && attempt?.score !== null && attempt?.score !== undefined && (
-                                <Badge variant="default">
-                                  Nota: {attempt.score.toFixed(2)} / {atividade.exam?.activity?.maxScore || atividade.exam?.questions?.reduce((sum, q) => sum + q.points, 0) || 0}
-                                </Badge>
-                              )}
-                              <Badge variant={isFinalized ? "default" : "secondary"}>
-                                {isFinalized ? (
-                                  <>
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    Feito
-                                  </>
-                                ) : (
-                                  <>
-                                    <AlertCircle className="h-3 w-3 mr-1" />
-                                    Pendente
-                                  </>
-                                )}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm mb-4">{atividade.description}</p>
-                          {atividade.exam?.instructions && (
-                            <div className="mb-4 p-3 bg-muted rounded-lg">
-                              <p className="text-sm font-medium mb-1">Instruções:</p>
-                              <p className="text-sm">{atividade.exam.instructions}</p>
-                            </div>
-                          )}
-                          {isFinalized && (
-                            <div className="mb-4 space-y-2">
-                              <div className="p-3 bg-primary/10 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-sm font-medium">Nota:</p>
-                                  <p className="text-sm font-semibold">
-                                    {attempt?.score !== null && attempt?.score !== undefined
-                                      ? `${attempt.score.toFixed(2)}`
-                                      : 'Aguardando correção'} / {atividade.exam?.activity?.maxScore || atividade.exam?.questions?.reduce((sum, q) => sum + q.points, 0) || 0}
-                                  </p>
-                                </div>
-                              </div>
-                              {atividade.exam?.activity?.maxScore && (
-                                <div className="p-3 bg-muted rounded-lg">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-sm font-medium">Peso:</p>
-                                    <p className="text-sm font-semibold">{atividade.exam?.activity?.maxScore} pontos</p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          {!isFinalized && (
-                            <div className="border-t pt-4">
-                              <Button
-                                onClick={() => setActiveTab('provas-online')}
-                                className="w-full"
-                                variant="default"
-                              >
-                                <FileCheck className="h-4 w-4 mr-2" />
-                                Fazer Prova
-                              </Button>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    )
                   })
                 })()}
               </div>
@@ -1364,6 +1295,249 @@ export default function DisciplinaDetalhePage() {
                                 {actionLabel}
                               </Button>
                             )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })
+                })()}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="notas">
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <GraduationCap className="h-5 w-5 mr-2" />
+                  Notas da Disciplina
+                </h3>
+                
+                {(() => {
+                  // Verificar se está carregando
+                  if (enrollmentQuery.isLoading || gradesQuery.isLoading || activitiesQuery.isLoading) {
+                    return (
+                      <Card>
+                        <CardContent className="p-8 text-center">
+                          <p className="text-muted-foreground">Carregando notas...</p>
+                        </CardContent>
+                      </Card>
+                    )
+                  }
+
+                  // Verificar se não há enrollment
+                  if (!enrollmentQuery.data) {
+                    return (
+                      <Card>
+                        <CardContent className="p-8 text-center">
+                          <p className="text-muted-foreground">Você não está matriculado nesta turma.</p>
+                        </CardContent>
+                      </Card>
+                    )
+                  }
+
+                  const enrollmentId = enrollmentQuery.data.id
+                  const activities = activitiesQuery.data || []
+                  const grades = gradesQuery.data || []
+                  const attempts = attemptsQuery.data || []
+
+                  // Criar mapa de notas por activityId (considerando grades e activity_submissions)
+                  const gradeMap = new Map<string, { score: number; gradedAt: string | null }>()
+                  grades.forEach((grade: GradeDTO) => {
+                    if (grade.activity?.id) {
+                      gradeMap.set(grade.activity.id, {
+                        score: grade.score,
+                        gradedAt: grade.gradedAt
+                      })
+                    }
+                  })
+
+                  // Também considerar notas de provas online (virtual_exam)
+                  attempts.forEach((attempt) => {
+                    const activityId = attempt.exam?.activity?.id
+                    if (activityId && attempt.score !== null && attempt.score !== undefined) {
+                      gradeMap.set(activityId, {
+                        score: attempt.score,
+                        gradedAt: attempt.createdAt || null
+                      })
+                    }
+                  })
+
+                  // Considerar também activity_submissions.grade
+                  Object.values(submissionStatusByActivity).forEach((status) => {
+                    if (status.grade !== null && status.grade !== undefined) {
+                      gradeMap.set(status.activityId, {
+                        score: status.grade,
+                        gradedAt: status.submittedAt || null
+                      })
+                    }
+                  })
+
+                  // Combinar atividades com notas e incluir campo unit
+                  interface ActivityWithGrade extends ClassActivity {
+                    unit?: string | null
+                    type?: string
+                    maxScore?: number | null
+                    grade?: { score: number; gradedAt: string | null } | null
+                  }
+
+                  const activitiesWithGrades: ActivityWithGrade[] = activities.map((activity: any) => {
+                    const grade = gradeMap.get(activity.id)
+                    // Suporta tanto camelCase quanto snake_case
+                    const maxScore = activity.maxScore ?? activity.max_score ?? null
+                    return {
+                      ...activity,
+                      unit: activity.unit || null,
+                      type: activity.type || 'homework',
+                      maxScore: maxScore !== null ? Number(maxScore) : null,
+                      grade: grade || null
+                    }
+                  })
+
+                  // Adicionar provas online que podem não estar em activities
+                  const virtualExams = (examsQuery.data || []).filter(
+                    (exam) => exam.activity?.class?.id === classId && exam.activity?.type === 'virtual_exam'
+                  )
+                  
+                  virtualExams.forEach((exam) => {
+                    const activityId = exam.activity?.id
+                    if (activityId && !activitiesWithGrades.find(a => a.id === activityId)) {
+                      const attempt = attempts.find((a: ExamAttemptDTO) => 
+                        a.examId === exam.id || a.exam?.id === exam.id
+                      )
+                      activitiesWithGrades.push({
+                        id: activityId,
+                        title: exam.activity.title || 'Prova',
+                        description: exam.activity.description || exam.instructions || '',
+                        dueDate: exam.activity.dueDate || '',
+                        unit: exam.activity.unit || null,
+                        type: 'virtual_exam',
+                        maxScore: exam.activity.maxScore || null,
+                        grade: attempt && attempt.score !== null && attempt.score !== undefined
+                          ? { score: attempt.score, gradedAt: attempt.createdAt || null }
+                          : null
+                      })
+                    }
+                  })
+
+                  // Agrupar por unidade
+                  const activitiesByUnit = new Map<string, ActivityWithGrade[]>()
+                  activitiesWithGrades.forEach((activity) => {
+                    const unit = activity.unit || 'Sem Unidade'
+                    if (!activitiesByUnit.has(unit)) {
+                      activitiesByUnit.set(unit, [])
+                    }
+                    activitiesByUnit.get(unit)!.push(activity)
+                  })
+
+                  // Se não houver atividades, mostrar mensagem
+                  if (activitiesByUnit.size === 0) {
+                    return (
+                      <Card>
+                        <CardContent className="p-8 text-center">
+                          <p className="text-muted-foreground">Nenhuma atividade disponível para exibir notas.</p>
+                        </CardContent>
+                      </Card>
+                    )
+                  }
+
+                  // Ordenar unidades: 1ª Unidade, 2ª Unidade, Prova Final, depois outras
+                  const unitOrder = ['1ª Unidade', '2ª Unidade', 'Prova Final']
+                  const sortedUnits = Array.from(activitiesByUnit.keys()).sort((a, b) => {
+                    const aIndex = unitOrder.indexOf(a)
+                    const bIndex = unitOrder.indexOf(b)
+                    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
+                    if (aIndex !== -1) return -1
+                    if (bIndex !== -1) return 1
+                    return a.localeCompare(b)
+                  })
+
+                  return sortedUnits.map((unit) => {
+                    const unitActivities = activitiesByUnit.get(unit) || []
+                    
+                    // Calcular totais
+                    const totalScore = unitActivities.reduce((sum, a) => {
+                      return sum + (a.grade?.score || 0)
+                    }, 0)
+                    
+                    const totalWeight = unitActivities.reduce((sum, a) => {
+                      return sum + (a.maxScore || 0)
+                    }, 0)
+                    
+                    const missingPoints = Math.max(0, 10 - totalWeight)
+                    const hasMissingPoints = missingPoints > 0
+
+                    // Formatar nome do tipo de atividade
+                    const formatActivityType = (type: string) => {
+                      const typeMap: Record<string, string> = {
+                        'homework': 'Tarefa',
+                        'exam': 'Prova',
+                        'virtual_exam': 'Prova Online',
+                        'project': 'Projeto'
+                      }
+                      return typeMap[type] || type
+                    }
+
+                    return (
+                      <Card key={unit}>
+                        <CardHeader>
+                          <CardTitle className="text-xl">{unit}</CardTitle>
+                          {hasMissingPoints && (
+                            <Alert variant="destructive" className="mt-4">
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertTitle>Atenção</AlertTitle>
+                              <AlertDescription>
+                                Faltam {missingPoints.toFixed(2)} pontos para completar os 10 pontos desta unidade. 
+                                Uma atividade, prova ou prova online ainda precisa ser criada.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="border-b">
+                                  <th className="text-left p-3 font-semibold">Atividade</th>
+                                  <th className="text-left p-3 font-semibold">Tipo</th>
+                                  <th className="text-center p-3 font-semibold">Nota</th>
+                                  <th className="text-center p-3 font-semibold">Peso</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {unitActivities.map((activity) => (
+                                  <tr key={activity.id} className="border-b hover:bg-muted/50">
+                                    <td className="p-3">{activity.title}</td>
+                                    <td className="p-3">
+                                      <Badge variant="outline">
+                                        {formatActivityType(activity.type || 'homework')}
+                                      </Badge>
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      {activity.grade ? (
+                                        <span className="font-medium">{activity.grade.score.toFixed(2)}</span>
+                                      ) : (
+                                        <span className="text-muted-foreground">—</span>
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-center">
+                                      {activity.maxScore ? (
+                                        <span>{activity.maxScore.toFixed(2)}</span>
+                                      ) : (
+                                        <span className="text-muted-foreground">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                                <tr className="border-t-2 font-semibold bg-muted/30">
+                                  <td className="p-3" colSpan={2}>Total</td>
+                                  <td className="p-3 text-center">
+                                    {totalScore > 0 ? totalScore.toFixed(2) : '—'}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    {totalWeight > 0 ? totalWeight.toFixed(2) : '—'}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
                           </div>
                         </CardContent>
                       </Card>

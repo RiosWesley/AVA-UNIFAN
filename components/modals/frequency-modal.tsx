@@ -3,38 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { LiquidGlassButton } from "@/components/liquid-glass"
 import { Switch } from "@/components/ui/switch"
-
-interface Aluno {
-  id: string
-  nome: string
-  matricula: string
-}
-
-interface Aula {
-  id: string
-  data: Date
-  horario: string
-  sala: string
-  status: 'agendada' | 'lancada' | 'retificada'
-  alunosPresentes?: string[]
-  dataLancamento?: Date
-  aulaIndex?: number // Para ordenar temporalmente as aulas do mesmo dia
-}
-
-interface Turma {
-  id: number
-  nome: string
-  disciplina: string
-  alunos: number
-  mediaGeral: number
-  frequenciaMedia: number
-  proximaAula: string
-  sala: string
-  atividades: number
-  avaliacoes: number
-  listaAlunos: Aluno[]
-  aulas: Aula[]
-}
+import { Turma, Aula } from "@/src/services/ProfessorTurmasService"
 
 interface FrequencyModalProps {
   isOpen: boolean

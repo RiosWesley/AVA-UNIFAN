@@ -62,11 +62,8 @@ export default function AlunoDashboard() {
 
   useEffect(() => {
     const init = async () => {
-      const token = typeof window !== "undefined" ? localStorage.getItem("ava:token") : null
-      if (!token) {
-        router.push("/")
-        return
-      }
+      // A verificação de autenticação é feita pelo RouteGuard no layout
+      // Aqui apenas obtemos o userId
       const storedUserId = localStorage.getItem("ava:userId")
       if (storedUserId) {
         setStudentId(storedUserId)
@@ -78,12 +75,13 @@ export default function AlunoDashboard() {
           localStorage.setItem("ava:userId", current.id)
           setStudentId(current.id)
         }
-      } catch {
-        router.push("/")
+      } catch (error) {
+        // Se falhar, o RouteGuard já vai redirecionar
+        console.error("Erro ao obter dados do usuário:", error)
       }
     }
     init()
-  }, [router])
+  }, [])
 
   // Buscar semestres disponíveis e gradebook
   useEffect(() => {

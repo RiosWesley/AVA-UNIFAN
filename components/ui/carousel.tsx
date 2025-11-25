@@ -40,6 +40,15 @@ export function Carousel({
   const total = images.length
   const validImages = useMemo(() => images.filter((img) => !!img?.src), [images])
 
+  // Hooks devem ser chamados antes de qualquer return condicional
+  const lightboxPrev = useCallback(() => {
+    setLightboxIndex((prev) => (prev - 1 + validImages.length) % validImages.length)
+  }, [validImages.length])
+
+  const lightboxNext = useCallback(() => {
+    setLightboxIndex((prev) => (prev + 1) % validImages.length)
+  }, [validImages.length])
+
   useEffect(() => {
     if (total <= 1) return
     if (isPaused) return
@@ -53,27 +62,6 @@ export function Carousel({
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current)
     }
   }, [current, intervalMs, isPaused, total])
-
-  if (validImages.length === 0) return null
-
-  const goTo = (index: number) => setCurrent((index + total) % total)
-  const prev = () => goTo(current - 1)
-  const next = () => goTo(current + 1)
-
-  const openLightbox = (index: number) => {
-    if (enableLightbox) {
-      setLightboxIndex(index)
-      setLightboxOpen(true)
-    }
-  }
-
-  const lightboxPrev = useCallback(() => {
-    setLightboxIndex((prev) => (prev - 1 + validImages.length) % validImages.length)
-  }, [validImages.length])
-
-  const lightboxNext = useCallback(() => {
-    setLightboxIndex((prev) => (prev + 1) % validImages.length)
-  }, [validImages.length])
 
   // Navegação por teclado no lightbox
   useEffect(() => {
@@ -92,6 +80,19 @@ export function Carousel({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [lightboxOpen, lightboxPrev, lightboxNext])
+
+  if (validImages.length === 0) return null
+
+  const goTo = (index: number) => setCurrent((index + total) % total)
+  const prev = () => goTo(current - 1)
+  const next = () => goTo(current + 1)
+
+  const openLightbox = (index: number) => {
+    if (enableLightbox) {
+      setLightboxIndex(index)
+      setLightboxOpen(true)
+    }
+  }
 
   return (
     <>

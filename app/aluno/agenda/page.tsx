@@ -31,6 +31,7 @@ interface DayInfo {
   day: number
   hasEvents: boolean
   dayName: string
+  lessonPlans?: LessonPlanWithRelations[]
 }
 
 type EventosPorDia = Record<string, Evento[]>
@@ -144,6 +145,11 @@ export default function AgendaPage() {
 
   // Função para mapear LessonPlan para Evento
   const mapLessonPlanToEvento = (lessonPlan: LessonPlanWithRelations): Evento => {
+    // Validação: garantir que os dados necessários existem
+    if (!lessonPlan.class?.discipline?.name) {
+      console.warn('[Agenda] Lesson plan sem disciplina:', lessonPlan.id)
+    }
+    
     const hora = lessonPlan.schedule 
       ? `${lessonPlan.schedule.startTime} - ${lessonPlan.schedule.endTime}`
       : ''
@@ -156,12 +162,12 @@ export default function AgendaPage() {
 
     return {
       hora,
-      titulo: lessonPlan.class.discipline.name,
+      titulo: lessonPlan.class?.discipline?.name || 'Aula',
       tipo: 'Aula',
       sala,
-      professor: lessonPlan.class.teacher?.name || '',
+      professor: lessonPlan.class?.teacher?.name || '',
       participantes: 0,
-      descricao: lessonPlan.content,
+      descricao: lessonPlan.content || '',
       prioridade,
       cor: 'green'
     }
@@ -183,9 +189,14 @@ export default function AgendaPage() {
     if (!semestreSelecionado) return lessonPlansData
     return lessonPlansData.filter(lessonPlan => {
       const periodo = lessonPlan.class.academicPeriod?.period
+      // Se não houver período definido, incluir o lesson plan (para não perder dados)
+      if (!periodo) {
+        return true
+      }
       // Normalizar formato de semestre (2025.1 ou 2025-1)
-      const periodoNormalizado = periodo?.replace('-', '.')
-      const semestreNormalizado = semestreSelecionado.replace('-', '.')
+      // Remove espaços e normaliza ambos os formatos
+      const periodoNormalizado = periodo.trim().replace('-', '.')
+      const semestreNormalizado = semestreSelecionado.trim().replace('-', '.')
       return periodoNormalizado === semestreNormalizado
     })
   }, [lessonPlansData, semestreSelecionado])
@@ -355,6 +366,16 @@ export default function AgendaPage() {
     return eventos.filter(evento => evento.hora === periodo)
   }
 
+  // Função auxiliar para obter lesson plans de uma data específica
+  const getLessonPlansByDate = (dateStr: string) => {
+    return lessonPlansFiltrados.filter(lp => {
+      // Usar comparação direta de string para evitar problemas de timezone
+      // lp.date vem no formato 'YYYY-MM-DD' ou 'YYYY-MM-DDTHH:mm:ss.sssZ'
+      const lpDateStr = lp.date.split('T')[0] // Pega apenas a parte da data (YYYY-MM-DD)
+      return lpDateStr === dateStr
+    })
+  }
+
   // Memoized calendar days to avoid recalculation on every render
   const calendarDays: (DayInfo | null)[] = useMemo(() => {
     const days: (DayInfo | null)[] = []
@@ -373,13 +394,23 @@ export default function AgendaPage() {
       
       // Verificar se há lesson plans nesta data
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-      const hasEvents = lessonPlansFiltrados.some(lp => {
-        const lpDate = new Date(lp.date)
-        const lpDateStr = `${lpDate.getFullYear()}-${String(lpDate.getMonth() + 1).padStart(2, '0')}-${String(lpDate.getDate()).padStart(2, '0')}`
+      const lessonPlansDoDia = lessonPlansFiltrados.filter(lp => {
+        // Validar que lp.date existe
+        if (!lp.date) return false
+        // Usar comparação direta de string para evitar problemas de timezone
+        // lp.date vem no formato 'YYYY-MM-DD' ou 'YYYY-MM-DDTHH:mm:ss.sssZ'
+        const lpDateStr = lp.date.split('T')[0] // Pega apenas a parte da data (YYYY-MM-DD)
         return lpDateStr === dateStr
       })
+      const hasEvents = lessonPlansDoDia.length > 0
       
-      days.push({ day, hasEvents, dayName })
+      // Garantir consistência: se hasEvents é true, sempre ter lesson plans
+      days.push({ 
+        day, 
+        hasEvents, 
+        dayName,
+        lessonPlans: hasEvents ? lessonPlansDoDia : undefined
+      })
     }
 
     return days
@@ -705,36 +736,47 @@ export default function AgendaPage() {
                       {dayInfo ? (
                         <>
                           <div className="font-semibold text-sm mb-2">{dayInfo.day}</div>
-                          {dayInfo.hasEvents && (() => {
-                            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayInfo.day).padStart(2, '0')}`
-                            const eventosDoDia = lessonPlansFiltrados
-                              .filter(lp => {
-                                const lpDate = new Date(lp.date)
-                                const lpDateStr = `${lpDate.getFullYear()}-${String(lpDate.getMonth() + 1).padStart(2, '0')}-${String(lpDate.getDate()).padStart(2, '0')}`
-                                return lpDateStr === dateStr
-                              })
-                              .map(lp => mapLessonPlanToEvento(lp))
-                            
-                            return (
-                              <div className="space-y-1">
-                                {eventosDoDia.slice(0, 2).map((evento: Evento, idx: number) => (
-                                  <div
-                                    key={idx}
-                                    className={`text-xs rounded-lg px-2 py-1 ${getTipoConfig(evento.tipo).bgColor} ${getTipoConfig(evento.tipo).borderColor} border`}
-                                  >
-                                    <div className="font-medium truncate">{evento.titulo}</div>
-                                    {evento.hora && (
-                                      <div className="text-xs opacity-75">{evento.hora.slice(0, 5)}</div>
-                                    )}
-                                  </div>
-                                ))}
-                                {eventosDoDia.length > 2 && (
-                                  <div className="text-xs text-center text-muted-foreground font-medium">
-                                    +{eventosDoDia.length - 2}
-                                  </div>
-                                )}
-                              </div>
-                            )
+                          {dayInfo.hasEvents && dayInfo.lessonPlans && dayInfo.lessonPlans.length > 0 && (() => {
+                            try {
+                              const eventosDoDia = dayInfo.lessonPlans
+                                .map(lp => {
+                                  try {
+                                    return mapLessonPlanToEvento(lp)
+                                  } catch (error) {
+                                    console.error('[Agenda] Erro ao mapear lesson plan:', error, lp)
+                                    return null
+                                  }
+                                })
+                                .filter((evento): evento is Evento => evento !== null)
+                              
+                              if (eventosDoDia.length === 0) {
+                                return null
+                              }
+                              
+                              return (
+                                <div className="space-y-1">
+                                  {eventosDoDia.slice(0, 2).map((evento: Evento, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className={`text-xs rounded-lg px-2 py-1 ${getTipoConfig(evento.tipo).bgColor} ${getTipoConfig(evento.tipo).borderColor} border`}
+                                    >
+                                      <div className="font-medium truncate">{evento.titulo}</div>
+                                      {evento.hora && (
+                                        <div className="text-xs opacity-75">{evento.hora.slice(0, 5)}</div>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {eventosDoDia.length > 2 && (
+                                    <div className="text-xs text-center text-muted-foreground font-medium">
+                                      +{eventosDoDia.length - 2}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            } catch (error) {
+                              console.error('[Agenda] Erro ao renderizar eventos do dia:', error)
+                              return null
+                            }
                           })()}
                         </>
                       ) : null}

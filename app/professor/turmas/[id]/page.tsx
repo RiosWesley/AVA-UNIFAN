@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
 import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle, Video, CalendarClock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff } from "lucide-react"
 import Link from "next/link"
@@ -20,7 +21,7 @@ import { ModalEntregasAtividade, ModalAtividade, ModalDeletarAtividade, ModalMat
 import { useParams, useRouter } from "next/navigation"
 import { getClassById } from "@/src/services/ClassesService"
 import { getEnrollmentsByClass, EnrollmentDTO } from "@/src/services/enrollmentsService"
-import { listActivitiesByClass, createActivity, updateActivity, deleteActivity, listSubmissionsByActivity, ActivityDTO, ActivityUnit, completeActivityForStudent } from "@/src/services/activitiesService"
+import { listActivitiesByClass, createActivity, updateActivity, deleteActivity, listSubmissionsByActivity, ActivityDTO, ActivityType, ActivityUnit, completeActivityForStudent, getActivityById } from "@/src/services/activitiesService"
 import { listMaterialsByClass, createMaterial, updateMaterial, deleteMaterial, MaterialDTO } from "@/src/services/materialsService"
 import { listForumsByClass, createForum, updateForum, deleteForum, ForumDTO } from "@/src/services/forumsService"
 import { listPostsByForum, createForumPost, ForumPostDTO } from "@/src/services/forumPostsService"
@@ -130,7 +131,7 @@ export default function TurmaDetalhePage() {
   type AlunoItem = { id: string; nome: string; matricula: string; media: number; frequencia: number; situacao: string }
   const [alunos, setAlunos] = useState<AlunoItem[]>([])
 
-  type AtividadeItem = { id: string; titulo: string; tipo: string; prazo?: string | null; entregues: number; total: number; status: "Ativa" | "Concluída"; peso?: number | null; descricao?: string | null }
+  type AtividadeItem = { id: string; titulo: string; tipo: string; prazo?: string | null; entregues: number; total: number; status: "Ativa" | "Concluída"; peso?: number | null; descricao?: string | null; unit?: string }
   const [atividades, setAtividades] = useState<AtividadeItem[]>([])
 
   // Entregas dos alunos (carregadas da API)
@@ -141,9 +142,14 @@ export default function TurmaDetalhePage() {
   const [forums, setForums] = useState<any[]>([])
 
   // Estados de Lançar Notas
-  const [criarNovaAtividade, setCriarNovaAtividade] = useState(true)
+  const [modoOperacao, setModoOperacao] = useState<'criar' | 'associar' | null>(null)
   const [atividadeSelecionadaId, setAtividadeSelecionadaId] = useState<string | undefined>(undefined)
+  const [atividadeSelecionadaCompleta, setAtividadeSelecionadaCompleta] = useState<ActivityDTO | null>(null)
   const [avaliacaoTitulo, setAvaliacaoTitulo] = useState("")
+  const [avaliacaoTipo, setAvaliacaoTipo] = useState<ActivityType>('exam')
+  const [avaliacaoUnidade, setAvaliacaoUnidade] = useState<ActivityUnit | ''>('')
+  const [avaliacaoStartDate, setAvaliacaoStartDate] = useState<string>("")
+  const [avaliacaoDueDate, setAvaliacaoDueDate] = useState<string>("")
   const [avaliacaoPeso, setAvaliacaoPeso] = useState<string>("")
   const [avaliacaoDescricao, setAvaliacaoDescricao] = useState("")
 
@@ -242,14 +248,15 @@ export default function TurmaDetalhePage() {
           const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
           return {
             id: a.id,
-            titulo: a.title,
-            tipo: a.type === 'exam' ? 'Avaliação' : a.type === 'project' ? 'Projeto' : 'Exercício',
-            prazo,
+              titulo: a.title,
+              tipo: a.type === 'exam' ? 'Prova' : a.type === 'project' ? 'Projeto' : 'Exercício',
+              prazo,
             entregues: submissionsCountsFiltrados[idx] ?? 0,
             total: totalAlunos,
             status,
             peso: a.maxScore ?? null,
-            descricao: a.description ?? null
+            descricao: a.description ?? null,
+            unit: a.unit
           }
         })
         setAtividades(atividadesMapped)
@@ -520,6 +527,32 @@ export default function TurmaDetalhePage() {
     carregar()
   }
 
+  // Função para validar maxScore por unidade
+  const validarMaxScoreUnidade = async (unidade: ActivityUnit, maxScore: number | undefined): Promise<{ valido: boolean; mensagem?: string }> => {
+    if (!maxScore || maxScore <= 0) {
+      return { valido: true } // Se não tem maxScore, não precisa validar
+    }
+
+    try {
+      const atividades = await listActivitiesByClass(classId)
+      const atividadesDaUnidade = atividades.filter(a => a.unit === unidade)
+      const somaAtual = atividadesDaUnidade.reduce((sum, a) => sum + (a.maxScore || 0), 0)
+      const totalFinal = somaAtual + maxScore
+
+      if (totalFinal > 10) {
+        return {
+          valido: false,
+          mensagem: `A soma das notas para a ${unidade} não pode exceder 10 pontos. Total atual: ${somaAtual.toFixed(2)}, Nova atividade: ${maxScore.toFixed(2)}, Total final seria: ${totalFinal.toFixed(2)}`
+        }
+      }
+
+      return { valido: true }
+    } catch (error) {
+      console.error('Erro ao validar maxScore:', error)
+      return { valido: true } // Em caso de erro, deixa passar (backend vai validar)
+    }
+  }
+
   const handleSalvarNotas = async (notas: Record<number, number>) => {
     try {
       if (!atividadeSelecionada?.id) {
@@ -584,8 +617,29 @@ export default function TurmaDetalhePage() {
   }
 
   const handleEditarAtividade = (atividade: any) => {
+    // Mapear tipo da API para tipo do modal
+    const tipoMap: Record<string, string> = {
+      'exam': 'Avaliação',
+      'homework': 'Exercício',
+      'project': 'Projeto',
+      'virtual_exam': 'Avaliação'
+    }
+    const atividadeParaEditar = {
+      ...atividade,
+      tipo: tipoMap[atividade.tipo] || atividade.tipo || 'Exercício',
+      // Garantir que unidade seja preservada (pode vir como unit ou unidade)
+      unidade: atividade.unit || atividade.unidade || '1ª Unidade',
+      unit: atividade.unit || atividade.unidade || '1ª Unidade', // Preservar também como unit
+      prazo: atividade.prazo || atividade.dueDate,
+      peso: atividade.peso || atividade.maxScore,
+      maxScore: atividade.maxScore || atividade.peso, // Preservar também como maxScore
+      descricao: atividade.descricao || atividade.description,
+      description: atividade.description || atividade.descricao, // Preservar também como description
+      title: atividade.title || atividade.titulo, // Preservar também como title
+      titulo: atividade.titulo || atividade.title // Preservar também como titulo
+    }
     setModoModalAtividade('editar')
-    setAtividadeEditando(atividade)
+    setAtividadeEditando(atividadeParaEditar)
     setModalAtividadeOpen(true)
   }
 
@@ -593,22 +647,50 @@ export default function TurmaDetalhePage() {
     // Persistir criação/edição de atividade
     const persist = async () => {
       try {
+        // Mapear tipo do modal para tipo da API
+        const tipoMap: Record<string, ActivityType> = {
+          'Exercício': 'homework',
+          'Avaliação': 'exam',
+          'Projeto': 'project',
+          'Trabalho em Grupo': 'project',
+          'Pesquisa': 'homework',
+          'Apresentação': 'project',
+          'Outro': 'homework'
+        }
+        const activityType = tipoMap[atividade?.tipo] || atividade?.type || 'homework'
+
+        // Converter data do formato YYYY-MM-DD para ISO string se necessário
+        const formatDateForAPI = (dateString: string | null | undefined): string | undefined => {
+          if (!dateString) return undefined
+          // Se já estiver no formato ISO, retornar como está
+          if (dateString.includes('T') || dateString.includes('Z')) return dateString
+          // Se estiver no formato YYYY-MM-DD, converter para ISO
+          try {
+            const date = new Date(dateString + 'T00:00:00')
+            if (isNaN(date.getTime())) return undefined
+            return date.toISOString().split('T')[0] // Retorna apenas a data (YYYY-MM-DD) para o backend
+          } catch {
+            return undefined
+          }
+        }
+
         if (modoModalAtividade === 'criar') {
           await createActivity({
             classId,
             title: atividade?.titulo || atividade?.title || 'Atividade',
-            unit: (atividade?.unit as ActivityUnit) || '1ª Unidade',
-            type: atividade?.type || 'homework',
+            unit: (atividade?.unidade || atividade?.unit || '1ª Unidade') as ActivityUnit,
+            type: activityType,
             description: atividade?.descricao || atividade?.description,
-            dueDate: atividade?.prazo,
+            dueDate: formatDateForAPI(atividade?.prazo),
             maxScore: atividade?.peso ? Number(atividade.peso) : undefined,
           })
         } else if (atividadeEditando?.id) {
           await updateActivity(atividadeEditando.id, {
             title: atividade?.titulo || atividade?.title,
             description: atividade?.descricao || atividade?.description,
-            dueDate: atividade?.prazo,
+            dueDate: formatDateForAPI(atividade?.prazo),
             maxScore: atividade?.peso ? Number(atividade.peso) : undefined,
+            unit: (atividade?.unidade || atividade?.unit) as ActivityUnit,
           })
         }
         const acts = await listActivitiesByClass(classId)
@@ -616,14 +698,24 @@ export default function TurmaDetalhePage() {
         const atividadesMapped: AtividadeItem[] = acts.map((a: ActivityDTO) => {
           const prazo = a.dueDate || null
           const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
-          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null }
+          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null, unit: a.unit }
         })
         setAtividades(atividadesMapped)
         toast({ title: "Atividade salva", description: "A atividade foi salva com sucesso!" })
-      } catch (e: any) {
-        toast({ title: "Erro ao salvar atividade", description: "Tente novamente." })
-      } finally {
         setModalAtividadeOpen(false)
+      } catch (e: any) {
+        const errorMessage = e?.message || "Tente novamente."
+        // Verificar se é erro de limite de pontuação por unidade
+        if (errorMessage.includes('não pode exceder') || errorMessage.includes('soma das notas')) {
+          toast({ 
+            title: "Limite de Pontuação Excedido", 
+            description: errorMessage + "\n\nSugestão: Ajuste a pontuação máxima da atividade ou escolha outra unidade.",
+            variant: "error"
+          })
+        } else {
+          toast({ title: "Erro ao salvar atividade", description: errorMessage, variant: "error" })
+        }
+        // Não fechar o modal em caso de erro para permitir correção
       }
     }
     persist()
@@ -643,7 +735,7 @@ export default function TurmaDetalhePage() {
         const atividadesMapped: AtividadeItem[] = acts.map((a: ActivityDTO) => {
           const prazo = a.dueDate || null
           const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
-          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null }
+          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null, unit: a.unit }
         })
         setAtividades(atividadesMapped)
         toast({ title: "Item excluído", description: "Exclusão realizada com sucesso." })
@@ -941,7 +1033,7 @@ export default function TurmaDetalhePage() {
     setModalProvaOpen(true)
   }
 
-  const handleSalvarProva = async (payload: CreateExamPayload | UpdateExamPayload, activityData?: { title: string; description?: string; startDate?: string; dueDate?: string; maxScore?: number }) => {
+  const handleSalvarProva = async (payload: CreateExamPayload | UpdateExamPayload, activityData?: { title: string; description?: string; startDate?: string; dueDate?: string; maxScore?: number; unit?: ActivityUnit }) => {
     try {
       if (modoModalProva === 'criar') {
         // Criar Activity primeiro
@@ -949,7 +1041,7 @@ export default function TurmaDetalhePage() {
           const activity = await createActivity({
             classId,
             title: activityData.title,
-            unit: '1ª Unidade' as ActivityUnit,
+            unit: activityData.unit || '1ª Unidade',
             type: 'virtual_exam' as const,
             description: activityData.description,
             startDate: activityData.startDate,
@@ -976,7 +1068,8 @@ export default function TurmaDetalhePage() {
               description: activityData.description,
               startDate: activityData.startDate,
               dueDate: activityData.dueDate,
-              maxScore: activityData.maxScore
+              maxScore: activityData.maxScore,
+              unit: activityData.unit
             })
           } else {
             console.warn('ActivityId não encontrado para atualização')
@@ -994,7 +1087,17 @@ export default function TurmaDetalhePage() {
       toast({ title: "Prova salva", description: "A prova foi salva com sucesso!" })
       setModalProvaOpen(false)
     } catch (e: any) {
-      toast({ title: "Erro ao salvar prova", description: e?.message || "Tente novamente." })
+      const errorMessage = e?.message || "Tente novamente."
+      // Verificar se é erro de limite de pontuação por unidade
+      if (errorMessage.includes('não pode exceder') || errorMessage.includes('soma das notas')) {
+        toast({ 
+          title: "Limite de Pontuação Excedido", 
+          description: errorMessage + "\n\nSugestão: Ajuste a pontuação máxima da prova ou escolha outra unidade.",
+          variant: "error"
+        })
+      } else {
+        toast({ title: "Erro ao salvar prova", description: errorMessage, variant: "error" })
+      }
     }
   }
 
@@ -1604,6 +1707,7 @@ export default function TurmaDetalhePage() {
                       <LiquidGlassButton
                         onClick={() => fileInputRef.current?.click()}
                         variant="outline"
+                        disabled={!modoOperacao}
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         Importar Notas
@@ -1618,7 +1722,7 @@ export default function TurmaDetalhePage() {
                           Limpar Importado
                         </LiquidGlassButton>
                       )}
-                      <LiquidGlassButton onClick={generateExcelModel} variant="outline">
+                      <LiquidGlassButton onClick={generateExcelModel} variant="outline" disabled={!modoOperacao}>
                         <Download className="h-4 w-4 mr-2" />
                         Exportar Modelo Excel
                       </LiquidGlassButton>
@@ -1626,218 +1730,501 @@ export default function TurmaDetalhePage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="avaliacao" className="mb-2">Tipo de Avaliação</Label>
-                        <Input id="avaliacao" placeholder="Ex: Prova Bimestral" value={avaliacaoTitulo} onChange={e => setAvaliacaoTitulo(e.target.value)} />
-                      </div>
-                      <div>
-                        <Label htmlFor="peso" className="mb-2">Peso</Label>
-                        <Input id="peso" type="number" placeholder="Ex: 4.0" value={avaliacaoPeso} onChange={e => setAvaliacaoPeso(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="descricao" className="mb-2">Descrição</Label>
-                      <Textarea id="descricao" placeholder="Descrição da avaliação..." value={avaliacaoDescricao} onChange={e => setAvaliacaoDescricao(e.target.value)} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2">
-                        <input id="criarNova" type="checkbox" checked={criarNovaAtividade} onChange={e => setCriarNovaAtividade(e.target.checked)} />
-                        <Label htmlFor="criarNova">Criar nova atividade (exam)</Label>
-                      </div>
-                      {!criarNovaAtividade && (
-                        <div>
-                          <Label htmlFor="atividadeExistente" className="mb-2">Atividade existente</Label>
-                          <select id="atividadeExistente" className="w-full border rounded px-2 py-2 bg-background" value={atividadeSelecionadaId} onChange={e => setAtividadeSelecionadaId(e.target.value)}>
-                            <option value="">Selecione...</option>
-                            {atividades.map(a => (
-                              <option key={a.id} value={a.id}>{a.titulo}</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">Notas dos Alunos</h4>
-                        {Object.keys(notasImportadas).length > 0 && (
-                          <Badge
-                            variant="default"
-                            className="bg-accent/20 text-accent-foreground hover:bg-accent/30 border border-accent/30"
-                          >
-                            ✅ {Object.keys(notasImportadas).length} notas importadas
-                          </Badge>
-                        )}
-                      </div>
-                      {alunos.map((aluno) => (
-                        <div
-                          key={aluno.id}
-                          className={`flex items-center justify-between p-3 border rounded-lg transition-all duration-200 ${
-                            notasImportadas[aluno.id]
-                              ? isLiquidGlass
-                                ? 'imported-note-container'
-                                : 'border-accent/50 bg-accent/5 hover:border-accent/70'
-                              : 'border-border hover:border-border/80'
-                          }`}
+                  <div className="space-y-6">
+                    {/* Seleção Inicial de Modo */}
+                    {modoOperacao === null && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <LiquidGlassButton
+                          onClick={() => setModoOperacao('criar')}
+                          className="h-24 flex flex-col items-center justify-center"
+                          variant="outline"
                         >
-                          <div className="flex-1">
-                            <span className="font-medium">{aluno.nome}</span>
-                            <p className="text-sm text-muted-foreground">Matrícula: {aluno.matricula}</p>
-                          </div>
-                          <div className="flex items-center gap-2">
+                          <Plus className="h-6 w-6 mb-2" />
+                          <span className="font-semibold">Criar nova atividade</span>
+                        </LiquidGlassButton>
+                        <LiquidGlassButton
+                          onClick={() => setModoOperacao('associar')}
+                          className="h-24 flex flex-col items-center justify-center"
+                          variant="outline"
+                        >
+                          <FileText className="h-6 w-6 mb-2" />
+                          <span className="font-semibold">Avaliar uma atividade ou prova existente</span>
+                        </LiquidGlassButton>
+                      </div>
+                    )}
+
+                    {/* Modo: Criar Nova Atividade */}
+                    {modoOperacao === 'criar' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold">Criar nova atividade</h3>
+                          <LiquidGlassButton
+                            onClick={() => {
+                              setModoOperacao(null)
+                              setAvaliacaoTitulo('')
+                              setAvaliacaoTipo('exam')
+                              setAvaliacaoUnidade('')
+                              setAvaliacaoStartDate('')
+                              setAvaliacaoDueDate('')
+                              setAvaliacaoPeso('')
+                              setAvaliacaoDescricao('')
+                              setNotasImportadas({})
+                              setNotasDigitadas({})
+                            }}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancelar
+                          </LiquidGlassButton>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="avaliacao-titulo" className="mb-2">Título *</Label>
                             <Input
+                              id="avaliacao-titulo"
+                              placeholder="Ex: Prova Bimestral"
+                              value={avaliacaoTitulo}
+                              onChange={e => setAvaliacaoTitulo(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="avaliacao-unidade" className="mb-2">Unidade *</Label>
+                            <Select value={avaliacaoUnidade} onValueChange={(value: ActivityUnit) => setAvaliacaoUnidade(value)}>
+                              <SelectTrigger id="avaliacao-unidade" className="w-full">
+                                <SelectValue placeholder="Selecione a unidade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1ª Unidade">1ª Unidade</SelectItem>
+                                <SelectItem value="2ª Unidade">2ª Unidade</SelectItem>
+                                <SelectItem value="Prova Final">Prova Final</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="avaliacao-tipo" className="mb-2">Tipo *</Label>
+                            <Select value={avaliacaoTipo} onValueChange={(value: ActivityType) => setAvaliacaoTipo(value)}>
+                              <SelectTrigger id="avaliacao-tipo" className="w-full">
+                                <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="exam">Prova</SelectItem>
+                                <SelectItem value="homework">Exercício</SelectItem>
+                                <SelectItem value="project">Projeto</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="avaliacao-peso" className="mb-2">Peso (MaxScore)</Label>
+                            <Input
+                              id="avaliacao-peso"
                               type="number"
-                              placeholder="0.0"
-                              className={`w-20 transition-all duration-200 ${
-                                notasImportadas[aluno.id]
-                                  ? isLiquidGlass
-                                    ? 'imported-note-input'
-                                    : 'border-accent/60 bg-accent/10 focus:border-accent focus:ring-accent/20'
-                                  : 'border-border focus:border-ring'
-                              }`}
+                              placeholder="Ex: 4.0"
+                              value={avaliacaoPeso}
+                              onChange={e => setAvaliacaoPeso(e.target.value)}
                               min="0"
                               max="10"
                               step="0.1"
-                              defaultValue={notasImportadas[aluno.id] || ''}
-                              onChange={(e) => {
-                                const value = e.target.value
-                                setNotasDigitadas(prev => ({ ...prev, [aluno.id]: value }))
-                              }}
                             />
-                            {notasImportadas[aluno.id] && (
-                              <CheckCircle className="h-4 w-4 text-accent animate-in fade-in duration-200" />
-                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
 
-                    <LiquidGlassButton className="w-full" onClick={async () => {
-                      try {
-                        let activityIdToUse: string | null = null
-                        if (criarNovaAtividade) {
-                          if (!avaliacaoTitulo) {
-                            toast({ title: "Título obrigatório", description: "Informe o título da avaliação." })
-                            return
-                          }
-                          const created = await createActivity({
-                            classId,
-                            title: avaliacaoTitulo,
-                            unit: '1ª Unidade',
-                            type: 'exam',
-                            description: avaliacaoDescricao || undefined,
-                            maxScore: avaliacaoPeso ? Number(avaliacaoPeso) : undefined,
-                          })
-                          activityIdToUse = created.id
-                        } else {
-                          if (!atividadeSelecionadaId) {
-                            toast({ title: "Selecione uma atividade", description: "Escolha uma atividade existente ou crie uma nova." })
-                            return
-                          }
-                          activityIdToUse = atividadeSelecionadaId
-                        }
-                        const notasFinais: Record<string, string> = { ...notasImportadas, ...notasDigitadas }
-                        const entries = Object.entries(notasFinais).filter(([_, v]) => v !== '' && v !== undefined && v !== null)
-                        if (entries.length === 0) {
-                          toastImportWarning('Nenhuma nota informada', 'Preencha ou importe notas antes de salvar.')
-                          return
-                        }
-                        const maxAllowed = avaliacaoPeso ? Number(avaliacaoPeso) : 10
-                        for (const [enrollmentId, scoreStr] of entries) {
-                          const score = parseFloat(scoreStr)
-                          if (Number.isNaN(score) || score < 0 || score > maxAllowed) {
-                            toastImportError('Notas inválidas', `Verifique a nota do aluno (matrícula ${alunos.find(a => a.id === enrollmentId)?.matricula ?? enrollmentId}).`)
-                            return
-                          }
-                        }
-                        // Salvar em lote com upsert (create ou update)
-                        const { findGrades, updateGrade } = await import('@/src/services/gradesService')
-                        const results = await Promise.allSettled(
-                          entries.map(async ([enrollmentId, scoreStr]) => {
-                            try {
-                              await createGradeForActivity(activityIdToUse!, { enrollmentId: String(enrollmentId), score: Number(scoreStr) })
-                            } catch {
-                              const existentes = await findGrades({ enrollmentId: String(enrollmentId), activityId: activityIdToUse! })
-                              const existente = Array.isArray(existentes) ? existentes[0] : undefined
-                              if (existente?.id) {
-                                await updateGrade(existente.id, { score: Number(scoreStr) })
-                              } else {
-                                throw new Error('Falha ao criar/atualizar nota')
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="avaliacao-start-date" className="mb-2">Data de Início</Label>
+                            <Input
+                              id="avaliacao-start-date"
+                              type="datetime-local"
+                              value={avaliacaoStartDate}
+                              onChange={e => setAvaliacaoStartDate(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="avaliacao-due-date" className="mb-2">Prazo de Entrega</Label>
+                            <Input
+                              id="avaliacao-due-date"
+                              type="date"
+                              value={avaliacaoDueDate}
+                              onChange={e => setAvaliacaoDueDate(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="avaliacao-descricao" className="mb-2">Descrição</Label>
+                          <Textarea
+                            id="avaliacao-descricao"
+                            placeholder="Descrição da avaliação..."
+                            value={avaliacaoDescricao}
+                            onChange={e => setAvaliacaoDescricao(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Modo: Associar a Atividade Existente */}
+                    {modoOperacao === 'associar' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold">Associar a Atividade Existente</h3>
+                          <LiquidGlassButton
+                            onClick={() => {
+                              setModoOperacao(null)
+                              setAtividadeSelecionadaId(undefined)
+                              setAtividadeSelecionadaCompleta(null)
+                              setNotasImportadas({})
+                              setNotasDigitadas({})
+                            }}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancelar
+                          </LiquidGlassButton>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="atividade-existente-select" className="mb-2">Selecione a Atividade *</Label>
+                          <Select
+                            value={atividadeSelecionadaId || ''}
+                            onValueChange={async (value: string) => {
+                              setAtividadeSelecionadaId(value)
+                              try {
+                                const atividade = await getActivityById(value)
+                                setAtividadeSelecionadaCompleta(atividade)
+                                setAvaliacaoTitulo(atividade.title)
+                                setAvaliacaoTipo(atividade.type)
+                                setAvaliacaoUnidade(atividade.unit)
+                                setAvaliacaoStartDate(atividade.startDate ? new Date(atividade.startDate).toISOString().slice(0, 16) : '')
+                                setAvaliacaoDueDate(atividade.dueDate ? new Date(atividade.dueDate).toISOString().slice(0, 10) : '')
+                                setAvaliacaoPeso(atividade.maxScore ? String(atividade.maxScore) : '')
+                                setAvaliacaoDescricao(atividade.description || '')
+                              } catch (error) {
+                                toast({ title: "Erro ao carregar atividade", description: "Não foi possível carregar os dados da atividade." })
+                              }
+                            }}
+                          >
+                            <SelectTrigger id="atividade-existente-select" className="w-full">
+                              <SelectValue placeholder="Selecione uma atividade" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {atividades.filter(a => a.tipo !== 'Prova Virtual').map(a => (
+                                <SelectItem key={a.id} value={a.id}>{a.titulo}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {atividadeSelecionadaCompleta && (
+                          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                            <h4 className="font-medium">Dados da Atividade Selecionada</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Título:</span>
+                                <p className="font-medium">{atividadeSelecionadaCompleta.title}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Unidade:</span>
+                                <p className="font-medium">{atividadeSelecionadaCompleta.unit}</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Tipo:</span>
+                                <p className="font-medium">
+                                  {atividadeSelecionadaCompleta.type === 'exam' ? 'Prova' : 
+                                   atividadeSelecionadaCompleta.type === 'homework' ? 'Exercício' : 
+                                   atividadeSelecionadaCompleta.type === 'project' ? 'Projeto' : 
+                                   atividadeSelecionadaCompleta.type}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Peso:</span>
+                                <p className="font-medium">{atividadeSelecionadaCompleta.maxScore || 'Não definido'}</p>
+                              </div>
+                              {atividadeSelecionadaCompleta.startDate && (
+                                <div>
+                                  <span className="text-muted-foreground">Data de Início:</span>
+                                  <p className="font-medium">{new Date(atividadeSelecionadaCompleta.startDate).toLocaleString('pt-BR')}</p>
+                                </div>
+                              )}
+                              {atividadeSelecionadaCompleta.dueDate && (
+                                <div>
+                                  <span className="text-muted-foreground">Prazo:</span>
+                                  <p className="font-medium">{new Date(atividadeSelecionadaCompleta.dueDate).toLocaleDateString('pt-BR')}</p>
+                                </div>
+                              )}
+                              {atividadeSelecionadaCompleta.description && (
+                                <div className="col-span-2">
+                                  <span className="text-muted-foreground">Descrição:</span>
+                                  <p className="font-medium">{atividadeSelecionadaCompleta.description}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Lista de Alunos para Lançamento de Notas */}
+                    {modoOperacao !== null && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">Notas dos Alunos</h4>
+                          {Object.keys(notasImportadas).length > 0 && (
+                            <Badge
+                              variant="default"
+                              className="bg-accent/20 text-accent-foreground hover:bg-accent/30 border border-accent/30"
+                            >
+                              ✅ {Object.keys(notasImportadas).length} notas importadas
+                            </Badge>
+                          )}
+                        </div>
+                        {alunos.map((aluno) => {
+                          const maxAllowed = modoOperacao === 'associar' && atividadeSelecionadaCompleta?.maxScore
+                            ? atividadeSelecionadaCompleta.maxScore
+                            : avaliacaoPeso
+                            ? Number(avaliacaoPeso)
+                            : 10
+                          
+                          return (
+                            <div
+                              key={aluno.id}
+                              className={`flex items-center justify-between p-3 border rounded-lg transition-all duration-200 ${
+                                notasImportadas[aluno.id]
+                                  ? isLiquidGlass
+                                    ? 'imported-note-container'
+                                    : 'border-accent/50 bg-accent/5 hover:border-accent/70'
+                                  : 'border-border hover:border-border/80'
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <span className="font-medium">{aluno.nome}</span>
+                                <p className="text-sm text-muted-foreground">Matrícula: {aluno.matricula}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  placeholder="0.0"
+                                  className={`w-20 transition-all duration-200 ${
+                                    notasImportadas[aluno.id]
+                                      ? isLiquidGlass
+                                        ? 'imported-note-input'
+                                        : 'border-accent/60 bg-accent/10 focus:border-accent focus:ring-accent/20'
+                                      : 'border-border focus:border-ring'
+                                  }`}
+                                  min="0"
+                                  max={maxAllowed}
+                                  step="0.1"
+                                  defaultValue={notasImportadas[aluno.id] || ''}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                    const numValue = parseFloat(value)
+                                    if (value === '' || (!isNaN(numValue) && numValue >= 0 && numValue <= maxAllowed)) {
+                                      setNotasDigitadas(prev => ({ ...prev, [aluno.id]: value }))
+                                    } else if (!isNaN(numValue) && numValue > maxAllowed) {
+                                      toast({
+                                        title: "Nota inválida",
+                                        description: `A nota não pode ser maior que o peso máximo (${maxAllowed.toFixed(1)})`,
+                                        variant: "error"
+                                      })
+                                    }
+                                  }}
+                                />
+                                {notasImportadas[aluno.id] && (
+                                  <CheckCircle className="h-4 w-4 text-accent animate-in fade-in duration-200" />
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Botão de Salvar Notas */}
+                    {modoOperacao !== null && (
+                      <LiquidGlassButton className="w-full" onClick={async () => {
+                        try {
+                          let activityIdToUse: string | null = null
+                          let maxScoreAtividade: number | undefined = undefined
+
+                          if (modoOperacao === 'criar') {
+                            // Validações obrigatórias
+                            if (!avaliacaoTitulo.trim()) {
+                              toast({ title: "Título obrigatório", description: "Informe o título da avaliação.", variant: "error" })
+                              return
+                            }
+                            if (!avaliacaoUnidade) {
+                              toast({ title: "Unidade obrigatória", description: "Selecione a unidade da avaliação.", variant: "error" })
+                              return
+                            }
+
+                            // Validação de maxScore por unidade (frontend)
+                            const maxScoreValue = avaliacaoPeso ? Number(avaliacaoPeso) : undefined
+                            if (maxScoreValue) {
+                              const validacao = await validarMaxScoreUnidade(avaliacaoUnidade, maxScoreValue)
+                              if (!validacao.valido) {
+                                toast({
+                                  title: "Limite de Pontuação Excedido",
+                                  description: validacao.mensagem,
+                                  variant: "error"
+                                })
+                                return
                               }
                             }
-                          }),
-                        )
-                        // Marcar submissão como COMPLETED (sem anexos) para cada aluno com nota
-                        const enrollmentIdToStudentId = new Map(enrollmentsState.map(e => [e.id, e.student.id]))
-                        const uniqueStudentIds = Array.from(new Set(entries.map(([enrollmentId]) => String(enrollmentIdToStudentId.get(String(enrollmentId)))))).filter(Boolean) as string[]
-                        await Promise.allSettled(uniqueStudentIds.map(studentId => completeActivityForStudent(activityIdToUse!, studentId)))
-                        const ok = results.filter(r => r.status === 'fulfilled').length
-                        const fail = results.length - ok
-                        if (ok > 0) {
-                          toast({ title: "Notas salvas", description: `${ok} nota(s) salva(s) com sucesso!${fail > 0 ? ` • ${fail} falhou(aram)` : ""}` })
-                          // Limpar campos do formulário de Lançar Notas
-                          setAvaliacaoTitulo('')
-                          setAvaliacaoPeso('')
-                          setAvaliacaoDescricao('')
-                          setAtividadeSelecionadaId(undefined)
-                          setCriarNovaAtividade(true)
-                          setNotasImportadas({})
-                          setNotasDigitadas({})
-                          // Recarregar lista de atividades para incluir a recém-criada/atualizada
-                          try {
-                            const acts = await listActivitiesByClass(classId)
-                            const totalAlunos = enrollmentsState.length
-                            const submissionsCounts: number[] = await Promise.all(
-                              (acts as ActivityDTO[]).map(async (a) => {
-                                try {
-                                  const subs = await listSubmissionsByActivity(a.id)
-                                  return Array.isArray(subs) ? subs.length : 0
-                                } catch {
-                                  return 0
+
+                            // Criar atividade
+                            try {
+                              const created = await createActivity({
+                                classId,
+                                title: avaliacaoTitulo,
+                                unit: avaliacaoUnidade,
+                                type: avaliacaoTipo,
+                                description: avaliacaoDescricao || undefined,
+                                startDate: avaliacaoStartDate || undefined,
+                                dueDate: avaliacaoDueDate || undefined,
+                                maxScore: maxScoreValue,
+                              })
+                              activityIdToUse = created.id
+                              maxScoreAtividade = created.maxScore || undefined
+                            } catch (error: any) {
+                              const errorMessage = error?.message || "Erro ao criar atividade"
+                              // Verificar se é erro de limite de pontuação (backend)
+                              if (errorMessage.includes('não pode exceder') || errorMessage.includes('soma das notas')) {
+                                toast({
+                                  title: "Limite de Pontuação Excedido",
+                                  description: errorMessage,
+                                  variant: "error"
+                                })
+                              } else {
+                                toast({ title: "Erro ao criar atividade", description: errorMessage, variant: "error" })
+                              }
+                              return
+                            }
+                          } else if (modoOperacao === 'associar') {
+                            if (!atividadeSelecionadaId || !atividadeSelecionadaCompleta) {
+                              toast({ title: "Selecione uma atividade", description: "Escolha uma atividade existente.", variant: "error" })
+                              return
+                            }
+                            activityIdToUse = atividadeSelecionadaId
+                            maxScoreAtividade = atividadeSelecionadaCompleta.maxScore || undefined
+                          }
+
+                          // Validar e processar notas
+                          const notasFinais: Record<string, string> = { ...notasImportadas, ...notasDigitadas }
+                          const entries = Object.entries(notasFinais).filter(([_, v]) => v !== '' && v !== undefined && v !== null)
+                          if (entries.length === 0) {
+                            toastImportWarning('Nenhuma nota informada', 'Preencha ou importe notas antes de salvar.')
+                            return
+                          }
+
+                          // Validação de notas individuais
+                          const maxAllowed = maxScoreAtividade || 10
+                          for (const [enrollmentId, scoreStr] of entries) {
+                            const score = parseFloat(scoreStr)
+                            if (Number.isNaN(score) || score < 0) {
+                              toastImportError('Notas inválidas', `Verifique a nota do aluno (matrícula ${alunos.find(a => a.id === enrollmentId)?.matricula ?? enrollmentId}).`)
+                              return
+                            }
+                            if (score > maxAllowed) {
+                              toastImportError('Nota inválida', `A nota não pode ser maior que o peso máximo (${maxAllowed.toFixed(1)}). Aluno: ${alunos.find(a => a.id === enrollmentId)?.nome ?? enrollmentId}`)
+                              return
+                            }
+                          }
+                          // Salvar em lote com upsert (create ou update)
+                          const { findGrades, updateGrade } = await import('@/src/services/gradesService')
+                          const results = await Promise.allSettled(
+                            entries.map(async ([enrollmentId, scoreStr]) => {
+                              try {
+                                await createGradeForActivity(activityIdToUse!, { enrollmentId: String(enrollmentId), score: Number(scoreStr) })
+                              } catch {
+                                const existentes = await findGrades({ enrollmentId: String(enrollmentId), activityId: activityIdToUse! })
+                                const existente = Array.isArray(existentes) ? existentes[0] : undefined
+                                if (existente?.id) {
+                                  await updateGrade(existente.id, { score: Number(scoreStr) })
+                                } else {
+                                  throw new Error('Falha ao criar/atualizar nota')
+                                }
+                              }
+                            }),
+                          )
+                          // Marcar submissão como COMPLETED (sem anexos) para cada aluno com nota
+                          const enrollmentIdToStudentId = new Map(enrollmentsState.map(e => [e.id, e.student.id]))
+                          const uniqueStudentIds = Array.from(new Set(entries.map(([enrollmentId]) => String(enrollmentIdToStudentId.get(String(enrollmentId)))))).filter(Boolean) as string[]
+                          await Promise.allSettled(uniqueStudentIds.map(studentId => completeActivityForStudent(activityIdToUse!, studentId)))
+                          const ok = results.filter(r => r.status === 'fulfilled').length
+                          const fail = results.length - ok
+                          if (ok > 0) {
+                            toast({ title: "Notas salvas", description: `${ok} nota(s) salva(s) com sucesso!${fail > 0 ? ` • ${fail} falhou(aram)` : ""}` })
+                            // Limpar campos do formulário de Lançar Notas
+                            setModoOperacao(null)
+                            setAvaliacaoTitulo('')
+                            setAvaliacaoTipo('exam')
+                            setAvaliacaoUnidade('')
+                            setAvaliacaoStartDate('')
+                            setAvaliacaoDueDate('')
+                            setAvaliacaoPeso('')
+                            setAvaliacaoDescricao('')
+                            setAtividadeSelecionadaId(undefined)
+                            setAtividadeSelecionadaCompleta(null)
+                            setNotasImportadas({})
+                            setNotasDigitadas({})
+                            // Recarregar lista de atividades para incluir a recém-criada/atualizada
+                            try {
+                              const acts = await listActivitiesByClass(classId)
+                              const totalAlunos = enrollmentsState.length
+                              const submissionsCounts: number[] = await Promise.all(
+                                (acts as ActivityDTO[]).map(async (a) => {
+                                  try {
+                                    const subs = await listSubmissionsByActivity(a.id)
+                                    return Array.isArray(subs) ? subs.length : 0
+                                  } catch {
+                                    return 0
+                                  }
+                                })
+                              )
+                              // Filtrar atividades excluindo virtual_exam (que tem sua própria aba)
+                              const atividadesFiltradas = (acts as ActivityDTO[]).filter(a => a.type !== 'virtual_exam')
+                              const submissionsCountsFiltrados = atividadesFiltradas.map((a) => {
+                                const originalIdx = (acts as ActivityDTO[]).findIndex(act => act.id === a.id)
+                                return submissionsCounts[originalIdx] ?? 0
+                              })
+                              const atividadesMapped: AtividadeItem[] = atividadesFiltradas.map((a, idx) => {
+                                const prazo = a.dueDate || null
+                                const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
+                                return {
+                                  id: a.id,
+              titulo: a.title,
+              tipo: a.type === 'exam' ? 'Prova' : a.type === 'project' ? 'Projeto' : 'Exercício',
+              prazo,
+                                  entregues: submissionsCountsFiltrados[idx] ?? 0,
+                                  total: totalAlunos,
+                                  status,
+                                  peso: a.maxScore ?? null,
+                                  descricao: a.description ?? null,
+                                  unit: a.unit
                                 }
                               })
-                            )
-                            // Filtrar atividades excluindo virtual_exam (que tem sua própria aba)
-                            const atividadesFiltradas = (acts as ActivityDTO[]).filter(a => a.type !== 'virtual_exam')
-                            const submissionsCountsFiltrados = atividadesFiltradas.map((a) => {
-                              const originalIdx = (acts as ActivityDTO[]).findIndex(act => act.id === a.id)
-                              return submissionsCounts[originalIdx] ?? 0
-                            })
-                            const atividadesMapped: AtividadeItem[] = atividadesFiltradas.map((a, idx) => {
-                              const prazo = a.dueDate || null
-                              const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
-                              return {
-                                id: a.id,
-                                titulo: a.title,
-                                tipo: a.type === 'exam' ? 'Avaliação' : a.type === 'project' ? 'Projeto' : 'Exercício',
-                                prazo,
-                                entregues: submissionsCountsFiltrados[idx] ?? 0,
-                                total: totalAlunos,
-                                status,
-                                peso: a.maxScore ?? null,
-                                descricao: a.description ?? null
-                              }
-                            })
-                            setAtividades(atividadesMapped)
-                          } catch {
-                            // silencioso
+                              setAtividades(atividadesMapped)
+                            } catch {
+                              // silencioso
+                            }
                           }
+                          if (fail > 0 && ok === 0) {
+                            const firstError = (results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined)?.reason?.message
+                            toast({ title: "Erro ao lançar notas", description: firstError || "Tente novamente.", variant: "error" })
+                          }
+                        } catch (e: any) {
+                          console.error(e)
+                          toast({ title: "Erro ao lançar notas", description: e?.message || "Tente novamente.", variant: "error" })
                         }
-                        if (fail > 0 && ok === 0) {
-                          const firstError = (results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined)?.reason?.message
-                          toast({ title: "Erro ao lançar notas", description: firstError || "Tente novamente." })
-                        }
-                        setNotasImportadas({})
-                        setNotasDigitadas({})
-                      } catch (e: any) {
-                        console.error(e)
-                        toast({ title: "Erro ao lançar notas", description: "Tente novamente." })
-                      }
-                    }}>Salvar Notas</LiquidGlassButton>
+                      }}>
+                        Salvar Notas
+                      </LiquidGlassButton>
+                    )}
                   </div>
                 </CardContent>
               </LiquidGlassCard>

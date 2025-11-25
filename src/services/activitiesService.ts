@@ -34,14 +34,40 @@ export async function listActivitiesByClass(classId: string): Promise<ActivityDT
   return data;
 }
 
-export async function createActivity(payload: CreateActivityPayload): Promise<ActivityDTO> {
-  const { data } = await api.post('/activities', payload);
+export async function getActivityById(id: string): Promise<ActivityDTO> {
+  const { data } = await api.get(`/activities/${id}`);
   return data;
 }
 
+export async function createActivity(payload: CreateActivityPayload): Promise<ActivityDTO> {
+  try {
+    const { data } = await api.post('/activities', payload);
+    return data;
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.message || error?.message || 'Erro ao criar atividade';
+    console.error('Erro ao criar atividade:', {
+      payload,
+      error: error?.response?.data,
+      status: error?.response?.status
+    });
+    throw new Error(Array.isArray(errorMessage) ? errorMessage.join('; ') : errorMessage);
+  }
+}
+
 export async function updateActivity(id: string, payload: UpdateActivityPayload): Promise<ActivityDTO> {
-  const { data } = await api.patch(`/activities/${id}`, payload);
-  return data;
+  try {
+    const { data } = await api.patch(`/activities/${id}`, payload);
+    return data;
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.message || error?.message || 'Erro ao atualizar atividade';
+    console.error('Erro ao atualizar atividade:', {
+      id,
+      payload,
+      error: error?.response?.data,
+      status: error?.response?.status
+    });
+    throw new Error(Array.isArray(errorMessage) ? errorMessage.join('; ') : errorMessage);
+  }
 }
 
 export async function deleteActivity(id: string): Promise<void> {

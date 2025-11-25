@@ -88,3 +88,21 @@ export async function setDepartmentCoordinator(
   return data;
 }
 
+// Get departments for a user (teacher)
+export async function getUserDepartments(userId: string): Promise<Department[]> {
+  const { data } = await api.get<Department[]>(`/users/${userId}/departments`);
+  return data;
+}
+
+// Get department where user is coordinator
+export async function getCoordinatorDepartment(userId: string): Promise<Department | null> {
+  try {
+    const departments = await getDepartments();
+    const dept = departments.find(d => d.coordinator?.id === userId);
+    return dept || null;
+  } catch (error) {
+    console.error("Erro ao buscar departamento do coordenador:", error);
+    return null;
+  }
+}
+

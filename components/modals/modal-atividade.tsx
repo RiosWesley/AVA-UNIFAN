@@ -89,15 +89,33 @@ export function ModalAtividade({
     return () => observer.disconnect()
   }, [])
 
+  // Função auxiliar para formatar data para input date
+  const formatDateForInput = (dateString: string | null | undefined): string => {
+    if (!dateString) return ''
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return ''
+      // Formato: YYYY-MM-DD
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    } catch {
+      return ''
+    }
+  }
+
   // Preencher campos quando estiver editando
   useEffect(() => {
     if (modo === 'editar' && atividade) {
-      setTitulo(atividade.titulo || '')
+      setTitulo(atividade.titulo || atividade.title || '')
       setTipo(atividade.tipo || '')
-      setUnidade(atividade.unidade || '')
-      setPrazo(atividade.prazo || '')
-      setPeso(atividade.peso?.toString() || '')
-      setDescricao(atividade.descricao || '')
+      setUnidade(atividade.unidade || atividade.unit || '')
+      // Formatar data corretamente (aceita tanto prazo quanto dueDate)
+      const dataPrazo = atividade.prazo || atividade.dueDate
+      setPrazo(formatDateForInput(dataPrazo))
+      setPeso((atividade.peso || atividade.maxScore)?.toString() || '')
+      setDescricao(atividade.descricao || atividade.description || '')
       setArquivosAnexados([]) // Não carregamos arquivos existentes para edição (por enquanto)
     } else {
       // Limpar campos para criação
@@ -274,14 +292,9 @@ export function ModalAtividade({
       })
     }
 
+    // Não mostrar toast de sucesso aqui - será mostrado após salvar com sucesso
+    // Não fechar o modal aqui - será fechado após salvar com sucesso ou mantido aberto em caso de erro
     onSalvar(atividadeData)
-
-    toast({
-      title: modo === 'criar' ? "Atividade criada" : "Atividade atualizada",
-      description: `"${titulo}" foi ${modo === 'criar' ? 'criada' : 'atualizada'} com sucesso!`
-    })
-
-    onClose()
   }
 
   const handleClose = () => {

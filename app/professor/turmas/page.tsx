@@ -351,7 +351,7 @@ export default function ProfessorTurmasPage() {
         } else {
           // Fallback: verificar em todas as aulas do dia
           const aulaComDados = aulasDoDia.find(a => a.alunosPresentes && a.alunosPresentes.length > 0)
-          if (aulaComDados) {
+          if (aulaComDados && aulaComDados.alunosPresentes) {
             isPresente = aulaComDados.alunosPresentes.includes(aluno.id)
           }
         }
@@ -592,46 +592,7 @@ export default function ProfessorTurmasPage() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-primary">
-                      {estatisticas.totalAlunos}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Distribuídos em {turmasFiltradas.length} turmas</p>
-                  </CardContent>
-                </LiquidGlassCard>
 
-                <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Média Geral</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-primary">
-                      {estatisticas.mediaGeral.toFixed(1)}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Média de todas as turmas</p>
-                  </CardContent>
-                </LiquidGlassCard>
-
-                <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Atividades Pendentes</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-destructive">
-                      {estatisticas.atividadesPendentes}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Para correção</p>
-                  </CardContent>
-                </LiquidGlassCard>
-              </div>
 
               <div className="space-y-3">
                 {turmasFiltradas.map((turma) => (

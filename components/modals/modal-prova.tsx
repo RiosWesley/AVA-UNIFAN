@@ -5,17 +5,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LiquidGlassButton } from "@/components/liquid-glass"
 import { Save, X } from "lucide-react"
 import { toast } from "@/components/ui/toast"
 import { ExamDTO, CreateExamPayload, UpdateExamPayload } from "@/src/services/examsService"
+import { ActivityUnit } from "@/src/services/activitiesService"
 
 interface ModalProvaProps {
   isOpen: boolean
   onClose: () => void
   prova?: ExamDTO | null
   activityId?: string
-  onSalvar: (prova: CreateExamPayload | UpdateExamPayload, activityData?: { title: string; description?: string; startDate?: string; dueDate?: string; maxScore?: number }) => void
+  onSalvar: (prova: CreateExamPayload | UpdateExamPayload, activityData?: { title: string; description?: string; startDate?: string; dueDate?: string; maxScore?: number; unit?: ActivityUnit }) => void
   modo: 'criar' | 'editar'
 }
 
@@ -29,6 +31,7 @@ export function ModalProva({
 }: ModalProvaProps) {
   const [titulo, setTitulo] = useState('')
   const [descricao, setDescricao] = useState('')
+  const [unidade, setUnidade] = useState<ActivityUnit>('1ª Unidade')
   const [dataInicio, setDataInicio] = useState('')
   const [dataTermino, setDataTermino] = useState('')
   const [tempoLimite, setTempoLimite] = useState('')
@@ -38,6 +41,8 @@ export function ModalProva({
   const [shuffleOptions, setShuffleOptions] = useState(false)
   const [autoGrade, setAutoGrade] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const UNIDADES: ActivityUnit[] = ['1ª Unidade', '2ª Unidade', 'Prova Final']
 
   // Função auxiliar para formatar data para input datetime-local
   const formatDateTimeLocal = (dateString: string | null | undefined): string => {
@@ -58,6 +63,7 @@ export function ModalProva({
     if (modo === 'editar' && prova) {
       setTitulo(prova.activity?.title || '')
       setDescricao(prova.activity?.description || '')
+      setUnidade(prova.activity?.unit || '1ª Unidade')
       setDataInicio(formatDateTimeLocal(prova.activity?.startDate))
       setDataTermino(formatDateTimeLocal(prova.activity?.dueDate))
       setTempoLimite(prova.timeLimitMinutes?.toString() || '')
@@ -70,6 +76,7 @@ export function ModalProva({
       // Resetar campos ao criar
       setTitulo('')
       setDescricao('')
+      setUnidade('1ª Unidade')
       setDataInicio('')
       setDataTermino('')
       setTempoLimite('')
@@ -87,6 +94,10 @@ export function ModalProva({
 
     if (!titulo.trim()) {
       newErrors.titulo = 'Título é obrigatório'
+    }
+
+    if (!unidade) {
+      newErrors.unidade = 'Unidade é obrigatória'
     }
 
     if (!maxScore || isNaN(Number(maxScore)) || Number(maxScore) <= 0) {
@@ -137,7 +148,8 @@ export function ModalProva({
         description: descricao || undefined,
         startDate: startDateISO,
         dueDate: dueDateISO,
-        maxScore: maxScoreValue
+        maxScore: maxScoreValue,
+        unit: unidade
       })
     } else {
       // Ao editar, também atualizar dados da Activity
@@ -146,7 +158,8 @@ export function ModalProva({
         description: descricao || undefined,
         startDate: startDateISO,
         dueDate: dueDateISO,
-        maxScore: maxScoreValue
+        maxScore: maxScoreValue,
+        unit: unidade
       })
     }
   }
@@ -186,6 +199,26 @@ export function ModalProva({
               placeholder="Descrição da prova..."
               rows={3}
             />
+          </div>
+
+          {/* Unidade */}
+          <div>
+            <Label htmlFor="unidade">Unidade *</Label>
+            <Select value={unidade} onValueChange={(value) => setUnidade(value as ActivityUnit)}>
+              <SelectTrigger className={errors.unidade ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Selecione a unidade" />
+              </SelectTrigger>
+              <SelectContent>
+                {UNIDADES.map((unidadeItem) => (
+                  <SelectItem key={unidadeItem} value={unidadeItem}>
+                    {unidadeItem}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.unidade && (
+              <p className="text-sm text-destructive mt-1">{errors.unidade}</p>
+            )}
           </div>
 
           {/* Datas de Disponibilidade */}

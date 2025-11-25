@@ -67,6 +67,9 @@ interface BackendUser {
   createdAt: string;
   updatedAt: string;
   roles: Array<{ id: string; name: string }>;
+  usuario?: string;
+  telefone?: string;
+  cpf?: string;
 }
 
 // Interface para resposta paginada
@@ -87,6 +90,9 @@ function mapBackendUserToFrontend(backendUser: BackendUser): Usuario {
     id: backendUser.id,
     nome: backendUser.name,
     email: backendUser.email,
+    usuario: backendUser.usuario,
+    telefone: backendUser.telefone,
+    cpf: backendUser.cpf,
     role,
     status: backendUser.isActive ? "Ativo" : "Inativo",
     createdAt: backendUser.createdAt,
