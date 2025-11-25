@@ -1,4 +1,3 @@
-
 import { toast } from '@/components/ui/toast';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
@@ -7,10 +6,18 @@ const ICE_SERVERS = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
+    {
+      urls: "turn:44.215.222.13:3478",
+      username: "userava",
+      credential: "senhaforte"
+    },
+    {
+      urls: "turn:44.215.222.13:3478?transport=tcp",
+      username: "userava",
+      credential: "senhaforte"
+    }
   ],
 };
-
-
 
 export const useLiveSession = () => {
   const [isConnected, setIsConnected] = useState(false);
