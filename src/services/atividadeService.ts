@@ -14,6 +14,7 @@ export const getStudentActivities = async (studentId: string): Promise<StudentAc
       dataConclusao: string | null;
       semestre?: string;
       classId?: string;
+      type?: string;
     }>>(`/activities/students/${studentId}`);
     
     return response.data.map(a => ({
@@ -26,7 +27,8 @@ export const getStudentActivities = async (studentId: string): Promise<StudentAc
       nota: a.nota,
       dataConclusao: a.dataConclusao,
       semestre: a.semestre,
-      classId: a.classId
+      classId: a.classId,
+      type: a.type
     }));
   } catch (error) {
     console.error("Erro ao buscar atividades:", error);

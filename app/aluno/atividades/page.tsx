@@ -6,18 +6,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LiquidGlassCard } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
-import { Search, CheckCircle, Clock, Target, Calendar as CalIcon, BookOpen, Upload, GraduationCap } from 'lucide-react'
+import { Search, CheckCircle, Clock, Target, Calendar as CalIcon, BookOpen, Upload, GraduationCap, FileCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
-import { ModalEnviarAtividade } from '@/components/modals'
+import { ModalEnviarAtividade, ModalRealizarProva, ModalResultadoProva } from '@/components/modals'
 import { StudentActivity } from "@/src/Atividade"
 import { completeStudentActivity, getStudentActivities, uploadStudentActivity } from "@/src/services/atividadeService"
 import { PageSpinner } from "@/components/ui/page-spinner"
 import { getSemestresDisponiveis } from "@/src/services/ClassesService"
 import { me } from '@/src/services/auth'
+import { listExams, listAttemptsByStudent, getExamById, type ExamDTO, type ExamAttemptDTO } from '@/src/services/examsService'
 
 export default function AtividadesPage() {
   const router = useRouter()
@@ -28,6 +29,13 @@ export default function AtividadesPage() {
   const [semestreSelecionado, setSemestreSelecionado] = useState<string>("")
   const [semestres, setSemestres] = useState<Array<{ id: string; nome: string; ativo: boolean }>>([])
   const [studentId, setStudentId] = useState<string | null>(null)
+  
+  // Estados para modais de prova
+  const [modalRealizarProvaOpen, setModalRealizarProvaOpen] = useState(false)
+  const [examSelecionado, setExamSelecionado] = useState<ExamDTO | null>(null)
+  const [attemptAtual, setAttemptAtual] = useState<ExamAttemptDTO | null>(null)
+  const [modalResultadoProvaOpen, setModalResultadoProvaOpen] = useState(false)
+  const [attemptIdParaResultado, setAttemptIdParaResultado] = useState<string | null>(null)
   
 
   const queryClient = useQueryClient()
@@ -94,6 +102,18 @@ export default function AtividadesPage() {
     enabled: !!studentId,
   });
 
+  const examsQuery = useQuery({
+    queryKey: ['exams'],
+    queryFn: () => listExams(),
+    enabled: true,
+  });
+
+  const attemptsQuery = useQuery({
+    queryKey: ['exam-attempts-student', studentId],
+    queryFn: () => listAttemptsByStudent(studentId!),
+    enabled: !!studentId,
+  });
+
   const completeActivityMutation = useMutation({
     mutationFn: (activityId: string) => completeStudentActivity(activityId, studentId),
     onSuccess: () => {
@@ -140,6 +160,25 @@ export default function AtividadesPage() {
     setModalEnviarAtividadeOpen(true);
   };
 
+  // Helper para obter exam e attempt de uma atividade virtual_exam
+  const getExamDataForActivity = useMemo(() => {
+    return (activity: StudentActivity) => {
+      if (activity.type !== 'virtual_exam') return null;
+      
+      const exam = (examsQuery.data || []).find(
+        (e) => e.activity?.id === activity.id
+      );
+      
+      if (!exam) return null;
+      
+      const attempt = (attemptsQuery.data || []).find(
+        (a) => a.examId === exam.id || a.exam?.id === exam.id
+      );
+      
+      return { exam, attempt };
+    };
+  }, [examsQuery.data, attemptsQuery.data]);
+
   // Filtrar atividades por semestre
   const atividadesFiltradas = useMemo(() => {
     if (!semestreSelecionado) return allActivities
@@ -153,10 +192,32 @@ export default function AtividadesPage() {
   }, [allActivities, semestreSelecionado])
 
   const { atividadesPendentes, atividadesConcluidas } = useMemo(() => {
-    const pendentes = atividadesFiltradas.filter(a => a.status === 'pendente');
-    const concluidas = atividadesFiltradas.filter(a => a.status === 'concluido' || a.status === 'avaliado');
+    // Reclassificar virtual_exam baseado em ExamAttempt (fallback caso backend não esteja atualizado)
+    const atividadesReclassificadas = atividadesFiltradas.map(activity => {
+      if (activity.type === 'virtual_exam') {
+        const examData = getExamDataForActivity(activity);
+        if (examData?.attempt) {
+          const { attempt } = examData;
+          // Se a tentativa está finalizada mas o status do backend ainda é pendente, reclassificar
+          if ((attempt.status === 'submitted' || attempt.status === 'graded') && activity.status === 'pendente') {
+            return {
+              ...activity,
+              status: attempt.status === 'graded' ? 'avaliado' : 'concluido',
+              nota: attempt.score ?? attempt.autoGradeScore ?? attempt.manualGradeScore ?? activity.nota,
+              dataConclusao: attempt.submittedAt 
+                ? new Date(attempt.submittedAt).toLocaleDateString('pt-BR')
+                : activity.dataConclusao,
+            };
+          }
+        }
+      }
+      return activity;
+    });
+    
+    const pendentes = atividadesReclassificadas.filter(a => a.status === 'pendente');
+    const concluidas = atividadesReclassificadas.filter(a => a.status === 'concluido' || a.status === 'avaliado');
     return { atividadesPendentes: pendentes, atividadesConcluidas: concluidas };
-  }, [atividadesFiltradas]);
+  }, [atividadesFiltradas, examsQuery.data, attemptsQuery.data]);
 
   const filteredPendentes = useMemo(() => 
     atividadesPendentes.filter(a =>
@@ -352,33 +413,120 @@ export default function AtividadesPage() {
                             </div>
 
                             {/* Buttons */}
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() => handleAbrirModalEnviar(atividade)}
-                                disabled={uploadActivityMutation.isPending}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-                              >
-                                <Upload className="h-4 w-4" />
-                                <span>Enviar Atividade</span>
-                              </Button>
-                              <Button
-                                onClick={() => handleCompleteActivity(atividade.id)}
-                                disabled={completeActivityMutation.isPending}
-                                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-                              >
-                                {completeActivityMutation.isPending ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    <span>Concluindo...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle className="h-4 w-4" />
-                                    <span>Marcar como Concluída</span>
-                                  </>
-                                )}
-                              </Button>
-                            </div>
+                            {(() => {
+                              const examData = getExamDataForActivity(atividade);
+                              const isVirtualExam = atividade.type === 'virtual_exam' && examData;
+                              
+                              if (isVirtualExam) {
+                                const { exam, attempt } = examData;
+                                const startDate = exam.activity?.startDate ? new Date(exam.activity.startDate) : null;
+                                const dueDate = exam.activity?.dueDate ? new Date(exam.activity.dueDate) : null;
+                                const now = new Date();
+                                const isNotStarted = startDate && startDate > now;
+                                const isPastDue = dueDate && dueDate < now;
+                                const isAvailable = (!startDate || startDate <= now) && (!dueDate || dueDate >= now);
+                                const isFinalized = attempt && (attempt.status === 'submitted' || attempt.status === 'graded');
+                                const canStart = isAvailable && (!attempt || attempt.status === 'in_progress') && !isFinalized;
+                                
+                                let actionLabel = 'Iniciar Prova';
+                                let ActionIconComponent: React.ComponentType<{ className?: string }> = FileCheck;
+                                
+                                if (isNotStarted) {
+                                  actionLabel = 'Aguardando Início';
+                                } else if (attempt) {
+                                  if (attempt.status === 'in_progress') {
+                                    actionLabel = 'Continuar Prova';
+                                    ActionIconComponent = Clock;
+                                  } else if (attempt.status === 'submitted' || attempt.status === 'graded') {
+                                    // Não deve aparecer na lista pendente se já foi finalizada
+                                    return null;
+                                  }
+                                } else if (isPastDue) {
+                                  actionLabel = 'Prazo Expirado';
+                                }
+                                
+                                // Só mostrar botão se pode iniciar/continuar
+                                if (!isFinalized && canStart && attempt?.status !== 'submitted' && attempt?.status !== 'graded') {
+                                  return (
+                                    <div className="flex gap-2">
+                                      <Button
+                                        onClick={async () => {
+                                          if (!studentId) return;
+                                          try {
+                                            // Verificar novamente se não há tentativa finalizada antes de abrir
+                                            const currentAttempts = await listAttemptsByStudent(studentId);
+                                            const currentAttempt = currentAttempts.find(a => a.examId === exam.id);
+                                            
+                                            if (currentAttempt && (currentAttempt.status === 'submitted' || currentAttempt.status === 'graded')) {
+                                              toast({
+                                                title: "Prova já finalizada",
+                                                description: "Você já finalizou esta prova.",
+                                                variant: "destructive",
+                                              });
+                                              attemptsQuery.refetch();
+                                              return;
+                                            }
+                                            
+                                            // Carregar exam completo com questões se necessário
+                                            let examCompleto = exam;
+                                            if (!exam.questions || exam.questions.length === 0) {
+                                              examCompleto = await getExamById(exam.id);
+                                            }
+                                            setExamSelecionado(examCompleto);
+                                            setAttemptAtual(currentAttempt || attempt || null);
+                                            setModalRealizarProvaOpen(true);
+                                          } catch (error: any) {
+                                            toast({
+                                              title: "Erro ao carregar prova",
+                                              description: error?.message || "Não foi possível carregar a prova.",
+                                              variant: "destructive",
+                                            });
+                                          }
+                                        }}
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                      >
+                                        <ActionIconComponent className="h-4 w-4" />
+                                        <span>{actionLabel}</span>
+                                      </Button>
+                                    </div>
+                                  );
+                                }
+                                
+                                // Se não pode iniciar, não mostrar botão
+                                return null;
+                              }
+                              
+                              // Para atividades normais, mostrar os dois botões
+                              return (
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleAbrirModalEnviar(atividade)}
+                                    disabled={uploadActivityMutation.isPending}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    <span>Enviar Atividade</span>
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleCompleteActivity(atividade.id)}
+                                    disabled={completeActivityMutation.isPending}
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                  >
+                                    {completeActivityMutation.isPending ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span>Concluindo...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="h-4 w-4" />
+                                        <span>Marcar como Concluída</span>
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -421,6 +569,9 @@ export default function AtividadesPage() {
 
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {filteredConcluidas.map((atividade) => {
+                    const examData = getExamDataForActivity(atividade);
+                    const isVirtualExam = atividade.type === 'virtual_exam' && examData;
+                    
                     return (
                       <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
                         isLiquidGlass
@@ -432,23 +583,48 @@ export default function AtividadesPage() {
                             <h3 className="font-bold text-foreground transition-colors">
                               {atividade.titulo}
                             </h3>
+                            {atividade.nota !== null && atividade.nota !== undefined && (
+                              <Badge variant="default" className="ml-2">
+                                Nota: {atividade.nota.toFixed(2)}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                             {atividade.descricao}
                           </p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-1 text-xs">
-                                <BookOpen className="h-3 w-3" />
-                                <span className="font-medium">{atividade.disciplina}</span>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1 text-xs">
+                                  <BookOpen className="h-3 w-3" />
+                                  <span className="font-medium">{atividade.disciplina}</span>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span className="font-bold">Concluída: {atividade.dataConclusao}</span>
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                <CheckCircle className="h-3 w-3" />
-                                <span className="font-bold">Concluída: {atividade.dataConclusao}</span>
+                            
+                            {/* Botão Ver Resultado para virtual_exam */}
+                            {isVirtualExam && examData.attempt && (
+                              examData.attempt.status === 'submitted' || examData.attempt.status === 'graded'
+                            ) && (
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => {
+                                    setAttemptIdParaResultado(examData.attempt!.id)
+                                    setModalResultadoProvaOpen(true)
+                                  }}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                >
+                                  <FileCheck className="h-4 w-4" />
+                                  <span>Ver Resultado</span>
+                                </Button>
                               </div>
-                            </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -482,6 +658,55 @@ export default function AtividadesPage() {
         atividade={atividadeSelecionada}
         onEnviar={handleEnviarAtividade}
         isPending={uploadActivityMutation.isPending}
+      />
+
+      {/* Modais de Prova */}
+      {examSelecionado && (
+        <ModalRealizarProva
+          isOpen={modalRealizarProvaOpen}
+          onClose={() => {
+            setModalRealizarProvaOpen(false)
+            setExamSelecionado(null)
+            setAttemptAtual(null)
+            // Recarregar tentativas
+            attemptsQuery.refetch()
+            queryClient.invalidateQueries({ queryKey: ['studentActivities', studentId] })
+          }}
+          exam={examSelecionado}
+          attempt={attemptAtual}
+          onFinalizar={(submittedAttempt) => {
+            const wasAutoGrade = examSelecionado?.autoGrade
+            setModalRealizarProvaOpen(false)
+            setExamSelecionado(null)
+            setAttemptAtual(null)
+            // Recarregar tentativas e atividades para atualizar a UI
+            attemptsQuery.refetch()
+            examsQuery.refetch()
+            queryClient.invalidateQueries({ queryKey: ['studentActivities', studentId] })
+            // Se autoGrade, mostrar resultado imediatamente
+            if (wasAutoGrade) {
+              setAttemptIdParaResultado(submittedAttempt.id)
+              setModalResultadoProvaOpen(true)
+            } else {
+              toast({
+                title: "Prova submetida",
+                description: "Aguarde a correção manual do professor.",
+              })
+            }
+          }}
+        />
+      )}
+      <ModalResultadoProva
+        isOpen={modalResultadoProvaOpen}
+        onClose={() => {
+          setModalResultadoProvaOpen(false)
+          setAttemptIdParaResultado(null)
+          // Recarregar tentativas e atividades para atualizar a UI
+          attemptsQuery.refetch()
+          examsQuery.refetch()
+          queryClient.invalidateQueries({ queryKey: ['studentActivities', studentId] })
+        }}
+        attemptId={attemptIdParaResultado}
       />
     </div>
   )
