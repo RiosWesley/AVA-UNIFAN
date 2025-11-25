@@ -163,7 +163,7 @@ export async function calculateCourseStatistics(courseId: string, semestre?: str
     }
 
     const professoresSet = new Set<string>()
-    let totalAlunos = 0
+    const allUniqueStudents = new Set<string>() // Alunos únicos em todas as turmas
     const allGrades: number[] = []
     const allFrequencies: number[] = []
 
@@ -174,9 +174,12 @@ export async function calculateCourseStatistics(courseId: string, semestre?: str
 
       const details = await getClassDetails(classItem.id)
       
-      // Contar alunos únicos
-      const uniqueStudents = new Set(details.enrollments.map(e => e.student?.id).filter(Boolean))
-      totalAlunos += uniqueStudents.size
+      // Coletar alunos únicos de todas as turmas (sem duplicatas)
+      details.enrollments.forEach(e => {
+        if (e.student?.id) {
+          allUniqueStudents.add(e.student.id)
+        }
+      })
 
       // Coletar notas
       if (details.grades.length > 0) {
@@ -189,6 +192,8 @@ export async function calculateCourseStatistics(courseId: string, semestre?: str
         allFrequencies.push(avgFreq)
       }
     }
+
+    const totalAlunos = allUniqueStudents.size
 
     const media = allGrades.length > 0
       ? allGrades.reduce((sum, g) => sum + g, 0) / allGrades.length

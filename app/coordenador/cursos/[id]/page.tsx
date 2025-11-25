@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2, PowerOff, Power } from "lucide-react"
+import { BookOpen, ArrowLeft, Users, GraduationCap, Clock, Edit, Plus, Search, Loader2, PowerOff, Power, Eye, X } from "lucide-react"
 import { toast } from "@/components/ui/toast"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -35,7 +35,9 @@ import {
 import { Combobox } from "@/components/ui/combobox"
 import { getCurrentUser } from "@/src/services/professor-dashboard"
 import { getDepartmentTeachers, type Teacher } from "@/src/services/departmentsService"
-import { findByPeriod as findAcademicPeriodByPeriod } from "@/src/services/academicPeriodsService"
+import { getAcademicPeriodByPeriod } from "@/src/services/academicPeriodsService"
+import { createEnrollment, checkStudentDisciplineStatus, getEnrollmentsByClass, type EnrollmentDTO } from "@/src/services/enrollmentsService"
+import { UserPlus } from "lucide-react"
 
 type Disciplina = {
   id: string
@@ -59,7 +61,7 @@ type Turma = {
   horario: string
   sala: string
   alunos: number
-  capacidade: number
+  capacidade?: number
   status: "ativa" | "inativa"
   courseId?: string
   semestre?: string
@@ -105,11 +107,10 @@ const mapDiscipline = (d: BackendDiscipline): Disciplina => ({
   id: d.id,
   nome: d.name,
   codigo: d.code ?? "",
-  cargaHoraria: d.workloadHours ?? 0,
+  cargaHoraria: d.workLoad ?? d.workload ?? d.workloadHours ?? 0,
   creditos: d.credits ?? 0,
   semestre: d.semester,
   tipo: d.type === "optional" ? "optativa" : "obrigatoria",
-  professor: d.teacher?.name,
   status: d.status === "inactive" ? "inativa" : "ativa",
   courseId: d.courseId ?? d.course?.id
 })
@@ -148,7 +149,7 @@ const mapClass = (c: BackendClass): Turma => {
       return "Sala nao informada"
     })(),
     alunos: c.studentsCount ?? 0,
-    capacidade: c.capacity ?? c.studentsCount ?? 0,
+    capacidade: c.capacity ?? undefined,
     status: c.status === "inactive" ? "inativa" : "ativa",
     courseId: c.courseId ?? c.course?.id,
     semestre
@@ -207,6 +208,20 @@ export default function CursoDetalhePage() {
     endTime: "",
     room: ""
   })
+  const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false)
+  const [turmaSelecionadaParaMatricula, setTurmaSelecionadaParaMatricula] = useState<Turma | null>(null)
+  const [alunoSelecionadoParaMatricula, setAlunoSelecionadoParaMatricula] = useState<string>("")
+  const [alunosSelecionadosParaMatricula, setAlunosSelecionadosParaMatricula] = useState<string[]>([])
+  const [alunosMatriculadosNaTurma, setAlunosMatriculadosNaTurma] = useState<EnrollmentDTO[]>([])
+  const [isLoadingEnrolledForFilter, setIsLoadingEnrolledForFilter] = useState(false)
+  const [isEnrolling, setIsEnrolling] = useState(false)
+  const [enrollmentValidationError, setEnrollmentValidationError] = useState<string | null>(null)
+  const [isEnrolledStudentsModalOpen, setIsEnrolledStudentsModalOpen] = useState(false)
+  const [turmaParaListarAlunos, setTurmaParaListarAlunos] = useState<Turma | null>(null)
+  const [enrolledStudents, setEnrolledStudents] = useState<EnrollmentDTO[]>([])
+  const [isLoadingEnrolledStudents, setIsLoadingEnrolledStudents] = useState(false)
+  const [searchEnrolledStudents, setSearchEnrolledStudents] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -273,6 +288,32 @@ export default function CursoDetalhePage() {
       setTurmas(mappedClasses)
       setTurmasBackend(classesData)
       setAlunos(mappedStudents)
+
+      // Buscar enrollments reais de cada turma para atualizar contagem de alunos
+      try {
+        const enrollmentsCounts = await Promise.all(
+          mappedClasses.map(async (turma) => {
+            try {
+              const enrollments = await getEnrollmentsByClass(turma.id)
+              return { turmaId: turma.id, count: enrollments.length }
+            } catch (error) {
+              console.error(`Erro ao buscar enrollments da turma ${turma.id}:`, error)
+              return { turmaId: turma.id, count: turma.alunos } // Usar contagem do backend em caso de erro
+            }
+          })
+        )
+
+        // Atualizar contagem de alunos baseada nos enrollments reais
+        setTurmas((prev) =>
+          prev.map((t) => {
+            const enrollmentCount = enrollmentsCounts.find((ec) => ec.turmaId === t.id)
+            return enrollmentCount ? { ...t, alunos: enrollmentCount.count } : t
+          })
+        )
+      } catch (error) {
+        console.error("Erro ao buscar enrollments das turmas:", error)
+        // Em caso de erro, manter contagem do backend
+      }
 
       // Buscar professores do departamento do curso
       if (courseData.department?.id) {
@@ -566,7 +607,7 @@ export default function CursoDetalhePage() {
       } else {
         // Buscar academicPeriodId baseado no semestre selecionado
         const normalizedPeriod = semestreSelecionado.replace('-', '.')
-        const academicPeriod = await findAcademicPeriodByPeriod(normalizedPeriod)
+        const academicPeriod = await getAcademicPeriodByPeriod(normalizedPeriod)
         
         if (!academicPeriod) {
           toast({
@@ -697,6 +738,245 @@ export default function CursoDetalhePage() {
       room: normalizedRoom
     })
     setIsTurmaModalOpen(true)
+  }
+
+  // Função auxiliar para atualizar contagem de alunos de uma turma baseada em enrollments reais
+  const updateTurmaStudentCount = async (turmaId: string) => {
+    try {
+      const enrollments = await getEnrollmentsByClass(turmaId)
+      const realCount = enrollments.length
+      
+      setTurmas((prev) =>
+        prev.map((t) => (t.id === turmaId ? { ...t, alunos: realCount } : t))
+      )
+      
+      return realCount
+    } catch (error) {
+      console.error(`Erro ao atualizar contagem de alunos da turma ${turmaId}:`, error)
+      return null
+    }
+  }
+
+  const handleOpenEnrollmentModal = async (turma?: Turma) => {
+    setTurmaSelecionadaParaMatricula(turma || null)
+    setAlunoSelecionadoParaMatricula("")
+    setAlunosSelecionadosParaMatricula([])
+    setEnrollmentValidationError(null)
+    setIsEnrollmentModalOpen(true)
+    
+    // Se uma turma foi selecionada, buscar alunos já matriculados para filtro
+    if (turma) {
+      try {
+        setIsLoadingEnrolledForFilter(true)
+        const enrollments = await getEnrollmentsByClass(turma.id)
+        setAlunosMatriculadosNaTurma(enrollments)
+      } catch (error) {
+        console.error("Erro ao buscar alunos matriculados:", error)
+        setAlunosMatriculadosNaTurma([])
+      } finally {
+        setIsLoadingEnrolledForFilter(false)
+      }
+    } else {
+      setAlunosMatriculadosNaTurma([])
+    }
+  }
+
+  // Buscar alunos matriculados quando turma é selecionada no modal
+  useEffect(() => {
+    if (isEnrollmentModalOpen && turmaSelecionadaParaMatricula) {
+      const loadEnrolledForFilter = async () => {
+        try {
+          setIsLoadingEnrolledForFilter(true)
+          const enrollments = await getEnrollmentsByClass(turmaSelecionadaParaMatricula!.id)
+          setAlunosMatriculadosNaTurma(enrollments)
+        } catch (error) {
+          console.error("Erro ao buscar alunos matriculados:", error)
+          setAlunosMatriculadosNaTurma([])
+        } finally {
+          setIsLoadingEnrolledForFilter(false)
+        }
+      }
+      loadEnrolledForFilter()
+    } else if (!turmaSelecionadaParaMatricula) {
+      setAlunosMatriculadosNaTurma([])
+    }
+  }, [turmaSelecionadaParaMatricula?.id, isEnrollmentModalOpen])
+
+  // Função para obter alunos disponíveis para seleção
+  const alunosDisponiveis = useMemo(() => {
+    if (!turmaSelecionadaParaMatricula) return alunos
+    
+    // IDs de alunos já matriculados na turma
+    const idsMatriculados = new Set(alunosMatriculadosNaTurma.map(e => e.student.id))
+    // IDs de alunos já selecionados no modal
+    const idsSelecionados = new Set(alunosSelecionadosParaMatricula)
+    
+    // Filtrar alunos: excluir matriculados e já selecionados
+    return alunos.filter(aluno => 
+      !idsMatriculados.has(aluno.id) && !idsSelecionados.has(aluno.id)
+    )
+  }, [alunos, alunosMatriculadosNaTurma, alunosSelecionadosParaMatricula, turmaSelecionadaParaMatricula])
+
+  const handleEnrollStudent = async () => {
+    if (!turmaSelecionadaParaMatricula) {
+      toast({
+        variant: "error",
+        title: "Turma não selecionada",
+        description: "Selecione uma turma para matricular os alunos.",
+      })
+      return
+    }
+
+    if (alunosSelecionadosParaMatricula.length === 0) {
+      toast({
+        variant: "error",
+        title: "Nenhum aluno selecionado",
+        description: "Selecione pelo menos um aluno para matricular na turma.",
+      })
+      return
+    }
+
+    // Buscar disciplina da turma
+    const turmaBackend = turmasBackend.find((t) => t.id === turmaSelecionadaParaMatricula.id)
+    const disciplineId = turmaBackend?.discipline?.id
+
+    if (!disciplineId) {
+      toast({
+        variant: "error",
+        title: "Erro",
+        description: "Não foi possível identificar a disciplina da turma.",
+      })
+      return
+    }
+
+    try {
+      setIsEnrolling(true)
+      setEnrollmentValidationError(null)
+
+      // Validar todos os alunos antes de processar
+      const alunosParaValidar = alunosSelecionadosParaMatricula
+        .map((alunoId) => {
+          const aluno = alunos.find((a) => a.id === alunoId)
+          return aluno ? { id: alunoId, aluno } : null
+        })
+        .filter((item): item is { id: string; aluno: Aluno } => item !== null)
+
+      // Verificar se todos estão vinculados ao curso
+      const alunosInvalidos = alunosParaValidar.filter((item) => !item.aluno)
+      if (alunosInvalidos.length > 0) {
+        setEnrollmentValidationError("Alguns alunos selecionados não estão vinculados ao curso.")
+        setIsEnrolling(false)
+        return
+      }
+
+      // Verificar se algum aluno já concluiu a disciplina
+      const validacoesDisciplina = await Promise.all(
+        alunosParaValidar.map(async (item) => {
+          const hasCompleted = await checkStudentDisciplineStatus(item.id, disciplineId)
+          return { alunoId: item.id, aluno: item.aluno, hasCompleted }
+        })
+      )
+
+      const alunosComDisciplinaConcluida = validacoesDisciplina.filter((v) => v.hasCompleted)
+      if (alunosComDisciplinaConcluida.length > 0) {
+        const nomes = alunosComDisciplinaConcluida.map((v) => v.aluno.nome).join(", ")
+        setEnrollmentValidationError(
+          `Os seguintes alunos já concluíram esta disciplina e não podem ser matriculados: ${nomes}`
+        )
+        setIsEnrolling(false)
+        return
+      }
+
+      // Processar matrículas em lote
+      const resultados = await Promise.allSettled(
+        alunosParaValidar.map((item) =>
+          createEnrollment(item.id, turmaSelecionadaParaMatricula.id)
+        )
+      )
+
+      // Contar sucessos e falhas
+      const sucessos = resultados.filter((r) => r.status === "fulfilled").length
+      const falhas = resultados.filter((r) => r.status === "rejected").length
+
+      // Atualizar contador de alunos da turma baseado em enrollments reais
+      if (sucessos > 0) {
+        await updateTurmaStudentCount(turmaSelecionadaParaMatricula.id)
+      }
+
+      // Exibir toast com resumo
+      if (falhas === 0) {
+        toast({
+          variant: "success",
+          title: "Alunos matriculados",
+          description: `${sucessos} aluno${sucessos !== 1 ? "s" : ""} matriculado${sucessos !== 1 ? "s" : ""} com sucesso na turma "${turmaSelecionadaParaMatricula.codigo}".`,
+        })
+      } else {
+        toast({
+          variant: "warning",
+          title: "Matrícula parcial",
+          description: `${sucessos} aluno${sucessos !== 1 ? "s" : ""} matriculado${sucessos !== 1 ? "s" : ""} com sucesso, ${falhas} falha${falhas !== 1 ? "ram" : "ram"}.`,
+        })
+      }
+
+      // Atualizar lista de alunos matriculados no filtro se houve sucessos
+      if (sucessos > 0 && turmaSelecionadaParaMatricula) {
+        try {
+          const updatedEnrollments = await getEnrollmentsByClass(turmaSelecionadaParaMatricula.id)
+          setAlunosMatriculadosNaTurma(updatedEnrollments)
+        } catch (error) {
+          console.error("Erro ao atualizar lista de alunos matriculados:", error)
+        }
+      }
+
+      // Fechar modal e resetar estados se tudo foi bem-sucedido
+      if (falhas === 0) {
+        setIsEnrollmentModalOpen(false)
+        setTurmaSelecionadaParaMatricula(null)
+        setAlunoSelecionadoParaMatricula("")
+        setAlunosSelecionadosParaMatricula([])
+        setEnrollmentValidationError(null)
+        setAlunosMatriculadosNaTurma([])
+      } else {
+        // Se houve falhas, manter modal aberto mas limpar apenas os que foram bem-sucedidos
+        // Por enquanto, vamos limpar tudo e deixar o usuário tentar novamente
+        setAlunosSelecionadosParaMatricula([])
+      }
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Não foi possível matricular os alunos"
+      toast({
+        variant: "error",
+        title: "Erro ao matricular alunos",
+        description: Array.isArray(message) ? message.join(", ") : message,
+      })
+    } finally {
+      setIsEnrolling(false)
+    }
+  }
+
+  const loadEnrolledStudents = async (classId: string) => {
+    try {
+      setIsLoadingEnrolledStudents(true)
+      const enrollments = await getEnrollmentsByClass(classId)
+      setEnrolledStudents(enrollments)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || "Não foi possível carregar os alunos matriculados"
+      toast({
+        variant: "error",
+        title: "Erro ao carregar alunos",
+        description: Array.isArray(message) ? message.join(", ") : message,
+      })
+      setEnrolledStudents([])
+    } finally {
+      setIsLoadingEnrolledStudents(false)
+    }
+  }
+
+  const handleOpenEnrolledStudentsModal = async (turma: Turma) => {
+    setTurmaParaListarAlunos(turma)
+    setSearchEnrolledStudents("")
+    setCurrentPage(1)
+    setIsEnrolledStudentsModalOpen(true)
+    await loadEnrolledStudents(turma.id)
   }
 
   const isEmpty = !isLoading && !curso
@@ -905,7 +1185,7 @@ export default function CursoDetalhePage() {
                                     {disciplina.status === "ativa" ? "Ativa" : "Inativa"}
                                   </Badge>
                                 </div>
-                                <div className="grid grid-cols-4 gap-4 text-sm text-muted-foreground">
+                                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground">
                                   <div>
                                     <span className="font-semibold">Semestre:</span> {disciplina.semestre ?? "-"}
                                   </div>
@@ -914,10 +1194,6 @@ export default function CursoDetalhePage() {
                                   </div>
                                   <div>
                                     <span className="font-semibold">Creditos:</span> {disciplina.creditos}
-                                  </div>
-                                  <div>
-                                    <span className="font-semibold">Professor:</span>{" "}
-                                    {disciplina.professor ?? "Sem professor"}
                                   </div>
                                 </div>
                               </div>
@@ -967,10 +1243,16 @@ export default function CursoDetalhePage() {
                             {turmasFiltradas.length !== 1 ? "s" : ""}
                           </CardDescription>
                         </div>
-                        <LiquidGlassButton size="sm" onClick={() => setIsTurmaModalOpen(true)}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Nova turma
-                        </LiquidGlassButton>
+                        <div className="flex gap-2">
+                          <LiquidGlassButton size="sm" onClick={() => handleOpenEnrollmentModal()}>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Matricular Aluno
+                          </LiquidGlassButton>
+                          <LiquidGlassButton size="sm" onClick={() => setIsTurmaModalOpen(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Nova turma
+                          </LiquidGlassButton>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1063,22 +1345,30 @@ export default function CursoDetalhePage() {
                                 <div className="mt-2 flex items-center gap-2 text-sm">
                                   <Users className="h-4 w-4 text-muted-foreground" />
                                   <span>
-                                    {turma.alunos} / {turma.capacidade} alunos
+                                    {turma.alunos} {turma.capacidade && turma.capacidade > 0 ? `/ ${turma.capacidade}` : ""} aluno{turma.alunos !== 1 ? "s" : ""}
                                   </span>
-                                  <div className="flex-1 max-w-xs">
-                                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full bg-emerald-600"
-                                        style={{
-                                          width: `${Math.min(100, (turma.alunos / (turma.capacidade || 1)) * 100)}%`
-                                        }}
-                                      />
+                                  {turma.capacidade && turma.capacidade > 0 && (
+                                    <div className="flex-1 max-w-xs">
+                                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <div
+                                          className="h-full bg-emerald-600"
+                                          style={{
+                                            width: `${Math.min(100, (turma.alunos / turma.capacidade) * 100)}%`
+                                          }}
+                                        />
+                                      </div>
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditarTurma(turma)}>
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEnrolledStudentsModal(turma)} title="Ver alunos matriculados">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEnrollmentModal(turma)} title="Matricular aluno">
+                                  <UserPlus className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => handleEditarTurma(turma)} title="Editar turma">
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -1403,6 +1693,338 @@ export default function CursoDetalhePage() {
             >
               {isSavingTurma && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {turmaEditandoId ? "Salvar alterações" : "Criar turma"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isEnrollmentModalOpen}
+        onOpenChange={(open) => {
+          setIsEnrollmentModalOpen(open)
+          if (!open) {
+            setTurmaSelecionadaParaMatricula(null)
+            setAlunoSelecionadoParaMatricula("")
+            setAlunosSelecionadosParaMatricula([])
+            setEnrollmentValidationError(null)
+            setAlunosMatriculadosNaTurma([])
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Matricular Alunos em Turma</DialogTitle>
+            <DialogDescription>
+              Selecione a turma e adicione um ou mais alunos para realizar a matrícula. Os alunos devem estar vinculados ao curso e não podem ter concluído a disciplina. Alunos já matriculados não aparecerão na lista.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="turma-matricula">Turma</Label>
+              {turmaSelecionadaParaMatricula ? (
+                <Input
+                  id="turma-matricula"
+                  value={`${turmaSelecionadaParaMatricula.codigo} - ${turmaSelecionadaParaMatricula.disciplina}`}
+                  disabled
+                  className="bg-muted cursor-not-allowed"
+                />
+              ) : (
+                <Combobox
+                  options={turmas.map((t) => {
+                    const turma: Turma = t
+                    return {
+                      id: turma.id,
+                      label: `${turma.codigo} - ${turma.disciplina}`,
+                    }
+                  })}
+                  value={null}
+                  onChange={(value) => {
+                    if (value) {
+                      const turma = turmas.find((t) => t.id === value)
+                      setTurmaSelecionadaParaMatricula(turma || null)
+                      setEnrollmentValidationError(null)
+                    }
+                  }}
+                  placeholder="Selecione uma turma..."
+                />
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="aluno-matricula">Adicionar Aluno</Label>
+              {isLoadingEnrolledForFilter ? (
+                <div className="flex items-center gap-2 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Carregando alunos disponíveis...</span>
+                </div>
+              ) : (
+                <Combobox
+                  options={alunosDisponiveis.map((a) => ({
+                    id: a.id,
+                    label: `${a.nome}${a.matricula ? ` (${a.matricula})` : ""}`,
+                  }))}
+                  value={null}
+                  onChange={(value) => {
+                    if (value && !alunosSelecionadosParaMatricula.includes(value)) {
+                      setAlunosSelecionadosParaMatricula([...alunosSelecionadosParaMatricula, value])
+                      setEnrollmentValidationError(null)
+                    }
+                  }}
+                  placeholder="Selecione um aluno para adicionar..."
+                />
+              )}
+              {alunosDisponiveis.length === 0 && alunos.length > 0 && turmaSelecionadaParaMatricula && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Todos os alunos disponíveis já estão matriculados nesta turma ou já foram selecionados.
+                </p>
+              )}
+              {alunos.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Nenhum aluno vinculado ao curso. Vincule alunos ao curso primeiro.
+                </p>
+              )}
+            </div>
+
+            {alunosSelecionadosParaMatricula.length > 0 && (
+              <div>
+                <Label>Alunos Selecionados ({alunosSelecionadosParaMatricula.length})</Label>
+                <div className="mt-2 space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                  {alunosSelecionadosParaMatricula.map((alunoId) => {
+                    const aluno = alunos.find((a) => a.id === alunoId)
+                    if (!aluno) return null
+                    return (
+                      <div
+                        key={alunoId}
+                        className="flex items-center justify-between p-2 bg-muted rounded-md"
+                      >
+                        <div>
+                          <span className="font-medium">{aluno.nome}</span>
+                          {aluno.matricula && (
+                            <span className="text-sm text-muted-foreground ml-2">({aluno.matricula})</span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setAlunosSelecionadosParaMatricula(
+                              alunosSelecionadosParaMatricula.filter((id) => id !== alunoId)
+                            )
+                          }}
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Remover aluno"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {enrollmentValidationError && (
+              <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                <p className="text-sm text-destructive">{enrollmentValidationError}</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEnrollmentModalOpen(false)
+                setTurmaSelecionadaParaMatricula(null)
+                setAlunoSelecionadoParaMatricula("")
+                setAlunosSelecionadosParaMatricula([])
+                setEnrollmentValidationError(null)
+                setAlunosMatriculadosNaTurma([])
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleEnrollStudent}
+              disabled={
+                isEnrolling ||
+                !turmaSelecionadaParaMatricula ||
+                alunosSelecionadosParaMatricula.length === 0 ||
+                alunos.length === 0
+              }
+            >
+              {isEnrolling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Matricular {alunosSelecionadosParaMatricula.length > 0 ? `(${alunosSelecionadosParaMatricula.length})` : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isEnrolledStudentsModalOpen}
+        onOpenChange={(open) => {
+          setIsEnrolledStudentsModalOpen(open)
+          if (!open) {
+            setTurmaParaListarAlunos(null)
+            setEnrolledStudents([])
+            setSearchEnrolledStudents("")
+            setCurrentPage(1)
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              Alunos Matriculados
+              {turmaParaListarAlunos && (
+                <span className="text-base font-normal text-muted-foreground ml-2">
+                  - {turmaParaListarAlunos.codigo} - {turmaParaListarAlunos.disciplina}
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {isLoadingEnrolledStudents
+                ? "Carregando alunos..."
+                : `${enrolledStudents.length} aluno${enrolledStudents.length !== 1 ? "s" : ""} matriculado${enrolledStudents.length !== 1 ? "s" : ""}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, email ou matrícula..."
+                value={searchEnrolledStudents}
+                onChange={(e) => {
+                  setSearchEnrolledStudents(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="pl-10"
+              />
+            </div>
+
+            {isLoadingEnrolledStudents ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Carregando alunos...</span>
+              </div>
+            ) : (
+              <>
+                {(() => {
+                  // Filtrar alunos baseado na busca
+                  const filteredStudents = enrolledStudents.filter((enrollment) => {
+                    const term = searchEnrolledStudents.toLowerCase()
+                    const name = enrollment.student.name.toLowerCase()
+                    const email = enrollment.student.email?.toLowerCase() || ""
+                    const enrollmentNumber = enrollment.student.usuario?.toLowerCase() || ""
+                    return name.includes(term) || email.includes(term) || enrollmentNumber.includes(term)
+                  })
+
+                  // Calcular paginação
+                  const studentsPerPage = 5
+                  const totalPages = Math.ceil(filteredStudents.length / studentsPerPage)
+                  const startIndex = (currentPage - 1) * studentsPerPage
+                  const endIndex = startIndex + studentsPerPage
+                  const paginatedStudents = filteredStudents.slice(startIndex, endIndex)
+
+                  return (
+                    <>
+                      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                        {paginatedStudents.length === 0 ? (
+                          <div className="text-center py-12 text-muted-foreground">
+                            {searchEnrolledStudents
+                              ? "Nenhum aluno encontrado com os critérios de busca"
+                              : "Nenhum aluno matriculado nesta turma"}
+                          </div>
+                        ) : (
+                          paginatedStudents.map((enrollment) => {
+                            const enrollmentDate = new Date(enrollment.enrolledAt)
+                            const formattedDate = enrollmentDate.toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            })
+
+                            return (
+                              <div
+                                key={enrollment.id}
+                                className={`p-4 border rounded-xl ${
+                                  isLiquidGlass
+                                    ? "border-gray-200/30 dark:border-gray-700/50"
+                                    : "border-gray-200 dark:border-gray-700"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold">{enrollment.student.name}</h4>
+                                    <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                                      {enrollment.student.email && (
+                                        <div>
+                                          <span className="font-semibold">Email:</span> {enrollment.student.email}
+                                        </div>
+                                      )}
+                                      {enrollment.student.usuario && (
+                                        <div>
+                                          <span className="font-semibold">Matrícula:</span> {enrollment.student.usuario}
+                                        </div>
+                                      )}
+                                      <div>
+                                        <span className="font-semibold">Data de matrícula:</span> {formattedDate}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })
+                        )}
+                      </div>
+
+                      {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <div className="text-sm text-muted-foreground">
+                            Página {currentPage} de {totalPages} ({filteredStudents.length} aluno{filteredStudents.length !== 1 ? "s" : ""})
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                            >
+                              Anterior
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                              disabled={currentPage === totalPages}
+                            >
+                              Próxima
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEnrolledStudentsModalOpen(false)
+                setTurmaParaListarAlunos(null)
+                setEnrolledStudents([])
+                setSearchEnrolledStudents("")
+                setCurrentPage(1)
+              }}
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
