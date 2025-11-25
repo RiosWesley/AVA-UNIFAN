@@ -130,7 +130,7 @@ export default function TurmaDetalhePage() {
   type AlunoItem = { id: string; nome: string; matricula: string; media: number; frequencia: number; situacao: string }
   const [alunos, setAlunos] = useState<AlunoItem[]>([])
 
-  type AtividadeItem = { id: string; titulo: string; tipo: string; prazo?: string | null; entregues: number; total: number; status: "Ativa" | "Concluída"; peso?: number | null; descricao?: string | null }
+  type AtividadeItem = { id: string; titulo: string; tipo: string; prazo?: string | null; entregues: number; total: number; status: "Ativa" | "Concluída"; peso?: number | null; descricao?: string | null; unit?: string }
   const [atividades, setAtividades] = useState<AtividadeItem[]>([])
 
   // Entregas dos alunos (carregadas da API)
@@ -249,7 +249,8 @@ export default function TurmaDetalhePage() {
             total: totalAlunos,
             status,
             peso: a.maxScore ?? null,
-            descricao: a.description ?? null
+            descricao: a.description ?? null,
+            unit: a.unit
           }
         })
         setAtividades(atividadesMapped)
@@ -584,8 +585,29 @@ export default function TurmaDetalhePage() {
   }
 
   const handleEditarAtividade = (atividade: any) => {
+    // Mapear tipo da API para tipo do modal
+    const tipoMap: Record<string, string> = {
+      'exam': 'Avaliação',
+      'homework': 'Exercício',
+      'project': 'Projeto',
+      'virtual_exam': 'Avaliação'
+    }
+    const atividadeParaEditar = {
+      ...atividade,
+      tipo: tipoMap[atividade.tipo] || atividade.tipo || 'Exercício',
+      // Garantir que unidade seja preservada (pode vir como unit ou unidade)
+      unidade: atividade.unit || atividade.unidade || '1ª Unidade',
+      unit: atividade.unit || atividade.unidade || '1ª Unidade', // Preservar também como unit
+      prazo: atividade.prazo || atividade.dueDate,
+      peso: atividade.peso || atividade.maxScore,
+      maxScore: atividade.maxScore || atividade.peso, // Preservar também como maxScore
+      descricao: atividade.descricao || atividade.description,
+      description: atividade.description || atividade.descricao, // Preservar também como description
+      title: atividade.title || atividade.titulo, // Preservar também como title
+      titulo: atividade.titulo || atividade.title // Preservar também como titulo
+    }
     setModoModalAtividade('editar')
-    setAtividadeEditando(atividade)
+    setAtividadeEditando(atividadeParaEditar)
     setModalAtividadeOpen(true)
   }
 
@@ -593,22 +615,50 @@ export default function TurmaDetalhePage() {
     // Persistir criação/edição de atividade
     const persist = async () => {
       try {
+        // Mapear tipo do modal para tipo da API
+        const tipoMap: Record<string, ActivityType> = {
+          'Exercício': 'homework',
+          'Avaliação': 'exam',
+          'Projeto': 'project',
+          'Trabalho em Grupo': 'project',
+          'Pesquisa': 'homework',
+          'Apresentação': 'project',
+          'Outro': 'homework'
+        }
+        const activityType = tipoMap[atividade?.tipo] || atividade?.type || 'homework'
+
+        // Converter data do formato YYYY-MM-DD para ISO string se necessário
+        const formatDateForAPI = (dateString: string | null | undefined): string | undefined => {
+          if (!dateString) return undefined
+          // Se já estiver no formato ISO, retornar como está
+          if (dateString.includes('T') || dateString.includes('Z')) return dateString
+          // Se estiver no formato YYYY-MM-DD, converter para ISO
+          try {
+            const date = new Date(dateString + 'T00:00:00')
+            if (isNaN(date.getTime())) return undefined
+            return date.toISOString().split('T')[0] // Retorna apenas a data (YYYY-MM-DD) para o backend
+          } catch {
+            return undefined
+          }
+        }
+
         if (modoModalAtividade === 'criar') {
           await createActivity({
             classId,
             title: atividade?.titulo || atividade?.title || 'Atividade',
-            unit: (atividade?.unit as ActivityUnit) || '1ª Unidade',
-            type: atividade?.type || 'homework',
+            unit: (atividade?.unidade || atividade?.unit || '1ª Unidade') as ActivityUnit,
+            type: activityType,
             description: atividade?.descricao || atividade?.description,
-            dueDate: atividade?.prazo,
+            dueDate: formatDateForAPI(atividade?.prazo),
             maxScore: atividade?.peso ? Number(atividade.peso) : undefined,
           })
         } else if (atividadeEditando?.id) {
           await updateActivity(atividadeEditando.id, {
             title: atividade?.titulo || atividade?.title,
             description: atividade?.descricao || atividade?.description,
-            dueDate: atividade?.prazo,
+            dueDate: formatDateForAPI(atividade?.prazo),
             maxScore: atividade?.peso ? Number(atividade.peso) : undefined,
+            unit: (atividade?.unidade || atividade?.unit) as ActivityUnit,
           })
         }
         const acts = await listActivitiesByClass(classId)
@@ -616,14 +666,24 @@ export default function TurmaDetalhePage() {
         const atividadesMapped: AtividadeItem[] = acts.map((a: ActivityDTO) => {
           const prazo = a.dueDate || null
           const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
-          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null }
+          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null, unit: a.unit }
         })
         setAtividades(atividadesMapped)
         toast({ title: "Atividade salva", description: "A atividade foi salva com sucesso!" })
-      } catch (e: any) {
-        toast({ title: "Erro ao salvar atividade", description: "Tente novamente." })
-      } finally {
         setModalAtividadeOpen(false)
+      } catch (e: any) {
+        const errorMessage = e?.message || "Tente novamente."
+        // Verificar se é erro de limite de pontuação por unidade
+        if (errorMessage.includes('não pode exceder') || errorMessage.includes('soma das notas')) {
+          toast({ 
+            title: "Limite de Pontuação Excedido", 
+            description: errorMessage + "\n\nSugestão: Ajuste a pontuação máxima da atividade ou escolha outra unidade.",
+            variant: "error"
+          })
+        } else {
+          toast({ title: "Erro ao salvar atividade", description: errorMessage, variant: "error" })
+        }
+        // Não fechar o modal em caso de erro para permitir correção
       }
     }
     persist()
@@ -643,7 +703,7 @@ export default function TurmaDetalhePage() {
         const atividadesMapped: AtividadeItem[] = acts.map((a: ActivityDTO) => {
           const prazo = a.dueDate || null
           const status: "Ativa" | "Concluída" = prazo ? (new Date(prazo).getTime() < Date.now() ? "Concluída" : "Ativa") : "Ativa"
-          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null }
+          return { id: a.id, titulo: a.title, tipo: a.type, prazo, entregues: 0, total: totalAlunos, status, peso: a.maxScore ?? null, descricao: a.description ?? null, unit: a.unit }
         })
         setAtividades(atividadesMapped)
         toast({ title: "Item excluído", description: "Exclusão realizada com sucesso." })
@@ -941,7 +1001,7 @@ export default function TurmaDetalhePage() {
     setModalProvaOpen(true)
   }
 
-  const handleSalvarProva = async (payload: CreateExamPayload | UpdateExamPayload, activityData?: { title: string; description?: string; startDate?: string; dueDate?: string; maxScore?: number }) => {
+  const handleSalvarProva = async (payload: CreateExamPayload | UpdateExamPayload, activityData?: { title: string; description?: string; startDate?: string; dueDate?: string; maxScore?: number; unit?: ActivityUnit }) => {
     try {
       if (modoModalProva === 'criar') {
         // Criar Activity primeiro
@@ -949,7 +1009,7 @@ export default function TurmaDetalhePage() {
           const activity = await createActivity({
             classId,
             title: activityData.title,
-            unit: '1ª Unidade' as ActivityUnit,
+            unit: activityData.unit || '1ª Unidade',
             type: 'virtual_exam' as const,
             description: activityData.description,
             startDate: activityData.startDate,
@@ -976,7 +1036,8 @@ export default function TurmaDetalhePage() {
               description: activityData.description,
               startDate: activityData.startDate,
               dueDate: activityData.dueDate,
-              maxScore: activityData.maxScore
+              maxScore: activityData.maxScore,
+              unit: activityData.unit
             })
           } else {
             console.warn('ActivityId não encontrado para atualização')
@@ -994,7 +1055,17 @@ export default function TurmaDetalhePage() {
       toast({ title: "Prova salva", description: "A prova foi salva com sucesso!" })
       setModalProvaOpen(false)
     } catch (e: any) {
-      toast({ title: "Erro ao salvar prova", description: e?.message || "Tente novamente." })
+      const errorMessage = e?.message || "Tente novamente."
+      // Verificar se é erro de limite de pontuação por unidade
+      if (errorMessage.includes('não pode exceder') || errorMessage.includes('soma das notas')) {
+        toast({ 
+          title: "Limite de Pontuação Excedido", 
+          description: errorMessage + "\n\nSugestão: Ajuste a pontuação máxima da prova ou escolha outra unidade.",
+          variant: "error"
+        })
+      } else {
+        toast({ title: "Erro ao salvar prova", description: errorMessage, variant: "error" })
+      }
     }
   }
 
@@ -1819,7 +1890,8 @@ export default function TurmaDetalhePage() {
                                 total: totalAlunos,
                                 status,
                                 peso: a.maxScore ?? null,
-                                descricao: a.description ?? null
+                                descricao: a.description ?? null,
+                                unit: a.unit
                               }
                             })
                             setAtividades(atividadesMapped)
