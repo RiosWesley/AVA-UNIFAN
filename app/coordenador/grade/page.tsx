@@ -493,7 +493,7 @@ export default function GradeHorariaPage() {
 
           <Tabs defaultValue="grade" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="grade">Grade Semanal</TabsTrigger>
+              <TabsTrigger value="grade">Grade Horária</TabsTrigger>
               <TabsTrigger value="lista">Lista de Horários</TabsTrigger>
               <TabsTrigger value="conflitos">
                 Conflitos
