@@ -9,7 +9,7 @@ import { LiquidGlassCard, LiquidGlassButton } from "@/components/liquid-glass"
 import { LIQUID_GLASS_DEFAULT_INTENSITY } from "@/components/liquid-glass/config"
 import { MessageSquare, Megaphone, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import { useStudentNotices } from "@/hooks/use-comunicacao"
 import { useCurrentStudent } from "@/hooks/use-dashboard"
 import { ModalNovaMensagem } from "@/components/modals"
@@ -21,7 +21,7 @@ export default function AlunoComunicacaoPage() {
   const [defaultDestinatarioId, setDefaultDestinatarioId] = useState<string | null>(null)
   const { data: currentStudent } = useCurrentStudent()
   const [studentId, setStudentId] = useState<string | null>(null)
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
   type InboxItem = {
     otherUser: { id: string; name: string; email: string }
@@ -34,23 +34,47 @@ export default function AlunoComunicacaoPage() {
   const [replyText, setReplyText] = useState<string>("")
   const [otherUserRole, setOtherUserRole] = useState<string | null>(null)
 
-  const fetchInbox = async () => {
-    if (!API_URL || !studentId) return
+  const fetchInbox = useCallback(async () => {
+    console.log('[fetchInbox] Iniciando busca de inbox', { API_URL, studentId })
+    if (!API_URL || !studentId) {
+      console.log('[fetchInbox] Retornando cedo - faltando API_URL ou studentId')
+      return
+    }
     try {
-      const res = await fetch(`${API_URL}/messages/inbox`, {
+      const url = `${API_URL}/messages/inbox`
+      console.log('[fetchInbox] Fazendo requisição:', url)
+      console.log('[fetchInbox] Headers:', { 'Content-Type': 'application/json', 'x-user-id': studentId })
+      
+      const res = await fetch(url, {
         headers: { 'Content-Type': 'application/json', 'x-user-id': studentId },
       })
-      if (!res.ok) throw new Error('Erro ao carregar inbox')
+      
+      console.log('[fetchInbox] Resposta recebida:', { status: res.status, statusText: res.statusText, ok: res.ok })
+      
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('[fetchInbox] Erro na resposta:', errorText)
+        throw new Error(`Erro ao carregar inbox: ${res.status} - ${errorText}`)
+      }
+      
       const data = await res.json()
+      console.log('[fetchInbox] Dados recebidos:', data)
+      console.log('[fetchInbox] Tipo dos dados:', Array.isArray(data) ? 'array' : typeof data)
+      console.log('[fetchInbox] Quantidade de itens:', Array.isArray(data) ? data.length : 'N/A')
+      
       const normalized: InboxItem[] = (Array.isArray(data) ? data : []).map((i: any) => ({
         ...i,
         lastMessage: { ...i.lastMessage, sentAt: i.lastMessage?.sentAt ?? new Date().toISOString() },
       }))
+      
+      console.log('[fetchInbox] Dados normalizados:', normalized)
+      console.log('[fetchInbox] Quantidade de itens normalizados:', normalized.length)
       setInbox(normalized)
-    } catch {
+    } catch (error) {
+      console.error('[fetchInbox] Erro ao buscar inbox:', error)
       setInbox([])
     }
-  }
+  }, [API_URL, studentId])
 
   const fetchConversation = async (otherId: string) => {
     if (!API_URL || !studentId) return
@@ -162,10 +186,14 @@ export default function AlunoComunicacaoPage() {
   const notices = useStudentNotices(studentId || "")
 
   useEffect(() => {
+    console.log('[useEffect] studentId mudou:', studentId)
     if (studentId) {
+      console.log('[useEffect] Chamando fetchInbox porque studentId está definido')
       fetchInbox()
+    } else {
+      console.log('[useEffect] Não chamando fetchInbox - studentId não está definido')
     }
-  }, [studentId])
+  }, [studentId, fetchInbox])
 
   return (
     <div className="flex h-screen bg-background">
@@ -332,7 +360,8 @@ export default function AlunoComunicacaoPage() {
           <ModalNovaMensagem
             isOpen={isNovaMensagemOpen}
             onClose={() => setIsNovaMensagemOpen(false)}
-            currentUserId={studentId}
+            currentUserId={studentId || ""}
+            apiBaseUrl={API_URL}
             context="student"
             defaultDestinatarioId={defaultDestinatarioId}
             onSend={({ destinatarioId }) => {

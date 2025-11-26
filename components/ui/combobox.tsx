@@ -34,8 +34,11 @@ export function Combobox({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
+    console.log('[Combobox] Filtrando opções:', { query: q, totalOptions: options.length, options })
     if (!q) return options
-    return options.filter(o => o.label.toLowerCase().includes(q))
+    const result = options.filter(o => o.label.toLowerCase().includes(q))
+    console.log('[Combobox] Resultado do filtro:', result.length, 'opções')
+    return result
   }, [options, query])
 
   useEffect(() => {

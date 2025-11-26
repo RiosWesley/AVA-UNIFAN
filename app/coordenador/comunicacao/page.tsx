@@ -41,7 +41,7 @@ export default function CoordenadorComunicacaoPage() {
     conteudo?: string
   }>>([])
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Inbox e conversas (mensagens diretas)
@@ -373,7 +373,8 @@ export default function CoordenadorComunicacaoPage() {
                     <ModalNovaMensagem
                       isOpen={isNovaMensagemOpen}
                       onClose={() => setIsNovaMensagemOpen(false)}
-                      currentUserId={currentUserId}
+                      currentUserId={currentUserId || ""}
+                      apiBaseUrl={API_URL}
                       context="coordinator"
                       onSend={({ destinatarioId }) => {
                         setIsNovaMensagemOpen(false)

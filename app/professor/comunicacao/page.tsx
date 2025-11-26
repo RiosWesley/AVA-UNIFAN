@@ -23,7 +23,7 @@ import { PageSpinner } from "@/components/ui/page-spinner"
 export default function ProfessorComunicacaoPage() {
   const router = useRouter()
   const [isNovaMensagemOpen, setIsNovaMensagemOpen] = useState(false)
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -355,7 +355,8 @@ export default function ProfessorComunicacaoPage() {
                     <ModalNovaMensagem
                       isOpen={isNovaMensagemOpen}
                       onClose={() => setIsNovaMensagemOpen(false)}
-                      currentUserId={currentUserId}
+                      currentUserId={currentUserId || ""}
+                      apiBaseUrl={API_URL}
                       context="teacher"
                       onSend={({ destinatarioId }) => {
                         setIsNovaMensagemOpen(false)
