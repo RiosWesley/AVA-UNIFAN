@@ -27,6 +27,10 @@ import {
   updateClass,
   updateDiscipline,
   toggleDisciplineStatus,
+  getAllDisciplines,
+  associateDisciplineToCourse,
+  updateDisciplineSemester,
+  updateDisciplineType,
   type BackendClass,
   type BackendCourse,
   type BackendDiscipline,
@@ -195,7 +199,9 @@ export default function CursoDetalhePage() {
   const [novaDisciplina, setNovaDisciplina] = useState({
     nome: "",
     creditos: "",
-    cargaHoraria: ""
+    cargaHoraria: "",
+    semestre: "",
+    tipo: "obrigatoria" as "obrigatoria" | "optativa"
   })
   const [novaTurma, setNovaTurma] = useState({
     codigo: "",
@@ -222,6 +228,9 @@ export default function CursoDetalhePage() {
   const [isLoadingEnrolledStudents, setIsLoadingEnrolledStudents] = useState(false)
   const [searchEnrolledStudents, setSearchEnrolledStudents] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
+  const [allDisciplines, setAllDisciplines] = useState<BackendDiscipline[]>([])
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState<string | null>(null)
+  const [isLoadingDisciplines, setIsLoadingDisciplines] = useState(false)
 
   useEffect(() => {
     const checkTheme = () => {
@@ -444,12 +453,51 @@ export default function CursoDetalhePage() {
 
   const resetDisciplinaForm = () => {
     setDisciplinaEditandoId(null)
+    setSelectedDisciplineId(null)
     setNovaDisciplina({
       nome: "",
       creditos: "",
       cargaHoraria: "",
+      semestre: "",
+      tipo: "obrigatoria",
     })
   }
+
+  const loadAllDisciplines = useCallback(async () => {
+    try {
+      setIsLoadingDisciplines(true)
+      const disciplines = await getAllDisciplines()
+      setAllDisciplines(disciplines)
+    } catch (error: any) {
+      console.error("Erro ao buscar disciplinas:", error)
+      toast({
+        variant: "error",
+        title: "Erro ao carregar disciplinas",
+        description: "Não foi possível carregar a lista de disciplinas disponíveis.",
+      })
+      setAllDisciplines([])
+    } finally {
+      setIsLoadingDisciplines(false)
+    }
+  }, [])
+
+  // Carregar todas as disciplinas quando o modal de disciplina abrir
+  useEffect(() => {
+    if (isDisciplinaModalOpen && !disciplinaEditandoId) {
+      loadAllDisciplines()
+    } else if (!isDisciplinaModalOpen) {
+      // Limpar seleção quando o modal fecha
+      setSelectedDisciplineId(null)
+    }
+  }, [isDisciplinaModalOpen, disciplinaEditandoId, loadAllDisciplines])
+
+  // Mapear disciplinas para opções do Combobox
+  const disciplineOptions = useMemo(() => {
+    return allDisciplines.map((d) => ({
+      id: d.id,
+      label: `${d.name} (${d.credits || 0} créditos, ${d.workload || d.workLoad || 0}h)`,
+    }))
+  }, [allDisciplines])
 
   const resetTurmaForm = () => {
     setTurmaEditandoId(null)
@@ -467,6 +515,43 @@ export default function CursoDetalhePage() {
   }
 
   const handleCreateDisciplina = async () => {
+    // Se uma disciplina existente está selecionada, apenas associar ao curso
+    if (selectedDisciplineId) {
+      try {
+        setIsSavingDisciplina(true)
+        const semester = novaDisciplina.semestre ? Number(novaDisciplina.semestre) : undefined
+        const type = novaDisciplina.tipo === "obrigatoria" ? "required" : "optional"
+        await associateDisciplineToCourse(cursoId, selectedDisciplineId, semester, type)
+        
+        // Recarregar disciplinas do curso
+        const disciplinesData = await getCourseDisciplines(cursoId)
+        const mappedDisciplines = disciplinesData
+          .map((disciplina) => mapDiscipline(disciplina))
+          .filter((d) => d.status === "ativa")
+        setDisciplinas(mappedDisciplines)
+        
+        toast({
+          variant: "success",
+          title: "Disciplina vinculada",
+          description: "Disciplina existente vinculada ao curso com sucesso.",
+        })
+        resetDisciplinaForm()
+        setDisciplinaEditandoId(null)
+        setIsDisciplinaModalOpen(false)
+      } catch (error: any) {
+        const message = error?.response?.data?.message || error?.message || "Não foi possível vincular a disciplina"
+        toast({
+          variant: "error",
+          title: "Erro ao vincular disciplina",
+          description: Array.isArray(message) ? message.join(", ") : message,
+        })
+      } finally {
+        setIsSavingDisciplina(false)
+      }
+      return
+    }
+
+    // Validação para criar nova disciplina
     if (!novaDisciplina.nome.trim() || !novaDisciplina.creditos || !novaDisciplina.cargaHoraria) {
       toast({
         variant: "error",
@@ -484,9 +569,40 @@ export default function CursoDetalhePage() {
           credits: Number(novaDisciplina.creditos),
           workload: Number(novaDisciplina.cargaHoraria),
         })
-        setDisciplinas((prev) =>
-          prev.map((d) => (d.id === disciplinaEditandoId ? mapDiscipline(updated) : d))
-        )
+        
+        // Atualizar semestre se fornecido
+        if (novaDisciplina.semestre) {
+          try {
+            await updateDisciplineSemester(cursoId, disciplinaEditandoId, Number(novaDisciplina.semestre))
+          } catch (error) {
+            console.error("Erro ao atualizar semestre da disciplina:", error)
+            // Não falhar a atualização se o semestre não puder ser atualizado
+          }
+        } else {
+          // Se semestre vazio, definir como null
+          try {
+            await updateDisciplineSemester(cursoId, disciplinaEditandoId, undefined)
+          } catch (error) {
+            console.error("Erro ao remover semestre da disciplina:", error)
+          }
+        }
+
+        // Atualizar tipo
+        try {
+          const type = novaDisciplina.tipo === "obrigatoria" ? "required" : "optional"
+          await updateDisciplineType(cursoId, disciplinaEditandoId, type)
+        } catch (error) {
+          console.error("Erro ao atualizar tipo da disciplina:", error)
+          // Não falhar a atualização se o tipo não puder ser atualizado
+        }
+
+        // Recarregar disciplinas para obter o semestre atualizado
+        const disciplinesData = await getCourseDisciplines(cursoId)
+        const mappedDisciplines = disciplinesData
+          .map((disciplina) => mapDiscipline(disciplina))
+          .filter((d) => d.status === "ativa")
+        setDisciplinas(mappedDisciplines)
+
         toast({
           variant: "success",
           title: "Disciplina atualizada",
@@ -500,7 +616,32 @@ export default function CursoDetalhePage() {
           courseId: cursoId,
         })
 
-        setDisciplinas((prev) => [...prev, mapDiscipline(created)])
+        // Atualizar semestre se fornecido
+        if (novaDisciplina.semestre) {
+          try {
+            await updateDisciplineSemester(cursoId, created.id, Number(novaDisciplina.semestre))
+          } catch (error) {
+            console.error("Erro ao atualizar semestre da disciplina:", error)
+            // Não falhar a criação se o semestre não puder ser atualizado
+          }
+        }
+
+        // Atualizar tipo se fornecido
+        try {
+          const type = novaDisciplina.tipo === "obrigatoria" ? "required" : "optional"
+          await updateDisciplineType(cursoId, created.id, type)
+        } catch (error) {
+          console.error("Erro ao atualizar tipo da disciplina:", error)
+          // Não falhar a criação se o tipo não puder ser atualizado
+        }
+
+        // Recarregar disciplinas para obter o semestre atualizado
+        const disciplinesData = await getCourseDisciplines(cursoId)
+        const mappedDisciplines = disciplinesData
+          .map((disciplina) => mapDiscipline(disciplina))
+          .filter((d) => d.status === "ativa")
+        setDisciplinas(mappedDisciplines)
+
         toast({
           variant: "success",
           title: "Disciplina adicionada",
@@ -678,12 +819,55 @@ export default function CursoDetalhePage() {
 
   const handleEditarDisciplina = (disciplina: Disciplina) => {
     setDisciplinaEditandoId(disciplina.id)
+    setSelectedDisciplineId(null)
     setNovaDisciplina({
       nome: disciplina.nome,
       creditos: String(disciplina.creditos || ""),
       cargaHoraria: String(disciplina.cargaHoraria || ""),
+      semestre: String(disciplina.semestre || ""),
+      tipo: disciplina.tipo || "obrigatoria",
     })
     setIsDisciplinaModalOpen(true)
+  }
+
+  const handleDisciplineSelect = (disciplineId: string | null) => {
+    setSelectedDisciplineId(disciplineId)
+    
+    if (disciplineId) {
+      // Carregar dados da disciplina selecionada
+      const selectedDiscipline = allDisciplines.find((d) => d.id === disciplineId)
+      if (selectedDiscipline) {
+        setNovaDisciplina({
+          nome: selectedDiscipline.name,
+          creditos: String(selectedDiscipline.credits || ""),
+          cargaHoraria: String(selectedDiscipline.workload || selectedDiscipline.workLoad || ""),
+          semestre: "",
+          tipo: "obrigatoria",
+        })
+      }
+    }
+    // Se disciplineId é null, manter o nome digitado (será capturado via onSearch)
+  }
+
+  const handleDisciplineSearch = (query: string) => {
+    // Quando o usuário digita e não há seleção, atualizar o nome
+    if (!selectedDisciplineId) {
+      setNovaDisciplina((prev) => ({
+        ...prev,
+        nome: query,
+      }))
+    }
+  }
+
+  const handleClearDisciplineSelection = () => {
+    setSelectedDisciplineId(null)
+    setNovaDisciplina({
+      nome: "",
+      creditos: "",
+      cargaHoraria: "",
+      semestre: "",
+      tipo: "obrigatoria",
+    })
   }
 
   const handleToggleDisciplineStatusClick = async (disciplina: Disciplina) => {
@@ -1465,19 +1649,58 @@ export default function CursoDetalhePage() {
           <DialogHeader>
             <DialogTitle>{disciplinaEditandoId ? "Editar disciplina" : "Nova disciplina"}</DialogTitle>
             <DialogDescription>
-              {disciplinaEditandoId ? "Atualize os dados da disciplina vinculada ao curso." : "Vincule uma disciplina a este curso."}
+              {disciplinaEditandoId 
+                ? "Atualize os dados da disciplina vinculada ao curso." 
+                : selectedDisciplineId
+                ? "Disciplina existente selecionada. Para modificar dados, crie uma nova disciplina."
+                : "Busque uma disciplina existente ou crie uma nova disciplina para vincular ao curso."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
               <Label htmlFor="nome-disciplina">Nome</Label>
-              <Input
-                id="nome-disciplina"
-                value={novaDisciplina.nome}
-                onChange={(e) => setNovaDisciplina({ ...novaDisciplina, nome: e.target.value })}
-                placeholder="Ex: Algoritmos"
-              />
+              {disciplinaEditandoId ? (
+                <Input
+                  id="nome-disciplina"
+                  value={novaDisciplina.nome}
+                  onChange={(e) => setNovaDisciplina({ ...novaDisciplina, nome: e.target.value })}
+                  placeholder="Ex: Algoritmos"
+                />
+                  ) : (
+                    <>
+                      {isLoadingDisciplines ? (
+                        <div className="flex items-center gap-2 py-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">Carregando disciplinas...</span>
+                        </div>
+                      ) : (
+                        <Combobox
+                          options={disciplineOptions}
+                          value={selectedDisciplineId}
+                          onChange={handleDisciplineSelect}
+                          onSearch={handleDisciplineSearch}
+                          placeholder="Buscar disciplina existente ou digite para criar nova..."
+                          allowCustomInput={true}
+                        />
+                      )}
+                  {selectedDisciplineId && (
+                    <div className="mt-2 p-3 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                      <p className="text-sm text-blue-900 dark:text-blue-200">
+                        Disciplina existente selecionada. Para modificar dados, crie uma nova disciplina.
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearDisciplineSelection}
+                        className="mt-2 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+                      >
+                        Criar nova disciplina
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1489,6 +1712,7 @@ export default function CursoDetalhePage() {
                   onChange={(e) => setNovaDisciplina({ ...novaDisciplina, creditos: e.target.value })}
                   min="0"
                   placeholder="Ex: 4"
+                  disabled={!!selectedDisciplineId && !disciplinaEditandoId}
                 />
               </div>
               <div>
@@ -1500,8 +1724,44 @@ export default function CursoDetalhePage() {
                   onChange={(e) => setNovaDisciplina({ ...novaDisciplina, cargaHoraria: e.target.value })}
                   min="0"
                   placeholder="Ex: 60"
+                  disabled={!!selectedDisciplineId && !disciplinaEditandoId}
                 />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="semestre-disciplina">Semestre no curso (opcional)</Label>
+              <Input
+                id="semestre-disciplina"
+                type="number"
+                value={novaDisciplina.semestre}
+                onChange={(e) => setNovaDisciplina({ ...novaDisciplina, semestre: e.target.value })}
+                min="1"
+                max="20"
+                placeholder="Ex: 1, 2, 3..."
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Informe em qual semestre do curso esta disciplina é oferecida.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="tipo-disciplina">Tipo</Label>
+              <Select
+                value={novaDisciplina.tipo}
+                onValueChange={(value: "obrigatoria" | "optativa") => 
+                  setNovaDisciplina({ ...novaDisciplina, tipo: value })
+                }
+              >
+                <SelectTrigger id="tipo-disciplina">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="obrigatoria">Obrigatória</SelectItem>
+                  <SelectItem value="optativa">Optativa</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-1">
+                Selecione se a disciplina é obrigatória ou optativa no curso.
+              </p>
             </div>
           </div>
 
@@ -1515,9 +1775,23 @@ export default function CursoDetalhePage() {
             >
               Cancelar
             </Button>
-            <Button onClick={handleCreateDisciplina} disabled={isSavingDisciplina}>
+            <Button 
+              onClick={handleCreateDisciplina} 
+              disabled={
+                isSavingDisciplina || 
+                (disciplinaEditandoId 
+                  ? false 
+                  : selectedDisciplineId 
+                    ? false 
+                    : !novaDisciplina.nome.trim() || !novaDisciplina.creditos || !novaDisciplina.cargaHoraria)
+              }
+            >
               {isSavingDisciplina && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {disciplinaEditandoId ? "Salvar alterações" : "Salvar disciplina"}
+              {disciplinaEditandoId 
+                ? "Salvar alterações" 
+                : selectedDisciplineId 
+                  ? "Vincular disciplina" 
+                  : "Salvar disciplina"}
             </Button>
           </DialogFooter>
         </DialogContent>
