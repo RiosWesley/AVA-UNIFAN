@@ -563,10 +563,10 @@ export default function UsuariosAdministradorPage() {
       <Sidebar userRole="administrador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Gestão de Usuários</h1>
-            <p className="text-muted-foreground">Cadastrar, listar, buscar e filtrar usuários</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Usuários</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Cadastrar, listar, buscar e filtrar usuários</p>
           </div>
 
           <Tabs defaultValue="lista" className="space-y-6">
@@ -599,7 +599,7 @@ export default function UsuariosAdministradorPage() {
                       />
                     </div>
                     <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as Role | "todos")}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full md:w-48">
                         <SelectValue placeholder="Filtrar por papel" />
                       </SelectTrigger>
                       <SelectContent>
@@ -610,7 +610,7 @@ export default function UsuariosAdministradorPage() {
                         <SelectItem value="administrador">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" onClick={() => setCurrentPage(1)}>
+                    <Button variant="outline" onClick={() => setCurrentPage(1)} className="w-full md:w-auto">
                       <Search className="w-4 h-4 mr-2" />
                       Buscar
                     </Button>
@@ -625,22 +625,23 @@ export default function UsuariosAdministradorPage() {
                     {filtrados.map((u) => (
                       <Card key={u.id} className="border-l-4 border-l-green-500">
                         <CardContent className="p-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-semibold text-lg">{u.nome}</h3>
-                                <Badge variant="outline" className="capitalize">{u.role}</Badge>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                <h3 className="font-semibold text-base sm:text-lg truncate">{u.nome}</h3>
+                                <Badge variant="outline" className="capitalize flex-shrink-0">{u.role}</Badge>
+                                <Badge variant={u.status === "Ativo" ? "default" : "secondary"} className="flex-shrink-0 sm:hidden">{u.status}</Badge>
                               </div>
                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{u.email}</span>
+                                <span className="flex items-center gap-1 truncate"><Mail className="w-3.5 h-3.5 flex-shrink-0" /><span className="truncate">{u.email}</span></span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={u.status === "Ativo" ? "default" : "secondary"}>{u.status}</Badge>
+                            <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                              <Badge variant={u.status === "Ativo" ? "default" : "secondary"} className="hidden sm:inline-flex">{u.status}</Badge>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="bg-transparent"
+                                className="bg-transparent flex-1 sm:flex-initial"
                                 onClick={() => handleDetalhes(u)}
                                 title="Ver detalhes"
                               >
@@ -649,7 +650,7 @@ export default function UsuariosAdministradorPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="bg-transparent"
+                                className="bg-transparent flex-1 sm:flex-initial"
                                 onClick={() => handleEditar(u)}
                                 title="Editar usuário"
                               >
@@ -659,7 +660,7 @@ export default function UsuariosAdministradorPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="bg-transparent"
+                                  className="bg-transparent flex-1 sm:flex-initial"
                                   onClick={() => handleInativar(u)}
                                   title="Inativar usuário"
                                 >
@@ -680,33 +681,36 @@ export default function UsuariosAdministradorPage() {
                   {/* Controles de Paginação */}
                   {!loading && total > 0 && (
                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row items-center gap-2 text-sm text-muted-foreground w-full sm:w-auto">
                         <span>Mostrando</span>
-                        <Select value={itemsPerPage.toString()} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
-                          <SelectTrigger className="w-20 h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="5">5</SelectItem>
-                            <SelectItem value="10">10</SelectItem>
-                            <SelectItem value="20">20</SelectItem>
-                            <SelectItem value="50">50</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <span>de {total} usuários</span>
+                        <div className="flex items-center gap-2">
+                          <Select value={itemsPerPage.toString()} onValueChange={(v) => handleItemsPerPageChange(Number(v))}>
+                            <SelectTrigger className="w-20 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="5">5</SelectItem>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <span>de {total} usuários</span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 1}
+                          className="flex-1 sm:flex-initial"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
                         
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 overflow-x-auto">
                           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                             let pageNum: number
                             if (totalPages <= 5) {
@@ -725,7 +729,7 @@ export default function UsuariosAdministradorPage() {
                                 variant={currentPage === pageNum ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => handlePageChange(pageNum)}
-                                className="w-8 h-8 p-0"
+                                className="w-8 h-8 p-0 flex-shrink-0"
                               >
                                 {pageNum}
                               </Button>
@@ -738,6 +742,7 @@ export default function UsuariosAdministradorPage() {
                           size="sm"
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages}
+                          className="flex-1 sm:flex-initial"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </Button>

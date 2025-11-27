@@ -462,13 +462,13 @@ export default function DepartamentosAdministradorPage() {
       <Sidebar userRole="administrador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Gestão de Departamentos</h1>
-              <p className="text-muted-foreground">Cadastrar, listar, buscar e gerenciar departamentos</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Departamentos</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Cadastrar, listar, buscar e gerenciar departamentos</p>
             </div>
-            <Button onClick={handleOpenModal}>
+            <Button onClick={handleOpenModal} className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Novo Departamento
             </Button>
@@ -534,40 +534,40 @@ export default function DepartamentosAdministradorPage() {
                   const professoresCount = departamento.teachers?.length || 0
 
                   return (
-                    <Card key={departamento.id} className="border-l-4 border-l-blue-500">
+                    <Card key={departamento.id} className="border-l-4 border-l-blue-500 overflow-hidden">
                       <CardContent className="p-4">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="space-y-1 flex-1">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                          <div className="space-y-1 flex-1 min-w-0 w-full">
                             <div className="flex items-center gap-3">
-                              <h3 className="font-semibold text-lg">{departamento.name}</h3>
+                              <h3 className="font-semibold text-base sm:text-lg truncate min-w-0 flex-1">{departamento.name}</h3>
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               {departamento.coordinator ? (
-                                <span className="flex items-center gap-1">
-                                  <Users className="w-3.5 h-3.5" />
-                                  Coordenador: {departamento.coordinator.name}
+                                <span className="flex items-center gap-1 min-w-0 flex-1 sm:flex-initial">
+                                  <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                                  <span className="truncate">Coordenador: {departamento.coordinator.name}</span>
                                 </span>
                               ) : (
-                                <Badge variant="secondary">Sem coordenador</Badge>
+                                <Badge variant="secondary" className="flex-shrink-0 text-xs">Sem coordenador</Badge>
                               )}
-                              <span className="flex items-center gap-1">
+                              <span className="flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
                                 <Users className="w-3.5 h-3.5" />
                                 {professoresCount} professor(es)
                               </span>
-                              <span className="flex items-center gap-1">
+                              <span className="flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
                                 <BookOpen className="w-3.5 h-3.5" />
                                 {cursosCount} curso(s)
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleView(departamento)}>
+                          <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                            <Button variant="outline" size="sm" onClick={() => handleView(departamento)} className="flex-1 sm:flex-initial">
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleEdit(departamento)}>
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(departamento)} className="flex-1 sm:flex-initial">
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleDelete(departamento)}>
+                            <Button variant="outline" size="sm" onClick={() => handleDelete(departamento)} className="flex-1 sm:flex-initial">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -585,12 +585,13 @@ export default function DepartamentosAdministradorPage() {
               
               {/* Paginação */}
               {filteredDepartamentos.length > 0 && totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
                   <Button
                     variant="outline"
                     size="sm"
                     disabled={currentPage <= 1}
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="w-full sm:w-auto"
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
                     Anterior
@@ -603,6 +604,7 @@ export default function DepartamentosAdministradorPage() {
                     size="sm"
                     disabled={currentPage >= totalPages}
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="w-full sm:w-auto"
                   >
                     Próxima
                     <ChevronRight className="h-4 w-4 ml-1" />

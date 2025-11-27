@@ -221,13 +221,13 @@ export default function CursosAdministradorPage() {
       <Sidebar userRole="administrador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Gestão de Cursos</h1>
-              <p className="text-muted-foreground">Cadastrar, listar, buscar e gerenciar cursos</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Cursos</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Cadastrar, listar, buscar e gerenciar cursos</p>
             </div>
-            <Button onClick={handleOpenModal}>
+            <Button onClick={handleOpenModal} className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Novo Curso
             </Button>
@@ -290,7 +290,7 @@ export default function CursosAdministradorPage() {
                       />
                     </div>
                     <Select value={departamentoFilter} onValueChange={setDepartamentoFilter}>
-                      <SelectTrigger className="w-54">
+                      <SelectTrigger className="w-full md:w-54">
                         <SelectValue placeholder="Filtrar por departamento" />
                       </SelectTrigger>
                       <SelectContent>
@@ -303,7 +303,7 @@ export default function CursosAdministradorPage() {
                       </SelectContent>
                     </Select>
                     <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full md:w-48">
                         <SelectValue placeholder="Filtrar por status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -316,33 +316,33 @@ export default function CursosAdministradorPage() {
 
                   <div className="space-y-3">
                     {cursos.map((curso) => (
-                      <Card key={curso.id} className="border-l-4 border-l-blue-500">
+                      <Card key={curso.id} className="border-l-4 border-l-blue-500 overflow-hidden">
                         <CardContent className="p-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="space-y-1 flex-1">
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-semibold text-lg">{curso.name}</h3>
-                                <Badge variant="outline" className="font-mono">{curso.code}</Badge>
-                                <Badge variant={curso.status === "active" ? "default" : "secondary"}>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="space-y-1 flex-1 min-w-0 w-full">
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                <h3 className="font-semibold text-base sm:text-lg truncate min-w-0 flex-1">{curso.name}</h3>
+                                <Badge variant="outline" className="font-mono flex-shrink-0 text-xs">{curso.code}</Badge>
+                                <Badge variant={curso.status === "active" ? "default" : "secondary"} className="flex-shrink-0 text-xs">
                                   {statusDisplayMap[curso.status]}
                                 </Badge>
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Building2 className="w-3.5 h-3.5" />
-                                  {curso.department?.name}
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1 min-w-0 flex-1 sm:flex-initial">
+                                  <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+                                  <span className="truncate">{curso.department?.name || 'Sem departamento'}</span>
                                 </span>
-                                <span>{curso.totalHours}h • {curso.durationSemesters} semestres</span>
+                                <span className="flex-shrink-0 whitespace-nowrap">{curso.totalHours}h • {curso.durationSemesters} semestres</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" onClick={() => handleView(curso)}>
+                            <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+                              <Button variant="outline" size="sm" onClick={() => handleView(curso)} className="flex-1 sm:flex-initial">
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleEdit(curso)}>
+                              <Button variant="outline" size="sm" onClick={() => handleEdit(curso)} className="flex-1 sm:flex-initial">
                                 <Edit className="w-4 h-4" />
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleDelete(curso)}>
+                              <Button variant="outline" size="sm" onClick={() => handleDelete(curso)} className="flex-1 sm:flex-initial">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
@@ -364,7 +364,7 @@ export default function CursosAdministradorPage() {
       </main>
 
       <Dialog open={isModalOpen} onOpenChange={handleCloseModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditMode ? "Editar Curso" : "Novo Curso"}</DialogTitle>
             <DialogDescription>
@@ -437,7 +437,7 @@ export default function CursosAdministradorPage() {
       </Dialog>
 
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selectedCurso?.name}</DialogTitle>
             <DialogDescription>Detalhes do curso</DialogDescription>

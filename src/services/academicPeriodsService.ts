@@ -13,6 +13,12 @@ export interface CreateAcademicPeriodDto {
   endDate?: string;
 }
 
+export interface UpdateAcademicPeriodDto {
+  period?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 // Converter entrySemester (YYYY-1) para formato do backend (YYYY.1)
 export function convertEntrySemesterToPeriod(entrySemester: string): string {
   return entrySemester.replace('-', '.');
@@ -90,4 +96,24 @@ export async function getOrCreateAcademicPeriod(entrySemester: string): Promise<
 export async function getAllAcademicPeriods(): Promise<AcademicPeriod[]> {
   const { data } = await api.get<AcademicPeriod[]>('/academic-periods');
   return data;
+}
+
+// Alias para compatibilidade
+export const getAcademicPeriods = getAllAcademicPeriods;
+
+// Criar período letivo
+export async function createAcademicPeriod(dto: CreateAcademicPeriodDto): Promise<AcademicPeriod> {
+  const { data } = await api.post<AcademicPeriod>('/academic-periods', dto);
+  return data;
+}
+
+// Atualizar período letivo
+export async function updateAcademicPeriod(id: string, dto: UpdateAcademicPeriodDto): Promise<AcademicPeriod> {
+  const { data } = await api.patch<AcademicPeriod>(`/academic-periods/${id}`, dto);
+  return data;
+}
+
+// Deletar período letivo
+export async function deleteAcademicPeriod(id: string): Promise<void> {
+  await api.delete(`/academic-periods/${id}`);
 }
