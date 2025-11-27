@@ -45,35 +45,35 @@ export default function PerfilProfessorPage() {
   }, [router])
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
-          <p className="text-gray-600">Gerencie suas informações profissionais e configurações</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Meu Perfil</h1>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">Gerencie suas informações profissionais e configurações</p>
         </div>
       </div>
 
-      <Tabs defaultValue="perfil" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="perfil" className="space-y-4 md:space-y-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1">
           <TabsTrigger value="perfil">Perfil</TabsTrigger>
           <TabsTrigger value="academico">Acadêmico</TabsTrigger>
           <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
           <TabsTrigger value="seguranca">Segurança</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="perfil" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
+        <TabsContent value="perfil" className="space-y-4 md:space-y-6">
+          <div className="grid gap-4 md:gap-6 md:grid-cols-3">
             <Card className="md:col-span-1">
               <CardHeader>
-                <CardTitle>Foto do Perfil</CardTitle>
-                <CardDescription>Atualize sua foto de perfil</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Foto do Perfil</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Atualize sua foto de perfil</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col items-center space-y-4">
-                <Avatar className="w-32 h-32">
+              <CardContent className="flex flex-col items-center space-y-3 md:space-y-4">
+                <Avatar className="w-24 h-24 md:w-32 md:h-32">
                   <AvatarImage src="/professor-profile-photo.jpg" />
-                  <AvatarFallback className="text-2xl">AS</AvatarFallback>
+                  <AvatarFallback className="text-xl md:text-2xl">AS</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" className="w-full bg-transparent">
+                <Button variant="outline" className="w-full bg-transparent text-sm md:text-base">
                   <Camera className="w-4 h-4 mr-2" />
                   Alterar Foto
                 </Button>
@@ -82,11 +82,11 @@ export default function PerfilProfessorPage() {
 
             <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle>Informações Pessoais</CardTitle>
-                <CardDescription>Atualize suas informações básicas</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Informações Pessoais</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Atualize suas informações básicas</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+              <CardContent className="space-y-3 md:space-y-4">
+                <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="nome">Nome Completo</Label>
                     <Input id="nome" defaultValue="Ana Silva Santos" />
@@ -108,23 +108,23 @@ export default function PerfilProfessorPage() {
                     <Input id="endereco" defaultValue="Av. Paulista, 1000 - São Paulo, SP" />
                   </div>
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">Salvar Alterações</Button>
+                <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Salvar Alterações</Button>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="academico" className="space-y-6">
+        <TabsContent value="academico" className="space-y-4 md:space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <GraduationCap className="w-4 h-4 md:w-5 md:h-5" />
                 Informações Acadêmicas
               </CardTitle>
-              <CardDescription>Dados sobre sua formação e experiência</CardDescription>
+              <CardDescription className="text-xs md:text-sm">Dados sobre sua formação e experiência</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="space-y-4 md:space-y-6">
+              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="registro">Registro Profissional</Label>
                   <Input id="registro" defaultValue="CRP-123456" />
@@ -167,7 +167,7 @@ export default function PerfilProfessorPage() {
                 <Input id="especializacoes" defaultValue="Inteligência Artificial, Machine Learning, Algoritmos" />
               </div>
 
-              <Button className="bg-green-600 hover:bg-green-700">Salvar Informações</Button>
+              <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Salvar Informações</Button>
             </CardContent>
           </Card>
 
@@ -178,66 +178,66 @@ export default function PerfilProfessorPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Algoritmos e Estruturas de Dados</p>
-                    <p className="text-sm text-gray-600">Turma: CC-2023A • 45 alunos</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm md:text-base truncate">Algoritmos e Estruturas de Dados</p>
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">Turma: CC-2023A • 45 alunos</p>
                   </div>
-                  <Badge>Ativa</Badge>
+                  <Badge className="text-xs w-fit">Ativa</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Inteligência Artificial</p>
-                    <p className="text-sm text-gray-600">Turma: CC-2023B • 38 alunos</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm md:text-base truncate">Inteligência Artificial</p>
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">Turma: CC-2023B • 38 alunos</p>
                   </div>
-                  <Badge>Ativa</Badge>
+                  <Badge className="text-xs w-fit">Ativa</Badge>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="font-medium">Machine Learning</p>
-                    <p className="text-sm text-gray-600">Turma: CC-2023C • 25 alunos</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm md:text-base truncate">Machine Learning</p>
+                    <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">Turma: CC-2023C • 25 alunos</p>
                   </div>
-                  <Badge variant="secondary">Planejada</Badge>
+                  <Badge variant="secondary" className="text-xs w-fit">Planejada</Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="configuracoes" className="space-y-6">
+        <TabsContent value="configuracoes" className="space-y-4 md:space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Bell className="w-4 h-4 md:w-5 md:h-5" />
                 Notificações
               </CardTitle>
-              <CardDescription>Configure como você deseja receber notificações</CardDescription>
+              <CardDescription className="text-xs md:text-sm">Configure como você deseja receber notificações</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">Notificações por Email</p>
-                  <p className="text-sm text-gray-600">Receba atualizações sobre suas turmas</p>
+            <CardContent className="space-y-4 md:space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <p className="font-medium text-sm md:text-base">Notificações por Email</p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Receba atualizações sobre suas turmas</p>
                 </div>
                 <Switch
                   checked={notificacoes.email}
                   onCheckedChange={(checked) => setNotificacoes({ ...notificacoes, email: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">Notificações Push</p>
-                  <p className="text-sm text-gray-600">Alertas sobre atividades e mensagens</p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <p className="font-medium text-sm md:text-base">Notificações Push</p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Alertas sobre atividades e mensagens</p>
                 </div>
                 <Switch
                   checked={notificacoes.push}
                   onCheckedChange={(checked) => setNotificacoes({ ...notificacoes, push: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">Notificações por SMS</p>
-                  <p className="text-sm text-gray-600">Alertas urgentes por SMS</p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <p className="font-medium text-sm md:text-base">Notificações por SMS</p>
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Alertas urgentes por SMS</p>
                 </div>
                 <Switch
                   checked={notificacoes.sms}
@@ -249,13 +249,13 @@ export default function PerfilProfessorPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Settings className="w-4 h-4 md:w-5 md:h-5" />
                 Preferências de Ensino
               </CardTitle>
-              <CardDescription>Configure suas preferências para o ensino</CardDescription>
+              <CardDescription className="text-xs md:text-sm">Configure suas preferências para o ensino</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 md:space-y-4">
               <div className="space-y-2">
                 <Label>Método de Avaliação Padrão</Label>
                 <select className="w-full p-2 border rounded-md">
@@ -277,22 +277,22 @@ export default function PerfilProfessorPage() {
                 <Label>Prazo Padrão para Correção (dias)</Label>
                 <Input type="number" defaultValue="7" />
               </div>
-              <Button className="bg-green-600 hover:bg-green-700">Salvar Preferências</Button>
+              <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Salvar Preferências</Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="seguranca" className="space-y-6">
+        <TabsContent value="seguranca" className="space-y-4 md:space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Shield className="w-4 h-4 md:w-5 md:h-5" />
                 Segurança da Conta
               </CardTitle>
-              <CardDescription>Gerencie a segurança da sua conta</CardDescription>
+              <CardDescription className="text-xs md:text-sm">Gerencie a segurança da sua conta</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
+            <CardContent className="space-y-4 md:space-y-6">
+              <div className="space-y-3 md:space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="senha-atual">Senha Atual</Label>
                   <Input id="senha-atual" type="password" />
@@ -305,19 +305,19 @@ export default function PerfilProfessorPage() {
                   <Label htmlFor="confirmar-senha">Confirmar Nova Senha</Label>
                   <Input id="confirmar-senha" type="password" />
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">Alterar Senha</Button>
+                <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Alterar Senha</Button>
               </div>
 
-              <div className="border-t pt-6">
-                <h3 className="font-medium mb-4">Sessões Ativas</h3>
+              <div className="border-t pt-4 md:pt-6">
+                <h3 className="font-medium mb-3 md:mb-4 text-sm md:text-base">Sessões Ativas</h3>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium">Navegador Atual</p>
-                      <p className="text-sm text-gray-600">Chrome - São Paulo, SP</p>
-                      <p className="text-sm text-gray-600">Último acesso: Agora</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm md:text-base">Navegador Atual</p>
+                      <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Chrome - São Paulo, SP</p>
+                      <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">Último acesso: Agora</p>
                     </div>
-                    <Badge>Atual</Badge>
+                    <Badge className="text-xs w-fit">Atual</Badge>
                   </div>
                 </div>
               </div>

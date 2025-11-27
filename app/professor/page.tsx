@@ -361,49 +361,49 @@ export default function ProfessorDashboard() {
       <Sidebar userRole="professor" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className="p-4 md:p-6 lg:p-8">
           {/* Header aprimorado */}
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+          <div className={`flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 rounded-2xl border backdrop-blur-sm gap-4 ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <GraduationCap className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <GraduationCap className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                  <Sparkles className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400 truncate">
                   Olá, {currentUser?.name ? `Prof. ${currentUser.name}` : 'Professor(a)'}!
                 </h1>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1">
                   Gerencie suas turmas e atividades
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
-                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                <div className="flex items-center mt-2 flex-wrap gap-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs md:text-sm">
                     <Star className="h-3 w-3 mr-1" />
                     {turmas.length} turmas ativas
                   </Badge>
-                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-xs md:text-sm">
                     <Award className="h-3 w-3 mr-1" />
                     Média geral: 8.2
                   </Badge>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
               <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                 {loading || semestres.length === 0 ? (
-                  <Skeleton className="h-10 w-40" />
+                  <Skeleton className="h-10 w-full sm:w-40" />
                 ) : (
                   <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                    <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                    <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                       isLiquidGlass
                         ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                         : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -427,27 +427,27 @@ export default function ProfessorDashboard() {
                   </Select>
                 )}
               </div>
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
+              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm w-full sm:w-auto ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
                   : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
               }`}>
-                <FileText className="h-5 w-5 mr-2" />
-                Lançar Notas
+                <FileText className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                <span className="text-sm md:text-base">Lançar Notas</span>
               </LiquidGlassButton>
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
+              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm w-full sm:w-auto ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
                   : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
               }`}>
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Registrar Frequência
+                <CheckCircle className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                <span className="text-sm md:text-base">Registrar Frequência</span>
               </LiquidGlassButton>
             </div>
           </div>
 
           {/* Mural de Avisos (Carrossel) */}
-          <div className="mb-8">
+          <div className="mb-4 md:mb-6 lg:mb-8">
             <Carousel
               images={carouselImages}
               heightClass="h-120 md:h-125 lg:h-140"
@@ -456,7 +456,7 @@ export default function ProfessorDashboard() {
           </div>
 
           {/* Cards de estatísticas aprimorados */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6 lg:mb-8">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group transition-all duration-300 hover:shadow-2xl border border-border/50 hover:border-border/80 ${
@@ -530,9 +530,9 @@ export default function ProfessorDashboard() {
           </div>
 
           {/* Layout principal aprimorado */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-12 gap-4 md:gap-6">
             {/* Conteúdo principal - ocupa 8 colunas no xl */}
-            <div className="xl:col-span-8 space-y-6">
+            <div className="xl:col-span-12 lg:xl:col-span-8 space-y-4 md:space-y-6">
               {/* Próximas Aulas */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
@@ -550,18 +550,18 @@ export default function ProfessorDashboard() {
                   <CardDescription className="text-gray-600 dark:text-gray-400">Suas aulas de hoje e próximas</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {proximasAulas.map((aula: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 md:p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors gap-3">
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
                             <Play className="h-5 w-5 text-green-600 dark:text-green-400" />
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">{aula.turma}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{aula.sala}</p>
-                            <div className="flex items-center mt-1">
-                              <Badge variant="outline" className="text-xs mr-2">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{aula.turma}</h4>
+                            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{aula.sala}</p>
+                            <div className="flex items-center mt-1 flex-wrap gap-2">
+                              <Badge variant="outline" className="text-xs">
                                 {aula.tipo}
                               </Badge>
                               <span className={`text-xs ${
@@ -572,9 +572,9 @@ export default function ProfessorDashboard() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{aula.horario}</p>
-                          <LiquidGlassButton size="sm" variant="outline" className="mt-2">
+                        <div className="flex items-center justify-between sm:justify-end sm:flex-col sm:items-end gap-2 sm:gap-0">
+                          <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-gray-100">{aula.horario}</p>
+                          <LiquidGlassButton size="sm" variant="outline" className="sm:mt-2">
                             <ChevronRight className="h-4 w-4" />
                           </LiquidGlassButton>
                         </div>
@@ -601,19 +601,19 @@ export default function ProfessorDashboard() {
                   <CardDescription className="text-gray-600 dark:text-gray-400">Turmas sob sua responsabilidade</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {paginatedTurmas.map((turma: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                            <BookOpen className="h-6 w-6 text-white" />
+                      <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 md:p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors gap-3">
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                            <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-white" />
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">{turma.nome}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{turma.disciplina}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{turma.alunos} alunos</p>
-                            <div className="flex items-center mt-1">
-                              <Badge variant="outline" className="text-xs mr-2">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{turma.nome}</h4>
+                            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{turma.disciplina}</p>
+                            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{turma.alunos} alunos</p>
+                            <div className="flex items-center mt-1 flex-wrap gap-2">
+                              <Badge variant="outline" className="text-xs">
                                 {turma.status}
                               </Badge>
                               <span className="text-xs text-green-600 dark:text-green-400">
@@ -622,19 +622,21 @@ export default function ProfessorDashboard() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{turma.proxima}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{turma.sala}</p>
-                          <LiquidGlassButton size="sm" variant="outline" className="mt-2">
-                            Gerenciar
-                            <ChevronRight className="h-4 w-4 ml-2" />
+                        <div className="flex items-center justify-between sm:justify-end sm:flex-col sm:items-end gap-2 sm:gap-0">
+                          <div className="text-right sm:text-right">
+                            <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-gray-100">{turma.proxima}</p>
+                            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{turma.sala}</p>
+                          </div>
+                          <LiquidGlassButton size="sm" variant="outline" className="sm:mt-2">
+                            <span className="hidden sm:inline">Gerenciar</span>
+                            <ChevronRight className="h-4 w-4 sm:ml-2" />
                           </LiquidGlassButton>
                         </div>
                       </div>
                     ))}
                   </div>
                   {/* Paginação Turmas */}
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 mt-4">
                     <LiquidGlassButton
                       size="sm"
                       variant="outline"
@@ -660,7 +662,7 @@ export default function ProfessorDashboard() {
             </div>
 
             {/* Conteúdo lateral - ocupa 4 colunas no xl */}
-            <div className="xl:col-span-4 space-y-6">
+            <div className="xl:col-span-12 lg:xl:col-span-4 space-y-4 md:space-y-6">
               {/* Agenda Semanal */}
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
@@ -750,7 +752,7 @@ export default function ProfessorDashboard() {
                     ))}
                   </div>
                   {/* Paginação Comunicados */}
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 mt-4">
                     <LiquidGlassButton
                       size="sm"
                       variant="outline"
@@ -778,7 +780,7 @@ export default function ProfessorDashboard() {
           </div>
 
           {/* Atividades Recentes - full width */}
-          <div className="mt-6">
+          <div className="mt-4 md:mt-6">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group transition-all duration-300 hover:shadow-xl border border-border/50 hover:border-border/80 ${
@@ -797,9 +799,9 @@ export default function ProfessorDashboard() {
               <CardContent>
                 <div className="space-y-3">
                   {paginatedAtividades.map((atividade: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <div className={`${"w-10 h-10 rounded-lg flex items-center justify-center shadow-lg "}
+                    <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors gap-3">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div className={`${"w-10 h-10 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 "}
                           ${atividade.tipo === "Prova" ? "bg-red-500/20" :
                           atividade.tipo === "Exercício" ? "bg-green-500/20" : "bg-green-500/20"}`}> 
                           <FileText className={`h-5 w-5 ${
@@ -807,11 +809,11 @@ export default function ProfessorDashboard() {
                             atividade.tipo === "Exercício" ? "text-green-600 dark:text-green-400" : "text-green-600 dark:text-green-400"
                           }`} />
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-gray-100">{atividade.titulo}</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{atividade.turma}</p>
-                          <div className="flex items-center mt-1">
-                            <Badge variant="outline" className="text-xs mr-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{atividade.titulo}</h4>
+                          <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{atividade.turma}</p>
+                          <div className="flex items-center mt-1 flex-wrap gap-2">
+                            <Badge variant="outline" className="text-xs">
                               {atividade.tipo}
                             </Badge>
                             <Badge
@@ -829,7 +831,7 @@ export default function ProfessorDashboard() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="flex items-center justify-between sm:justify-end sm:flex-col sm:items-end gap-2 sm:gap-0">
                         <Badge
                           variant={
                             atividade.status === "Pendente"
@@ -838,16 +840,17 @@ export default function ProfessorDashboard() {
                                 ? "secondary"
                                 : "outline"
                           }
+                          className="text-xs"
                         >
                           {atividade.status}
                         </Badge>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{atividade.prazo}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 sm:mt-1">{atividade.prazo}</p>
                       </div>
                     </div>
                   ))}
                 </div>
                 {/* Paginação */}
-                <div className="flex items-center justify-between mt-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 mt-4">
                   <LiquidGlassButton
                     size="sm"
                     variant="outline"

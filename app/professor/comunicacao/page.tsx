@@ -321,32 +321,32 @@ export default function ProfessorComunicacaoPage() {
       <Sidebar userRole="professor" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Comunicação</h1>
-              <p className="text-muted-foreground">Gerencie mensagens e avisos</p>
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-4 md:mb-6">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Comunicação</h1>
+              <p className="text-sm md:text-base text-muted-foreground">Gerencie mensagens e avisos</p>
             </div>
-            <div className="flex gap-2">
-              <LiquidGlassButton variant="outline">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <LiquidGlassButton variant="outline" className="w-full sm:w-auto">
                 <Bell className="h-4 w-4 mr-2" />
                 Notificações
               </LiquidGlassButton>
             </div>
           </div>
 
-          <Tabs defaultValue="mensagens" className="space-y-6">
+          <Tabs defaultValue="mensagens" className="space-y-4 md:space-y-6">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-              <TabsTrigger value="avisos">Avisos</TabsTrigger>
+              <TabsTrigger value="mensagens" className="text-sm md:text-base">Mensagens</TabsTrigger>
+              <TabsTrigger value="avisos" className="text-sm md:text-base">Avisos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="mensagens">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
                 <h3 className="text-lg font-semibold">Mensagens</h3>
                 <Dialog open={isNovaMensagemOpen}>
                   <DialogTrigger asChild onClick={() => setIsNovaMensagemOpen(true)}>
-                    <LiquidGlassButton disabled={!currentUserId}>
+                    <LiquidGlassButton disabled={!currentUserId} className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       Nova Mensagem
                     </LiquidGlassButton>
@@ -369,7 +369,7 @@ export default function ProfessorComunicacaoPage() {
                   )}
                 </Dialog>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 <div className="lg:col-span-1">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
@@ -382,14 +382,14 @@ export default function ProfessorComunicacaoPage() {
                           <div
                             key={item.otherUser.id}
                             onClick={() => handleSelectInboxItem(item.otherUser.id)}
-                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
+                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
                           >
-                            <div className="flex items-start justify-between mb-1">
-                              <h5 className="font-medium text-sm">{item.otherUser.name}</h5>
-                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full" />}
+                            <div className="flex items-start justify-between mb-1 gap-2">
+                              <h5 className="font-medium text-sm truncate flex-1 min-w-0">{item.otherUser.name}</h5>
+                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1.5" />}
                             </div>
-                            <p className="font-medium text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="font-medium text-sm mb-1 line-clamp-1 break-words">{item.lastMessage?.content || ''}</p>
+                            <p className="text-xs text-muted-foreground truncate">
                               {new Date(item.lastMessage?.sentAt || Date.now()).toLocaleString('pt-BR')}
                             </p>
                           </div>
@@ -402,22 +402,22 @@ export default function ProfessorComunicacaoPage() {
                 <div className="lg:col-span-2">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                       <CardHeader>
-                      <CardTitle>
+                      <CardTitle className="flex flex-wrap items-center gap-2">
                         {selectedOtherUserId
                           ? (
-                            <span>
-                              {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name}
+                            <>
+                              <span className="truncate">{inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.name}</span>
                               {otherUserRole && (
-                                <span className="ml-2 inline-flex items-center rounded border px-1.5 py-0.5 text-xs">
+                                <span className="inline-flex items-center rounded border px-1.5 py-0.5 text-xs flex-shrink-0">
                                   {otherUserRole}
                                 </span>
                               )}
-                            </span>
+                            </>
                           )
                           : 'Selecione uma conversa'}
                       </CardTitle>
                       {selectedOtherUserId && (
-                        <CardDescription>
+                        <CardDescription className="truncate">
                           {inbox.find(i => i.otherUser.id === selectedOtherUserId)?.otherUser.email}
                         </CardDescription>
                       )}
@@ -440,11 +440,11 @@ export default function ProfessorComunicacaoPage() {
                           <div className="border-t pt-4">
                             <Textarea
                               placeholder="Digite sua resposta..."
-                              className="mb-4"
+                              className="mb-4 min-h-[100px]"
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
                             />
-                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()}>
+                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()} className="w-full sm:w-auto">
                               <Send className="h-4 w-4 mr-2" />
                               Responder
                             </LiquidGlassButton>
@@ -461,9 +461,9 @@ export default function ProfessorComunicacaoPage() {
 
             <TabsContent value="avisos">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                   <h3 className="text-lg font-semibold">Meus Avisos</h3>
-                  <LiquidGlassButton onClick={openCreateAviso}>
+                  <LiquidGlassButton onClick={openCreateAviso} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Aviso
                   </LiquidGlassButton>
@@ -472,20 +472,20 @@ export default function ProfessorComunicacaoPage() {
                 {avisos.map((aviso) => (
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={aviso.id}>
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-lg mb-2">{aviso.titulo}</h4>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <Badge variant="outline">{aviso.turma}</Badge>
-                            <span>{aviso.data}</span>
-                            <span>{aviso.visualizacoes} visualizações</span>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-base md:text-lg mb-2 truncate">{aviso.titulo}</h4>
+                          <div className="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground">
+                            <Badge variant="outline" className="text-xs">{aviso.turma}</Badge>
+                            <span className="truncate">{aviso.data}</span>
+                            <span className="truncate">{aviso.visualizacoes} visualizações</span>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <LiquidGlassButton variant="outline" size="sm" onClick={() => openEditAviso(aviso.id)}>
+                        <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+                          <LiquidGlassButton variant="outline" size="sm" onClick={() => openEditAviso(aviso.id)} className="flex-1 sm:flex-none">
                             <Edit className="h-4 w-4" />
                           </LiquidGlassButton>
-                          <LiquidGlassButton variant="outline" size="sm" onClick={() => confirmDelete(aviso.id)}>
+                          <LiquidGlassButton variant="outline" size="sm" onClick={() => confirmDelete(aviso.id)} className="flex-1 sm:flex-none">
                             <Trash2 className="h-4 w-4" />
                           </LiquidGlassButton>
                         </div>

@@ -282,7 +282,7 @@ export function Sidebar({ userRole }: SidebarProps) {
 
       {/* Botão flutuante quando sidebar está retraída */}
       {isHidden && (
-        <div className="fixed left-0 top-0 z-50 ml-2 md:ml-4 mt-4 md:mt-6">
+        <div className="fixed right-0 top-0 z-50 mr-2 md:mr-4 mt-4 md:mt-6">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -302,10 +302,10 @@ export function Sidebar({ userRole }: SidebarProps) {
                 }}
                 aria-label="Expandir menu"
               >
-                <ChevronRight className="h-6 w-6 md:h-7 md:w-7" />
+                <ChevronLeft className="h-6 w-6 md:h-7 md:w-7" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="ml-2">
+            <TooltipContent side="left" className="mr-2">
               <span className="font-medium">Expandir menu</span>
             </TooltipContent>
           </Tooltip>
@@ -314,30 +314,33 @@ export function Sidebar({ userRole }: SidebarProps) {
       
       <div
         className={cn(
-          // Posicionamento: fixed em mobile quando não retraída, relative em desktop
-          isMobile && !isHidden ? "fixed left-0 top-0 z-50" : "relative",
-          // Largura: em mobile quando fixed, não aplicar classe de largura (controlado via style)
-          // Em desktop, largura normal via className
-          isMobile && !isHidden 
-            ? "" // Largura controlada via style inline quando fixed
+          // Posicionamento: sempre fixed em mobile, relative em desktop
+          isMobile ? "fixed left-0 top-0 z-50" : "relative",
+          // Largura: em mobile não aplicar classe (controlado via style), em desktop aplicar normalmente
+          isMobile 
+            ? "" // Largura sempre controlada via style quando em mobile
             : isHidden 
               ? "w-0 overflow-hidden" 
               : isCollapsed 
                 ? "w-16 overflow-hidden" 
                 : "w-72 overflow-hidden",
-          // Transição translate-x em mobile
+          // Transição translate-x em mobile: retraída = fora da tela, aberta = visível
           isMobile && isHidden ? "-translate-x-full" : isMobile && !isHidden ? "translate-x-0" : "",
-          "transition-all duration-500 ease-in-out"
+          // Transição: apenas transform em mobile, transition-all em desktop
+          isMobile 
+            ? "transition-transform duration-500 ease-in-out" 
+            : "transition-all duration-500 ease-in-out"
         )}
         style={{
-          // Em mobile quando fixed, definir largura visual (sobrescreve qualquer classe Tailwind)
-          ...(isMobile && !isHidden 
+          // Em mobile, sempre aplicar estilos para não afetar o flex layout
+          ...(isMobile 
             ? { 
-                width: isCollapsed ? '64px' : '288px', // 16 = 64px, 72 = 288px
-                minWidth: isCollapsed ? '64px' : '288px',
-                maxWidth: isCollapsed ? '64px' : '288px',
-                flexShrink: 0, // Não encolher
-                flexBasis: '0px' // Não ocupar espaço no flex
+                width: isHidden ? '0px' : (isCollapsed ? '64px' : '288px'),
+                minWidth: isHidden ? '0px' : (isCollapsed ? '64px' : '288px'),
+                maxWidth: isHidden ? '0px' : (isCollapsed ? '64px' : '288px'),
+                flexShrink: 0,
+                flexBasis: '0px', // Nunca ocupar espaço no flex quando em mobile
+                willChange: 'transform' // Otimizar apenas a transformação
               } 
             : {})
         }}

@@ -472,20 +472,20 @@ export default function ProfessorTurmasPage() {
       <Sidebar userRole="professor" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Minhas Turmas</h1>
-              <p className="text-muted-foreground">Gerencie suas turmas e acompanhe o desempenho</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Minhas Turmas</h1>
+              <p className="text-sm md:text-base text-muted-foreground">Gerencie suas turmas e acompanhe o desempenho</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 sm:gap-4 w-full md:w-auto">
               <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-primary" />
+                <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
                 {loadingSemestres || semestres.length === 0 ? (
-                  <Skeleton className="h-10 w-40" />
+                  <Skeleton className="h-10 w-full sm:w-40" />
                 ) : (
                   <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-full sm:w-40">
                       <SelectValue placeholder="Selecionar semestre" />
                     </SelectTrigger>
                     <SelectContent>
@@ -505,14 +505,14 @@ export default function ProfessorTurmasPage() {
                   </Select>
                 )}
               </div>
-              <div className="flex gap-2">
-                <LiquidGlassButton>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <LiquidGlassButton className="w-full sm:w-auto">
                   <FileText className="h-4 w-4 mr-2" />
-                  Lançar Notas
+                  <span className="text-sm md:text-base">Lançar Notas</span>
                 </LiquidGlassButton>
-                <LiquidGlassButton variant="outline">
+                <LiquidGlassButton variant="outline" className="w-full sm:w-auto">
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Registrar Frequência
+                  <span className="text-sm md:text-base">Registrar Frequência</span>
                 </LiquidGlassButton>
               </div>
             </div>
@@ -601,58 +601,62 @@ export default function ProfessorTurmasPage() {
                     href={`/professor/turmas/${turma.id}`}
                     className="block group"
                   >
-                    <div className="transition-all duration-300 rounded-xl border border-border/50 px-6 py-5 hover:shadow-lg bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60">
-                      <div className="flex items-center justify-between gap-6">
-                        {/* Ícone */}
-                        <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors flex-shrink-0">
-                          <BookOpen className="h-7 w-7 text-white" />
-                        </div>
+                    <div className="transition-all duration-300 rounded-xl border border-border/50 px-4 md:px-6 py-4 md:py-5 hover:shadow-lg bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
+                        <div className="flex items-center gap-3 md:gap-6 min-w-0 flex-1">
+                          {/* Ícone */}
+                          <div className="w-12 h-12 md:w-14 md:h-14 bg-primary rounded-xl flex items-center justify-center group-hover:bg-primary/90 transition-colors flex-shrink-0">
+                            <BookOpen className="h-6 w-6 md:h-7 md:w-7 text-white" />
+                          </div>
 
-                        {/* Informações da Turma */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">
-                              {turma.nome}
-                            </h3>
-                            <Badge variant="outline" className="text-xs">
-                              {turma.alunos} alunos
-                            </Badge>
-                          </div>
-                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                            {turma.disciplina}
-                          </p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{turma.proximaAula}</span>
+                          {/* Informações da Turma */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1">
+                              <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors truncate">
+                                {turma.nome}
+                              </h3>
+                              <Badge variant="outline" className="text-xs w-fit">
+                                {turma.alunos} alunos
+                              </Badge>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <BookOpen className="h-4 w-4" />
-                              <span>Sala {turma.sala}</span>
+                            <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2 truncate">
+                              {turma.disciplina}
+                            </p>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs md:text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                                <span className="truncate">{turma.proximaAula}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                                <span>Sala {turma.sala}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span>Média: <strong>{turma.mediaGeral}</strong></span>
+                                <span>•</span>
+                                <span>Freq: <strong>{turma.frequenciaMedia}%</strong></span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span>Média: <strong>{turma.mediaGeral}</strong></span>
-                              <span>•</span>
-                              <span>Freq: <strong>{turma.frequenciaMedia}%</strong></span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Estatísticas */}
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground min-w-0 flex-shrink-0">
-                          <div className="text-center">
-                            <div className="font-semibold text-foreground">{turma.atividades}</div>
-                            <div className="text-xs">Atividades</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="font-semibold text-foreground">{turma.avaliacoes}</div>
-                            <div className="text-xs">Avaliações</div>
                           </div>
                         </div>
 
-                        {/* Indicador de ação */}
-                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
-                          <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+                        <div className="flex items-center justify-between md:justify-end gap-4 md:gap-6">
+                          {/* Estatísticas */}
+                          <div className="flex items-center gap-4 md:gap-6 text-xs md:text-sm text-muted-foreground">
+                            <div className="text-center">
+                              <div className="font-semibold text-foreground">{turma.atividades}</div>
+                              <div className="text-xs">Atividades</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-semibold text-foreground">{turma.avaliacoes}</div>
+                              <div className="text-xs">Avaliações</div>
+                            </div>
+                          </div>
+
+                          {/* Indicador de ação */}
+                          <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
+                            <ChevronRight className="h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-0.5 transition-transform" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -661,13 +665,13 @@ export default function ProfessorTurmasPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="frequencia" className="space-y-6">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-foreground">Lançar Frequência</h2>
-                <p className="text-muted-foreground">Gerencie a presença dos alunos em cada aula</p>
+            <TabsContent value="frequencia" className="space-y-4 md:space-y-6">
+              <div className="mb-4 md:mb-6">
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">Lançar Frequência</h2>
+                <p className="text-sm md:text-base text-muted-foreground">Gerencie a presença dos alunos em cada aula</p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                 {turmasFiltradas.map((turma) => {
                   // Processar datas: agrupar, priorizar, filtrar e paginar
                   const aulasAgrupadas = groupAulasByDate(turma.aulas)
@@ -849,27 +853,28 @@ export default function ProfessorTurmasPage() {
                         {/* Controles de Paginação */}
                         {totalPaginas > 1 && (
                           <div className="mt-4 pt-4 border-t border-border/50">
-                            <div className="flex items-center justify-between">
-                              <div className="text-sm text-muted-foreground">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
+                              <div className="text-xs md:text-sm text-muted-foreground">
                                 Página {paginaAtual} de {totalPaginas}
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 md:gap-2">
                                 <LiquidGlassButton
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handlePageChange(paginaAtual - 1)}
                                   disabled={paginaAtual === 1}
+                                  className="text-xs md:text-sm"
                                 >
-                                  <ChevronLeft className="h-4 w-4 mr-1" />
-                                  Anterior
+                                  <ChevronLeft className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                                  <span className="hidden sm:inline">Anterior</span>
                                 </LiquidGlassButton>
                                 
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 overflow-x-auto">
                                   {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((pageNum) => (
                                     <button
                                       key={pageNum}
                                       onClick={() => handlePageChange(pageNum)}
-                                      className={`px-2 py-1 text-sm rounded ${
+                                      className={`px-2 py-1 text-xs md:text-sm rounded ${
                                         paginaAtual === pageNum
                                           ? 'bg-primary text-primary-foreground'
                                           : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -885,9 +890,10 @@ export default function ProfessorTurmasPage() {
                                   size="sm"
                                   onClick={() => handlePageChange(paginaAtual + 1)}
                                   disabled={paginaAtual === totalPaginas}
+                                  className="text-xs md:text-sm"
                                 >
-                                  Próximo
-                                  <ChevronRight className="h-4 w-4 ml-1" />
+                                  <span className="hidden sm:inline">Próximo</span>
+                                  <ChevronRight className="h-3 w-3 md:h-4 md:w-4 sm:ml-1" />
                                 </LiquidGlassButton>
                               </div>
                             </div>
