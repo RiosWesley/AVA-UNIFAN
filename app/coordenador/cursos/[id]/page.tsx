@@ -1170,7 +1170,7 @@ export default function CursoDetalhePage() {
       <Sidebar userRole="coordenador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           {isLoading && (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1201,31 +1201,31 @@ export default function CursoDetalhePage() {
           {!isLoading && curso && (
             <>
               <div
-                className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+                className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border backdrop-blur-sm ${
                   isLiquidGlass
                     ? "bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50"
                     : "bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700"
                 }`}
               >
-                <div className="flex items-center space-x-4">
-                  <LiquidGlassButton variant="outline" size="sm" onClick={() => router.push("/coordenador/cursos")}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
+                <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0 w-full">
+                  <LiquidGlassButton variant="outline" size="sm" onClick={() => router.push("/coordenador/cursos")} className="flex-shrink-0">
+                    <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Voltar</span>
                   </LiquidGlassButton>
-                  <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <BookOpen className="h-8 w-8 text-white" />
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">{curso.nome}</h1>
-                    <p className="text-muted-foreground text-lg mt-1">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-600 dark:text-emerald-400 truncate">{curso.nome}</h1>
+                    <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mt-1">
                       {curso.codigo} • {curso.departamento}
                     </p>
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant={curso.status === "ativo" ? "default" : "secondary"}>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant={curso.status === "ativo" ? "default" : "secondary"} className="text-xs">
                         {curso.status === "ativo" ? "Ativo" : "Inativo"}
                       </Badge>
-                      <Badge variant="outline">{curso.cargaHoraria}h</Badge>
-                      <Badge variant="outline">{curso.duracao} semestres</Badge>
+                      <Badge variant="outline" className="text-xs">{curso.cargaHoraria}h</Badge>
+                      <Badge variant="outline" className="text-xs">{curso.duracao} semestres</Badge>
                     </div>
                   </div>
                 </div>
@@ -1248,7 +1248,7 @@ export default function CursoDetalhePage() {
                 </LiquidGlassCard>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Alunos</CardTitle>
@@ -1313,7 +1313,7 @@ export default function CursoDetalhePage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="flex gap-4">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <div className="relative flex-1">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                           <Input
@@ -1326,7 +1326,7 @@ export default function CursoDetalhePage() {
                         <select
                           value={filtroTipoDisciplina}
                           onChange={(e) => setFiltroTipoDisciplina(e.target.value as typeof filtroTipoDisciplina)}
-                          className="px-3 py-2 border rounded-md bg-background"
+                          className="px-3 py-2 border rounded-md bg-background w-full sm:w-auto"
                         >
                           <option value="todas">Todas</option>
                           <option value="obrigatoria">Obrigatorias</option>
@@ -1335,7 +1335,7 @@ export default function CursoDetalhePage() {
                         <select
                           value={filtroStatusDisciplina}
                           onChange={(e) => setFiltroStatusDisciplina(e.target.value as typeof filtroStatusDisciplina)}
-                          className="px-3 py-2 border rounded-md bg-background"
+                          className="px-3 py-2 border rounded-md bg-background w-full sm:w-auto"
                         >
                           <option value="todas">Todas</option>
                           <option value="ativa">Ativas</option>
@@ -1347,7 +1347,7 @@ export default function CursoDetalhePage() {
                         {disciplinasFiltradas.map((disciplina) => (
                           <div
                             key={disciplina.id}
-                            className={`p-4 border rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors ${
+                            className={`p-3 sm:p-4 border rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors ${
                               disciplina.status === "inativa" ? "opacity-60" : ""
                             } ${
                               isLiquidGlass
@@ -1355,21 +1355,21 @@ export default function CursoDetalhePage() {
                                 : "border-gray-200 dark:border-gray-700"
                             }`}
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-semibold">{disciplina.nome}</h4>
-                                  <Badge variant="outline" className="font-mono text-xs">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                              <div className="flex-1 min-w-0 w-full">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <h4 className="font-semibold text-sm sm:text-base truncate">{disciplina.nome}</h4>
+                                  <Badge variant="outline" className="font-mono text-xs flex-shrink-0">
                                     {disciplina.codigo}
                                   </Badge>
-                                  <Badge variant={disciplina.tipo === "obrigatoria" ? "default" : "secondary"}>
+                                  <Badge variant={disciplina.tipo === "obrigatoria" ? "default" : "secondary"} className="text-xs flex-shrink-0">
                                     {disciplina.tipo === "obrigatoria" ? "Obrigatoria" : "Optativa"}
                                   </Badge>
-                                  <Badge variant={disciplina.status === "ativa" ? "default" : "secondary"}>
+                                  <Badge variant={disciplina.status === "ativa" ? "default" : "secondary"} className="text-xs flex-shrink-0">
                                     {disciplina.status === "ativa" ? "Ativa" : "Inativa"}
                                   </Badge>
                                 </div>
-                                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-muted-foreground">
                                   <div>
                                     <span className="font-semibold">Semestre:</span> {disciplina.semestre ?? "-"}
                                   </div>
@@ -1381,8 +1381,8 @@ export default function CursoDetalhePage() {
                                   </div>
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleEditarDisciplina(disciplina)}>
+                              <div className="flex gap-2 w-full sm:w-auto justify-end sm:justify-start">
+                                <Button variant="outline" size="sm" onClick={() => handleEditarDisciplina(disciplina)} className="flex-shrink-0">
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
@@ -1390,6 +1390,7 @@ export default function CursoDetalhePage() {
                                   size="sm"
                                   onClick={() => handleToggleDisciplineStatusClick(disciplina)}
                                   title={disciplina.status === "ativa" ? "Inativar disciplina" : "Ativar disciplina"}
+                                  className="flex-shrink-0"
                                 >
                                   {disciplina.status === "ativa" ? (
                                     <PowerOff className="h-4 w-4" />
@@ -1418,7 +1419,7 @@ export default function CursoDetalhePage() {
                     }`}
                   >
                     <CardHeader>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                         <div>
                           <CardTitle>Turmas</CardTitle>
                           <CardDescription>
@@ -1427,12 +1428,13 @@ export default function CursoDetalhePage() {
                             {turmasFiltradas.length !== 1 ? "s" : ""}
                           </CardDescription>
                         </div>
-                        <div className="flex gap-2">
-                          <LiquidGlassButton size="sm" onClick={() => handleOpenEnrollmentModal()}>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                          <LiquidGlassButton size="sm" onClick={() => handleOpenEnrollmentModal()} className="w-full sm:w-auto">
                             <UserPlus className="h-4 w-4 mr-2" />
-                            Matricular Aluno
+                            <span className="hidden sm:inline">Matricular Aluno</span>
+                            <span className="sm:hidden">Matricular</span>
                           </LiquidGlassButton>
-                          <LiquidGlassButton size="sm" onClick={() => setIsTurmaModalOpen(true)}>
+                          <LiquidGlassButton size="sm" onClick={() => setIsTurmaModalOpen(true)} className="w-full sm:w-auto">
                             <Plus className="h-4 w-4 mr-2" />
                             Nova turma
                           </LiquidGlassButton>
@@ -1440,7 +1442,7 @@ export default function CursoDetalhePage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="flex gap-4">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <div className="relative flex-1">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                           <Input
@@ -1451,16 +1453,16 @@ export default function CursoDetalhePage() {
                           />
                         </div>
                         {isLoading ? (
-                          <Skeleton className="h-10 w-40" />
+                          <Skeleton className="h-10 w-full sm:w-40" />
                         ) : semestres.length === 0 ? (
-                          <div className="px-3 py-2 border rounded-md bg-muted text-muted-foreground text-sm">
+                          <div className="px-3 py-2 border rounded-md bg-muted text-muted-foreground text-sm w-full sm:w-auto">
                             Nenhum semestre
                           </div>
                         ) : (
                           <div className="flex items-center space-x-2">
-                            <GraduationCap className="h-5 w-5 text-muted-foreground" />
+                            <GraduationCap className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                             <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                              <SelectTrigger className="w-40">
+                              <SelectTrigger className="w-full sm:w-40">
                                 <SelectValue placeholder="Selecionar semestre" />
                               </SelectTrigger>
                               <SelectContent>
@@ -1483,7 +1485,7 @@ export default function CursoDetalhePage() {
                         <select
                           value={filtroStatusTurma}
                           onChange={(e) => setFiltroStatusTurma(e.target.value as typeof filtroStatusTurma)}
-                          className="px-3 py-2 border rounded-md bg-background"
+                          className="px-3 py-2 border rounded-md bg-background w-full sm:w-auto"
                         >
                           <option value="todas">Todas</option>
                           <option value="ativa">Ativas</option>
@@ -1495,26 +1497,26 @@ export default function CursoDetalhePage() {
                         {turmasFiltradas.map((turma) => (
                           <div
                             key={turma.id}
-                            className={`p-4 border rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors ${
+                            className={`p-3 sm:p-4 border rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors ${
                               isLiquidGlass
                                 ? "border-gray-200/30 dark:border-gray-700/50"
                                 : "border-gray-200 dark:border-gray-700"
                             }`}
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-semibold">{turma.disciplina}</h4>
-                                  <Badge variant="outline" className="font-mono text-xs">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                              <div className="flex-1 min-w-0 w-full">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <h4 className="font-semibold text-sm sm:text-base truncate">{turma.disciplina}</h4>
+                                  <Badge variant="outline" className="font-mono text-xs flex-shrink-0">
                                     {turma.codigo}
                                   </Badge>
-                                  <Badge variant={turma.status === "ativa" ? "default" : "secondary"}>
+                                  <Badge variant={turma.status === "ativa" ? "default" : "secondary"} className="text-xs flex-shrink-0">
                                     {turma.status === "ativa" ? "Ativa" : "Inativa"}
                                   </Badge>
                                 </div>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 text-sm text-muted-foreground">
                                   <div>
-                                    <span className="font-semibold">Professor:</span> {turma.professor}
+                                    <span className="font-semibold">Professor:</span> <span className="truncate block">{turma.professor}</span>
                                   </div>
                                   <div>
                                     <span className="font-semibold">Periodo:</span> {turma.periodo}
@@ -1526,13 +1528,15 @@ export default function CursoDetalhePage() {
                                     <span className="font-semibold">Sala:</span> {turma.sala}
                                   </div>
                                 </div>
-                                <div className="mt-2 flex items-center gap-2 text-sm">
-                                  <Users className="h-4 w-4 text-muted-foreground" />
-                                  <span>
-                                    {turma.alunos} {turma.capacidade && turma.capacidade > 0 ? `/ ${turma.capacidade}` : ""} aluno{turma.alunos !== 1 ? "s" : ""}
-                                  </span>
+                                <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                    <span>
+                                      {turma.alunos} {turma.capacidade && turma.capacidade > 0 ? `/ ${turma.capacidade}` : ""} aluno{turma.alunos !== 1 ? "s" : ""}
+                                    </span>
+                                  </div>
                                   {turma.capacidade && turma.capacidade > 0 && (
-                                    <div className="flex-1 max-w-xs">
+                                    <div className="flex-1 w-full sm:max-w-xs">
                                       <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                         <div
                                           className="h-full bg-emerald-600"
@@ -1545,14 +1549,14 @@ export default function CursoDetalhePage() {
                                   )}
                                 </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => handleOpenEnrolledStudentsModal(turma)} title="Ver alunos matriculados">
+                              <div className="flex gap-2 w-full sm:w-auto justify-end sm:justify-start">
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEnrolledStudentsModal(turma)} title="Ver alunos matriculados" className="flex-shrink-0">
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => handleOpenEnrollmentModal(turma)} title="Matricular aluno">
+                                <Button variant="outline" size="sm" onClick={() => handleOpenEnrollmentModal(turma)} title="Matricular aluno" className="flex-shrink-0">
                                   <UserPlus className="h-4 w-4" />
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => handleEditarTurma(turma)} title="Editar turma">
+                                <Button variant="outline" size="sm" onClick={() => handleEditarTurma(turma)} title="Editar turma" className="flex-shrink-0">
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -1601,21 +1605,23 @@ export default function CursoDetalhePage() {
                         {alunosFiltrados.map((aluno) => (
                           <div
                             key={aluno.id}
-                            className={`p-4 border rounded-xl ${
+                            className={`p-3 sm:p-4 border rounded-xl ${
                               isLiquidGlass
                                 ? "border-gray-200/30 dark:border-gray-700/50"
                                 : "border-gray-200 dark:border-gray-700"
                             }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="font-semibold">{aluno.nome}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {aluno.email ?? "Email nao informado"} • {aluno.matricula ?? "Matricula nao informada"}
-                                </p>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+                              <div className="flex-1 min-w-0 w-full">
+                                <h4 className="font-semibold text-sm sm:text-base truncate">{aluno.nome}</h4>
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 text-sm text-muted-foreground mt-1">
+                                  <span className="truncate">{aluno.email ?? "Email nao informado"}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span className="truncate">{aluno.matricula ?? "Matricula nao informada"}</span>
+                                </div>
                               </div>
                               {aluno.status && (
-                                <Badge variant={aluno.status.toLowerCase() === "active" ? "default" : "secondary"}>
+                                <Badge variant={aluno.status.toLowerCase() === "active" ? "default" : "secondary"} className="text-xs flex-shrink-0">
                                   {aluno.status}
                                 </Badge>
                               )}
@@ -1645,7 +1651,7 @@ export default function CursoDetalhePage() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{disciplinaEditandoId ? "Editar disciplina" : "Nova disciplina"}</DialogTitle>
             <DialogDescription>
@@ -1806,7 +1812,7 @@ export default function CursoDetalhePage() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{turmaEditandoId ? "Editar turma" : "Nova turma"}</DialogTitle>
             <DialogDescription>Cadastre ou edite uma turma vinculada a uma disciplina deste curso.</DialogDescription>
@@ -1985,7 +1991,7 @@ export default function CursoDetalhePage() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Matricular Alunos em Turma</DialogTitle>
             <DialogDescription>
@@ -2147,7 +2153,7 @@ export default function CursoDetalhePage() {
           }
         }}
       >
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg lg:max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               Alunos Matriculados

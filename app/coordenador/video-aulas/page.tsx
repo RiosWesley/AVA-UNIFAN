@@ -85,131 +85,131 @@ function SortableVideoLessonItem({
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={cn(
-        "p-4 rounded-lg border transition-all hover:shadow-md cursor-grab active:cursor-grabbing",
-        isDragging && "ring-2 ring-emerald-500 shadow-lg z-50",
-        isLiquidGlass
-          ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
-          : 'bg-gray-50/40 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700'
-      )}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3 flex-1">
-          {/* Handle visual e número de ordem */}
-          <div className="flex flex-col items-center gap-2 pt-1">
-            <div className="text-muted-foreground transition-colors">
-              <GripVertical className="h-5 w-5" />
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={cn(
+          "p-3 sm:p-4 rounded-lg border transition-all hover:shadow-md cursor-grab active:cursor-grabbing",
+          isDragging && "ring-2 ring-emerald-500 shadow-lg z-50",
+          isLiquidGlass
+            ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
+            : 'bg-gray-50/40 dark:bg-gray-800/30 border-gray-200 dark:border-gray-700'
+        )}
+      >
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0 w-full">
+            {/* Handle visual e número de ordem */}
+            <div className="flex flex-col items-center gap-2 pt-1 flex-shrink-0">
+              <div className="text-muted-foreground transition-colors">
+                <GripVertical className="h-4 w-4 sm:h-5 sm:w-5" />
+              </div>
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded transition-all duration-150">
+                {index + 1}
+              </span>
             </div>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded transition-all duration-150">
-              {index + 1}
-            </span>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                <Video className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <h3 className="font-semibold text-sm sm:text-base lg:text-lg text-gray-900 dark:text-gray-100 truncate">
+                  {videoAula.title || 'Sem título'}
+                </h3>
+                {getStatusBadge(videoAula.status)}
+              </div>
+              {videoAula.description && (
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2">
+                  {videoAula.description}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground">
+                {videoAula.durationSeconds && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 flex-shrink-0" />
+                    <span>{formatarDuracao(videoAula.durationSeconds)}</span>
+                  </div>
+                )}
+                {videoAula.createdAt && (
+                  <span className="truncate">
+                    Criada em: {new Date(videoAula.createdAt).toLocaleDateString('pt-BR')}
+                  </span>
+                )}
+                {videoAula.teacher?.name && (
+                  <span className="truncate">Professor: {videoAula.teacher.name}</span>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <Video className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
-                {videoAula.title || 'Sem título'}
-              </h3>
-              {getStatusBadge(videoAula.status)}
+          <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
+            {/* Botões de seta */}
+            <div className="flex flex-row sm:flex-col gap-1">
+              <LiquidGlassButton
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMoveUp()
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation()
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation()
+                }}
+                disabled={index === 0}
+                className="h-8 w-8 p-0 flex-shrink-0"
+                title="Mover para cima"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </LiquidGlassButton>
+              <LiquidGlassButton
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMoveDown()
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation()
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation()
+                }}
+                disabled={index === total - 1}
+                className="h-8 w-8 p-0 flex-shrink-0"
+                title="Mover para baixo"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </LiquidGlassButton>
             </div>
-            {videoAula.description && (
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {videoAula.description}
-              </p>
-            )}
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              {videoAula.durationSeconds && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{formatarDuracao(videoAula.durationSeconds)}</span>
-                </div>
-              )}
-              {videoAula.createdAt && (
-                <span>
-                  Criada em: {new Date(videoAula.createdAt).toLocaleDateString('pt-BR')}
-                </span>
-              )}
-              {videoAula.teacher?.name && (
-                <span>Professor: {videoAula.teacher.name}</span>
-              )}
-            </div>
-          </div>
-        </div>
 
-        <div className="flex gap-2">
-          {/* Botões de seta */}
-          <div className="flex flex-col gap-1">
+            {/* Botão de editar */}
             <LiquidGlassButton
               variant="outline"
               size="sm"
               onClick={(e) => {
                 e.stopPropagation()
-                onMoveUp()
+                onEdit()
               }}
               onPointerDown={(e) => {
                 e.stopPropagation()
               }}
-              onMouseDown={(e) => {
-                e.stopPropagation()
-              }}
-              onTouchStart={(e) => {
-                e.stopPropagation()
-              }}
-              disabled={index === 0}
-              className="h-8 w-8 p-0"
-              title="Mover para cima"
+              className="flex items-center justify-center gap-2 flex-1 sm:flex-initial"
             >
-              <ArrowUp className="h-4 w-4" />
-            </LiquidGlassButton>
-            <LiquidGlassButton
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onMoveDown()
-              }}
-              onPointerDown={(e) => {
-                e.stopPropagation()
-              }}
-              onMouseDown={(e) => {
-                e.stopPropagation()
-              }}
-              onTouchStart={(e) => {
-                e.stopPropagation()
-              }}
-              disabled={index === total - 1}
-              className="h-8 w-8 p-0"
-              title="Mover para baixo"
-            >
-              <ArrowDown className="h-4 w-4" />
+              <Edit className="h-4 w-4" />
+              <span className="hidden sm:inline">Editar</span>
             </LiquidGlassButton>
           </div>
-
-          {/* Botão de editar */}
-          <LiquidGlassButton
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEdit()
-            }}
-            onPointerDown={(e) => {
-              e.stopPropagation()
-            }}
-            className="flex items-center gap-2"
-          >
-            <Edit className="h-4 w-4" />
-            Editar
-          </LiquidGlassButton>
         </div>
       </div>
-    </div>
   )
 }
 
@@ -542,20 +542,20 @@ export default function CoordenadorVideoAulasPage() {
       <Sidebar userRole="coordenador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          <div className="flex items-center mb-6">
-            <Link href="/coordenador">
-              <LiquidGlassButton variant="ghost" size="sm" className="mr-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+            <Link href="/coordenador" className="w-full sm:w-auto">
+              <LiquidGlassButton variant="ghost" size="sm" className="w-full sm:w-auto">
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Voltar</span>
               </LiquidGlassButton>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Video className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-                Vídeo-aulas
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+                <Video className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <span className="truncate">Vídeo-aulas</span>
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Gerencie as vídeo-aulas do sistema
               </p>
             </div>
@@ -563,17 +563,17 @@ export default function CoordenadorVideoAulasPage() {
 
           <Tabs defaultValue="listar" className="space-y-6">
             <TabsList className={cn(
-              "grid w-full grid-cols-2 gap-1 backdrop-blur-sm",
+              "grid w-full grid-cols-2 gap-1 backdrop-blur-sm overflow-x-auto",
               isLiquidGlass
                 ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                 : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
             )}>
-              <TabsTrigger value="listar" className="border-none flex items-center space-x-2">
-                <List className="h-4 w-4" />
+              <TabsTrigger value="listar" className="border-none flex items-center justify-center space-x-2 text-xs sm:text-sm">
+                <List className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span>Listar</span>
               </TabsTrigger>
-              <TabsTrigger value="inserir" className="border-none flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
+              <TabsTrigger value="inserir" className="border-none flex items-center justify-center space-x-2 text-xs sm:text-sm">
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span>Inserir</span>
               </TabsTrigger>
             </TabsList>
@@ -726,7 +726,7 @@ export default function CoordenadorVideoAulasPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Título */}
                 <div>
                   <Label htmlFor="titulo" className="text-sm font-medium">
@@ -776,11 +776,11 @@ export default function CoordenadorVideoAulasPage() {
                       {formData.arquivo ? 'Alterar Arquivo' : 'Selecionar Arquivo'}
                     </LiquidGlassButton>
                     {formData.arquivo && (
-                      <div className="mt-3 p-3 border rounded-lg bg-muted/50 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <FileVideo className="h-5 w-5 text-primary" />
-                          <div>
-                            <p className="text-sm font-medium">{formData.arquivo.name}</p>
+                      <div className="mt-3 p-3 border rounded-lg bg-muted/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileVideo className="h-5 w-5 text-primary flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{formData.arquivo.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {formatarTamanhoArquivo(formData.arquivo.size)}
                             </p>
@@ -796,6 +796,7 @@ export default function CoordenadorVideoAulasPage() {
                               fileInputRef.current.value = ''
                             }
                           }}
+                          className="flex-shrink-0"
                         >
                           <X className="h-4 w-4" />
                         </LiquidGlassButton>
@@ -814,7 +815,7 @@ export default function CoordenadorVideoAulasPage() {
                 </div>
 
                 {/* Disciplina e Duração */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="disciplina" className="text-sm font-medium">
                       Disciplina *
@@ -933,9 +934,9 @@ export default function CoordenadorVideoAulasPage() {
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Link href="/coordenador">
-                    <LiquidGlassButton variant="outline">
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t">
+                  <Link href="/coordenador" className="w-full sm:w-auto">
+                    <LiquidGlassButton variant="outline" className="w-full sm:w-auto">
                       <X className="h-4 w-4 mr-2" />
                       Cancelar
                     </LiquidGlassButton>
@@ -943,6 +944,7 @@ export default function CoordenadorVideoAulasPage() {
                   <LiquidGlassButton
                     onClick={handleSubmit}
                     disabled={salvarVideoAulaMutation.isPending}
+                    className="w-full sm:w-auto"
                   >
                     {salvarVideoAulaMutation.isPending ? (
                       <>

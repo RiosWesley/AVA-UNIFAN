@@ -423,29 +423,29 @@ export default function GradeHorariaPage() {
       <Sidebar userRole="coordenador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <Calendar className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                   Grade Horária
                 </h1>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mt-1">
                   Gerenciamento de horários e alocação de recursos
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                <div className="flex flex-wrap items-center mt-2 gap-2">
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-xs">
                     {horariosFiltrados.length} horário{horariosFiltrados.length !== 1 ? 's' : ''} cadastrado{horariosFiltrados.length !== 1 ? 's' : ''}
                   </Badge>
                   {conflitos.length > 0 && (
-                    <Badge variant="destructive" className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                    <Badge variant="destructive" className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 text-xs">
                       <AlertCircle className="h-3 w-3 mr-1" />
                       {conflitos.length} conflito{conflitos.length !== 1 ? 's' : ''}
                     </Badge>
@@ -453,14 +453,14 @@ export default function GradeHorariaPage() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 {loadingSemestres || semestres.length === 0 ? (
-                  <Skeleton className="h-10 w-40" />
+                  <Skeleton className="h-10 w-full sm:w-40" />
                 ) : (
                   <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                    <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                    <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                       isLiquidGlass
                         ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                         : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -484,8 +484,8 @@ export default function GradeHorariaPage() {
                   </Select>
                 )}
               </div>
-              <LiquidGlassButton onClick={handleAbrirModal} size="lg">
-                <Plus className="h-5 w-5 mr-2" />
+              <LiquidGlassButton onClick={handleAbrirModal} size="lg" className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Novo Horário
               </LiquidGlassButton>
             </div>
@@ -506,7 +506,7 @@ export default function GradeHorariaPage() {
             </TabsList>
 
             <TabsContent value="grade" className="space-y-6">
-              <div className="flex gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -517,7 +517,7 @@ export default function GradeHorariaPage() {
                   />
                 </div>
                 <Select value={filtroCurso} onValueChange={setFiltroCurso}>
-                  <SelectTrigger className="w-64">
+                  <SelectTrigger className="w-full sm:w-64">
                     <SelectValue placeholder="Filtrar por curso" />
                   </SelectTrigger>
                   <SelectContent>
@@ -528,7 +528,7 @@ export default function GradeHorariaPage() {
                   </SelectContent>
                 </Select>
                 <Select value={filtroTurma} onValueChange={setFiltroTurma}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Filtrar por turma" />
                   </SelectTrigger>
                   <SelectContent>
@@ -540,7 +540,7 @@ export default function GradeHorariaPage() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 overflow-x-auto">
                 {DIAS_SEMANA.map(dia => (
                   <LiquidGlassCard
                     key={dia}
@@ -594,7 +594,7 @@ export default function GradeHorariaPage() {
             </TabsContent>
 
             <TabsContent value="lista" className="space-y-6">
-              <div className="flex gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -605,7 +605,7 @@ export default function GradeHorariaPage() {
                   />
                 </div>
                 <Select value={filtroCurso} onValueChange={setFiltroCurso}>
-                  <SelectTrigger className="w-64">
+                  <SelectTrigger className="w-full sm:w-64">
                     <SelectValue placeholder="Filtrar por curso" />
                   </SelectTrigger>
                   <SelectContent>
@@ -616,7 +616,7 @@ export default function GradeHorariaPage() {
                   </SelectContent>
                 </Select>
                 <Select value={filtroTurma} onValueChange={setFiltroTurma}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="Filtrar por turma" />
                   </SelectTrigger>
                   <SelectContent>
@@ -647,26 +647,26 @@ export default function GradeHorariaPage() {
                             <Badge variant="outline">{horario.tipo}</Badge>
                             <Badge variant="secondary">{horario.curso}</Badge>
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4" />
-                              <span>{horario.professor}</span>
+                              <Users className="h-4 w-4 flex-shrink-0" />
+                              <span className="truncate">{horario.professor}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <BookOpen className="h-4 w-4" />
-                              <span>{horario.turma}</span>
+                              <BookOpen className="h-4 w-4 flex-shrink-0" />
+                              <span className="truncate">{horario.turma}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
+                              <Calendar className="h-4 w-4 flex-shrink-0" />
                               <span>{horario.diaSemana}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
+                              <Clock className="h-4 w-4 flex-shrink-0" />
                               <span>{horario.horarioInicio} - {horario.horarioFim}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{horario.sala}</span>
+                              <MapPin className="h-4 w-4 flex-shrink-0" />
+                              <span className="truncate">{horario.sala}</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs">Carga: {horario.cargaHoraria}h</span>
@@ -783,7 +783,7 @@ export default function GradeHorariaPage() {
       </main>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <div>
@@ -796,7 +796,7 @@ export default function GradeHorariaPage() {
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="space-y-6 pr-1">
+            <div className="space-y-4 sm:space-y-6 pr-1 p-1 sm:p-0">
               <div>
                 <Label htmlFor="disciplina" className="text-sm font-medium">
                   Disciplina *
@@ -813,7 +813,7 @@ export default function GradeHorariaPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="curso" className="text-sm font-medium">
                     Curso *
@@ -881,7 +881,7 @@ export default function GradeHorariaPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="diaSemana" className="text-sm font-medium">
                     Dia da Semana *
@@ -921,7 +921,7 @@ export default function GradeHorariaPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="horarioInicio" className="text-sm font-medium">
                     Horário de Início *
@@ -964,7 +964,7 @@ export default function GradeHorariaPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="sala" className="text-sm font-medium">
                     Sala/Laboratório *

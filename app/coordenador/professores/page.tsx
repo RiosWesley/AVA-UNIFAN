@@ -377,17 +377,18 @@ export default function ProfessoresCoordenadorPage() {
       <Sidebar userRole="coordenador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Gestão de Professores</h1>
-              <p className="text-muted-foreground">Cadastrar, listar e gerenciar professores</p>
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Professores</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Cadastrar, listar e gerenciar professores</p>
             </div>
             <Button
               onClick={() => {
                 resetForm()
                 setActiveTab("cadastro")
               }}
+              className="w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
               Novo Professor
@@ -410,7 +411,7 @@ export default function ProfessoresCoordenadorPage() {
                   <CardDescription>Gerencie os professores do sistema</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-6">
                     {departments.length > 0 && (
                       <div className="text-sm text-muted-foreground flex items-center">
                         <span className="font-semibold ml-1">{departments[0]?.name}</span>
@@ -424,7 +425,7 @@ export default function ProfessoresCoordenadorPage() {
                       />
                     </div>
                     <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "todos" | "Ativo" | "Inativo")}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className="w-full sm:w-48">
                         <SelectValue placeholder="Filtrar por status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -445,22 +446,22 @@ export default function ProfessoresCoordenadorPage() {
                       {filtrados.map((p) => (
                         <Card key={p.id} className="border-l-4 border-l-green-500">
                           <CardContent className="p-4">
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-3">
-                                  <h3 className="font-semibold text-lg">{p.nome}</h3>
-                                  <Badge variant="outline">Professor</Badge>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                              <div className="space-y-1 flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                  <h3 className="font-semibold text-base sm:text-lg truncate">{p.nome}</h3>
+                                  <Badge variant="outline" className="text-xs">Professor</Badge>
                                 </div>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Mail className="w-3.5 h-3.5" />
-                                    {p.email}
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1 truncate">
+                                    <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <span className="truncate">{p.email}</span>
                                   </span>
-                                  {p.telefone && <span>Tel: {p.telefone}</span>}
+                                  {p.telefone && <span className="truncate">Tel: {p.telefone}</span>}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant={p.status === "Ativo" ? "default" : "secondary"}>{p.status}</Badge>
+                              <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
+                                <Badge variant={p.status === "Ativo" ? "default" : "secondary"} className="text-xs">{p.status}</Badge>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -585,7 +586,7 @@ export default function ProfessoresCoordenadorPage() {
                         required={!isEditing}
                       />
                     </div>
-                    <div className="md:col-span-2 flex justify-end gap-2">
+                    <div className="md:col-span-2 flex flex-col-reverse sm:flex-row justify-end gap-2">
                       <Button
                         type="reset"
                         variant="outline"
@@ -593,10 +594,11 @@ export default function ProfessoresCoordenadorPage() {
                           resetForm()
                           setActiveTab("lista")
                         }}
+                        className="w-full sm:w-auto"
                       >
                         {isEditing ? "Cancelar edição" : "Limpar"}
                       </Button>
-                      <Button type="submit">
+                      <Button type="submit" className="w-full sm:w-auto">
                         {isEditing ? (
                           <>
                             <Edit className="w-4 h-4 mr-2" />

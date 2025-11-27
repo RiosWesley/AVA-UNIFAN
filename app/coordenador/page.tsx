@@ -210,49 +210,49 @@ export default function CoordenadorDashboard() {
       <Sidebar userRole="coordenador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
           {/* Header aprimorado */}
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+          <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <GraduationCap className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 sm:space-x-4 w-full sm:w-auto">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                  <Sparkles className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                   Painel de Coordenação
                 </h1>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mt-1">
                   Visão geral dos cursos e desempenho acadêmico
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                <div className="flex flex-wrap items-center mt-2 gap-2">
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-xs">
                     <Star className="h-3 w-3 mr-1" />
                     {dashboardData?.totalCursos || 0} cursos ativos
                   </Badge>
-                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-xs">
                     <Award className="h-3 w-3 mr-1" />
                     {dashboardData?.totalAlunos || 0} alunos
                   </Badge>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 {loadingSemestres || semestres.length === 0 ? (
-                  <Skeleton className="h-10 w-40" />
+                  <Skeleton className="h-10 w-full sm:w-40" />
                 ) : (
                   <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                    <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                    <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                       isLiquidGlass
                         ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                         : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -280,14 +280,15 @@ export default function CoordenadorDashboard() {
                 variant="outline" 
                 size="lg" 
                 onClick={() => router.push('/coordenador/grade')}
-                className={`backdrop-blur-sm ${
+                className={`w-full sm:w-auto backdrop-blur-sm ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
                     : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
                 }`}
               >
-                <Calendar className="h-5 w-5 mr-2" />
-                Montagem de Grade
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                <span className="hidden sm:inline">Montagem de Grade</span>
+                <span className="sm:hidden">Grade</span>
               </LiquidGlassButton>
             </div>
           </div>
@@ -541,20 +542,20 @@ export default function CoordenadorDashboard() {
                       <div className="space-y-4">
                         {cursosPaginados.map((curso) => (
                           <div key={curso.id} className="p-4 border border-gray-200/50 dark:border-gray-700/50 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-3">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ${
                                   curso.cor === "emerald" ? "bg-emerald-600" :
                                   curso.cor === "green" ? "bg-green-600" : "bg-orange-600"
                                 }`}>
-                                  <BookOpen className="h-6 w-6 text-white" />
+                                  <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                                 </div>
-                                <div>
-                                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">{curso.nome}</h4>
-                                  <div className="flex items-center mt-1">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">{curso.nome}</h4>
+                                  <div className="flex flex-wrap items-center mt-1 gap-2">
                                     <Badge
                                       variant={curso.status === "Excelente" ? "default" : curso.status === "Bom" ? "secondary" : "outline"}
-                                      className="text-xs mr-2"
+                                      className="text-xs"
                                     >
                                       {curso.status}
                                     </Badge>
@@ -564,12 +565,12 @@ export default function CoordenadorDashboard() {
                                   </div>
                                 </div>
                               </div>
-                              <LiquidGlassButton size="sm" variant="outline">
+                              <LiquidGlassButton size="sm" variant="outline" className="w-full sm:w-auto">
                                 Gerenciar
                                 <ChevronRight className="h-4 w-4 ml-2" />
                               </LiquidGlassButton>
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
                               <div>
                                 <p className="text-gray-600 dark:text-gray-400">Turmas</p>
                                 <p className="font-semibold text-gray-900 dark:text-gray-100">{curso.turmas}</p>
@@ -587,7 +588,7 @@ export default function CoordenadorDashboard() {
                         ))}
                       </div>
                       {totalPaginas > 1 && (
-                        <div key={`pagination-${currentPage}`} className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                        <div key={`pagination-${currentPage}`} className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
                           <div className="flex items-center space-x-2">
                             <LiquidGlassButton
                               variant="outline"
@@ -597,9 +598,9 @@ export default function CoordenadorDashboard() {
                               className={currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}
                             >
                               <ChevronLeft className="h-4 w-4 mr-1" />
-                              Anterior
+                              <span className="hidden sm:inline">Anterior</span>
                             </LiquidGlassButton>
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 px-2">
                               Página {currentPage} de {totalPaginas}
                             </span>
                             <LiquidGlassButton
@@ -609,11 +610,11 @@ export default function CoordenadorDashboard() {
                               disabled={currentPage === totalPaginas}
                               className={currentPage === totalPaginas ? 'opacity-50 cursor-not-allowed' : ''}
                             >
-                              Próxima
-                              <ChevronRight className="h-4 w-4 ml-1" />
+                              <span className="hidden sm:inline">Próxima</span>
+                              <ChevronRight className="h-4 w-4 sm:ml-1" />
                             </LiquidGlassButton>
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-right">
                             Mostrando {cursosPaginados.length} de {cursos.length} cursos
                           </div>
                         </div>
