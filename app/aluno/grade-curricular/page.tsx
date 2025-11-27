@@ -164,8 +164,8 @@ export default function AlunoGradeCurricularPage() {
   const Table = ({ data, showSemestre = false }: { data: Disciplina[], showSemestre?: boolean }) => {
     const totalCH = data.reduce((acc, d) => acc + d.cargaHoraria, 0)
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+      <div className="overflow-x-auto -mx-4 md:mx-0">
+        <table className="min-w-full text-xs md:text-sm">
           <thead className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-b border-green-200 dark:border-green-800">
             <tr className="text-center">
               {showSemestre && <th className="py-3 pr-4 font-semibold text-center">Semestre</th>}
@@ -247,38 +247,38 @@ export default function AlunoGradeCurricularPage() {
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm ${
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className={`flex items-center justify-between mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <BookOpen className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <BookOpen className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                  <Sparkles className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">Grade Curricular</h1>
-                <p className="text-muted-foreground text-lg mt-1">Componentes curriculares por semestre</p>
+              <div className="min-w-0">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400">Grade Curricular</h1>
+                <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1">Componentes curriculares por semestre</p>
               </div>
             </div>
           </div>
 
-          <Tabs defaultValue="resumo" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="resumo">Resumo</TabsTrigger>
-              <TabsTrigger value="todas">Todas</TabsTrigger>
-              <TabsTrigger value="obrigatorias">Disciplinas Obrigatórias</TabsTrigger>
-              <TabsTrigger value="optativas">Disciplinas Optativas</TabsTrigger>
+          <Tabs defaultValue="resumo" className="space-y-4 md:space-y-6">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+              <TabsTrigger value="resumo" className="text-xs md:text-sm">Resumo</TabsTrigger>
+              <TabsTrigger value="todas" className="text-xs md:text-sm">Todas</TabsTrigger>
+              <TabsTrigger value="obrigatorias" className="text-xs md:text-sm">Obrigatórias</TabsTrigger>
+              <TabsTrigger value="optativas" className="text-xs md:text-sm">Optativas</TabsTrigger>
             </TabsList>
 
             <TabsContent value="resumo">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
                   <CardHeader className="flex flex-row items-center justify-between pb-3">
                     <CardTitle className="text-sm">CH do Curso</CardTitle>
@@ -326,13 +326,13 @@ export default function AlunoGradeCurricularPage() {
             </TabsContent>
 
             <TabsContent value="todas">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Todas as Disciplinas</h3>
-                  <div className="flex items-center space-x-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <h3 className="text-base md:text-lg font-semibold">Todas as Disciplinas</h3>
+                  <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <Select value={filtroTodas} onValueChange={setFiltroTodas}>
-                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                      <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                         isLiquidGlass
                           ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                           : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -348,7 +348,7 @@ export default function AlunoGradeCurricularPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                   {semestres.map((sem) => {
                     const disciplinasFiltradas = filtrarDisciplinas(sem.disciplinas, filtroTodas)
                     if (disciplinasFiltradas.length === 0) return null
@@ -377,13 +377,13 @@ export default function AlunoGradeCurricularPage() {
             </TabsContent>
 
             <TabsContent value="obrigatorias">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Disciplinas Obrigatórias</h3>
-                  <div className="flex items-center space-x-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <h3 className="text-base md:text-lg font-semibold">Disciplinas Obrigatórias</h3>
+                  <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <Select value={filtroObrigatorias} onValueChange={setFiltroObrigatorias}>
-                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                      <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                         isLiquidGlass
                           ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                           : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -401,20 +401,22 @@ export default function AlunoGradeCurricularPage() {
                 </div>
                 <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
                   <CardContent>
-                    <Table data={disciplinasFiltradasObrigatorias} showSemestre={true} />
+                    <div className="overflow-x-auto">
+                      <Table data={disciplinasFiltradasObrigatorias} showSemestre={true} />
+                    </div>
                   </CardContent>
                 </LiquidGlassCard>
               </div>
             </TabsContent>
 
             <TabsContent value="optativas">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Disciplinas Optativas</h3>
-                  <div className="flex items-center space-x-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-4 md:space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <h3 className="text-base md:text-lg font-semibold">Disciplinas Optativas</h3>
+                  <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <Select value={filtroOptativas} onValueChange={setFiltroOptativas}>
-                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                      <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                         isLiquidGlass
                           ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                           : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -432,7 +434,9 @@ export default function AlunoGradeCurricularPage() {
                 </div>
                 <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} className={isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}>
                   <CardContent>
-                    <Table data={disciplinasFiltradasOptativas} showSemestre={true} />
+                    <div className="overflow-x-auto">
+                      <Table data={disciplinasFiltradasOptativas} showSemestre={true} />
+                    </div>
                   </CardContent>
                 </LiquidGlassCard>
               </div>

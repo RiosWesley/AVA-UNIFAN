@@ -127,19 +127,19 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
     <div className="flex h-screen bg-background">
       <Sidebar userRole="aluno" />
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
-          <Button variant="ghost" className="w-fit" onClick={() => router.push("/aluno/financeiro")}>
+        <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+          <Button variant="ghost" className="w-full sm:w-fit" onClick={() => router.push("/aluno/financeiro")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar para Financeiro
           </Button>
 
           <Card>
             <CardHeader>
-              <CardTitle>Checkout de Pagamento</CardTitle>
-              <CardDescription>Revise os dados antes de confirmar o pagamento.</CardDescription>
+              <CardTitle className="text-xl md:text-2xl">Checkout de Pagamento</CardTitle>
+              <CardDescription className="text-sm">Revise os dados antes de confirmar o pagamento.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="space-y-4 md:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <div className="rounded-xl border p-4">
                   <p className="text-sm text-muted-foreground">Valor</p>
                   <p className="text-3xl font-bold text-primary">{formattedValue}</p>
@@ -158,14 +158,14 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <Wallet className="h-4 w-4 md:h-5 md:w-5" />
                     Método de pagamento
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <RadioGroup value={selectedMethod} onValueChange={(value) => setSelectedMethod(value as PaymentMethod)}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                       {PAYMENT_METHODS.map((method) => (
                         <Label
                           key={method}
@@ -196,11 +196,11 @@ export default function CheckoutPage({ params }: CheckoutPageProps) {
                 Este é um checkout simulado. Ao confirmar, a cobrança será marcada como paga no sistema.
               </div>
 
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => router.push("/aluno/financeiro")}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+                <Button variant="outline" onClick={() => router.push("/aluno/financeiro")} className="w-full sm:w-auto">
                   Cancelar
                 </Button>
-                <Button onClick={handleConfirmPayment} disabled={updateStatusMutation.isPending}>
+                <Button onClick={handleConfirmPayment} disabled={updateStatusMutation.isPending} className="w-full sm:w-auto">
                   {updateStatusMutation.isPending ? "Processando..." : "Confirmar Pagamento"}
                 </Button>
               </div>

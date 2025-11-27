@@ -36,6 +36,7 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   FileText,
   Video,
   LogOut,
@@ -103,6 +104,18 @@ function getInitialCollapsedState(): boolean {
   }
 }
 
+// Helper function to get initial hidden state from localStorage
+function getInitialHiddenState(): boolean {
+  if (typeof window === 'undefined') return false
+
+  try {
+    const saved = localStorage.getItem("ava:sidebar:hidden")
+    return saved ? JSON.parse(saved) : false
+  } catch {
+    return false
+  }
+}
+
 function getInitialOpenGroups(userRole: SidebarProps["userRole"]): Record<string, boolean> {
   if (typeof window === 'undefined') return {}
   try {
@@ -125,11 +138,13 @@ function getInitialTheme(): string | null {
 
 export function Sidebar({ userRole }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsedState)
+  const [isHidden, setIsHidden] = useState(getInitialHiddenState)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => getInitialOpenGroups(userRole))
   const [mounted, setMounted] = useState(false)
   const [userData, setUserData] = useState<{ name: string; id: string } | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
   const { theme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
@@ -145,6 +160,18 @@ export function Sidebar({ userRole }: SidebarProps) {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Detecção de mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   // Buscar dados do usuário autenticado
@@ -181,7 +208,26 @@ export function Sidebar({ userRole }: SidebarProps) {
         setIsCollapsed(savedState)
       }
     }
-  }, []) 
+  }, [])
+
+  // Persistência do estado hidden
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("ava:sidebar:hidden")
+      if (saved !== null) {
+        const savedState = JSON.parse(saved)
+        if (savedState !== isHidden) {
+          setIsHidden(savedState)
+        }
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ava:sidebar:hidden", JSON.stringify(isHidden))
+    } catch {}
+  }, [isHidden]) 
 
   // Persistência do estado de grupos abertos por papel de usuário
   useEffect(() => {
@@ -203,26 +249,115 @@ export function Sidebar({ userRole }: SidebarProps) {
   }, [openGroups, userRole])
 
   const toggleCollapsed = () => {
+    if (isHidden) return // Não permitir colapsar quando está retraída
     const newState = !isCollapsed
     setIsCollapsed(newState)
     localStorage.setItem("ava:sidebar:collapsed", JSON.stringify(newState))
   }
 
+  const toggleHidden = () => {
+    const newState = !isHidden
+    setIsHidden(newState)
+    localStorage.setItem("ava:sidebar:hidden", JSON.stringify(newState))
+  }
+
+  // Handler para auto-retrair em mobile ao navegar
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setIsHidden(true)
+      localStorage.setItem("ava:sidebar:hidden", JSON.stringify(true))
+    }
+  }
+
   return (
     <TooltipProvider>
-      <LiquidGlassSidebar
+      {/* Overlay com blur em mobile quando sidebar está aberta */}
+      {isMobile && !isHidden && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity duration-500"
+          onClick={toggleHidden}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Botão flutuante quando sidebar está retraída */}
+      {isHidden && (
+        <div className="fixed left-0 top-0 z-50 ml-2 md:ml-4 mt-4 md:mt-6">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={toggleHidden}
+                className={cn(
+                  "h-12 w-12 md:h-14 md:w-14 rounded-full bg-green-500/20 hover:bg-green-500/30",
+                  "text-green-600 dark:text-green-400 border-2 border-green-500/30",
+                  "shadow-xl backdrop-blur-md transition-all duration-300",
+                  "active:scale-95 cursor-pointer hover:scale-105",
+                  "flex items-center justify-center"
+                )}
+                style={{
+                  minWidth: '48px',
+                  minHeight: '48px'
+                }}
+                aria-label="Expandir menu"
+              >
+                <ChevronRight className="h-6 w-6 md:h-7 md:w-7" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="ml-2">
+              <span className="font-medium">Expandir menu</span>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      )}
+      
+      <div
         className={cn(
-          "relative flex flex-col h-full transition-all duration-500 ease-in-out backdrop-blur-xl overflow-hidden",
-          isCollapsed ? "w-16" : "w-72",
-          " border-r border-sidebar-border/50"
+          // Posicionamento: fixed em mobile quando não retraída, relative em desktop
+          isMobile && !isHidden ? "fixed left-0 top-0 z-50" : "relative",
+          // Largura: em mobile quando fixed, não aplicar classe de largura (controlado via style)
+          // Em desktop, largura normal via className
+          isMobile && !isHidden 
+            ? "" // Largura controlada via style inline quando fixed
+            : isHidden 
+              ? "w-0 overflow-hidden" 
+              : isCollapsed 
+                ? "w-16 overflow-hidden" 
+                : "w-72 overflow-hidden",
+          // Transição translate-x em mobile
+          isMobile && isHidden ? "-translate-x-full" : isMobile && !isHidden ? "translate-x-0" : "",
+          "transition-all duration-500 ease-in-out"
         )}
+        style={{
+          // Em mobile quando fixed, definir largura visual (sobrescreve qualquer classe Tailwind)
+          ...(isMobile && !isHidden 
+            ? { 
+                width: isCollapsed ? '64px' : '288px', // 16 = 64px, 72 = 288px
+                minWidth: isCollapsed ? '64px' : '288px',
+                maxWidth: isCollapsed ? '64px' : '288px',
+                flexShrink: 0, // Não encolher
+                flexBasis: '0px' // Não ocupar espaço no flex
+              } 
+            : {})
+        }}
       >
+        <LiquidGlassSidebar
+          className={cn(
+            "flex flex-col h-full backdrop-blur-xl",
+            // Altura: h-screen em mobile quando fixed, h-full em desktop
+            isMobile && !isHidden ? "h-screen" : "h-full",
+            " border-r border-sidebar-border/50"
+          )}
+        >
+      {!isHidden && (
+        <>
       <div className={cn(
         "border-b border-sidebar-border/30 backdrop-blur-sm transition-all duration-300",
-        isCollapsed ? "flex flex-col items-center p-3 space-y-3" : "flex items-center justify-between p-6"
+        isCollapsed ? "flex flex-col items-center p-3 space-y-3" : "flex items-center p-6 gap-4"
       )}>
         <div className={cn(
-          "relative transition-all duration-300",
+          "relative transition-all duration-300 flex-shrink-0",
           isCollapsed && "mx-auto"
         )}>
           <div className=" bg-green-600 p-2 rounded-lg">
@@ -230,8 +365,8 @@ export function Sidebar({ userRole }: SidebarProps) {
           </div>
         </div>
         {!isCollapsed && (
-          <div className="flex flex-col">
-            <span className="font-bold text-green-600 dark:text-green-400 text-lg">
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="font-bold text-green-600 dark:text-green-400 text-lg ">
               AVA-UNIFAN
             </span>
             <span className="text-xs text-sidebar-foreground/60 font-medium">
@@ -239,52 +374,104 @@ export function Sidebar({ userRole }: SidebarProps) {
             </span>
           </div>
         )}
-        {isCollapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleCollapsed}
-                className={cn(
-                  "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 cursor-pointer",
-                  "active:scale-95 bg-green-500/10"
-                )}
-                style={{
-                  borderColor: 'transparent',
-                  borderWidth: isLightMode ? '0' : undefined,
-                  boxShadow: 'none'
-                }}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="ml-2">
-              <span className="font-medium">Expandir menu</span>
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleCollapsed}
-                className="text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 active:scale-95 cursor-pointer"
-                style={{
-                  borderColor: 'transparent',
-                  borderWidth: isLightMode ? '0' : undefined,
-                  boxShadow: 'none'
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="ml-2">
-              <span className="font-medium">Recolher menu</span>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        <div className={cn(
+          "flex items-center gap-2",
+          isCollapsed && "flex-col"
+        )}>
+          {isCollapsed ? (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleCollapsed}
+                    className={cn(
+                      "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 cursor-pointer",
+                      "active:scale-95 bg-green-500/10"
+                    )}
+                    style={{
+                      borderColor: 'transparent',
+                      borderWidth: isLightMode ? '0' : undefined,
+                      boxShadow: 'none'
+                    }}
+                  >
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="ml-2">
+                  <span className="font-medium">Expandir menu</span>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleHidden}
+                    className={cn(
+                      "text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 cursor-pointer",
+                      "active:scale-95 bg-green-500/10"
+                    )}
+                    style={{
+                      borderColor: 'transparent',
+                      borderWidth: isLightMode ? '0' : undefined,
+                      boxShadow: 'none'
+                    }}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="ml-2">
+                  <span className="font-medium">Retrair completamente</span>
+                </TooltipContent>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleCollapsed}
+                    className="text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 active:scale-95 cursor-pointer"
+                    style={{
+                      borderColor: 'transparent',
+                      borderWidth: isLightMode ? '0' : undefined,
+                      boxShadow: 'none'
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="ml-2">
+                  <span className="font-medium">Recolher menu</span>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleHidden}
+                    className="text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-300 active:scale-95 cursor-pointer"
+                    style={{
+                      borderColor: 'transparent',
+                      borderWidth: isLightMode ? '0' : undefined,
+                      boxShadow: 'none'
+                    }}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="ml-2">
+                  <span className="font-medium">Retrair completamente</span>
+                </TooltipContent>
+              </Tooltip>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -403,7 +590,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                         const ChildIcon = child.icon
                         const childActive = pathname === child.href
                         return (
-                          <Link key={child.href} href={child.href} className="cursor-pointer">
+                          <Link key={child.href} href={child.href} className="cursor-pointer" onClick={handleLinkClick}>
                             <Button
                               variant={childActive ? "secondary" : "ghost"}
                               className={cn(
@@ -440,7 +627,7 @@ export function Sidebar({ userRole }: SidebarProps) {
             }
 
             return (
-              <Link key={(item as any).href} href={(item as any).href} className="cursor-pointer">
+              <Link key={(item as any).href} href={(item as any).href} className="cursor-pointer" onClick={handleLinkClick}>
                 {buttonContent}
               </Link>
             )
@@ -582,7 +769,10 @@ export function Sidebar({ userRole }: SidebarProps) {
           </Button>
         )}
       </div>
-      </LiquidGlassSidebar>
+        </>
+      )}
+        </LiquidGlassSidebar>
+      </div>
     </TooltipProvider>
   )
 }

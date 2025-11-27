@@ -130,25 +130,25 @@ export default function FrequenciaPage() {
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8 space-y-6">
-          <div className={`flex items-center justify-between p-6 rounded-xl border backdrop-blur-sm ${
+        <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
+          <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 md:p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-green-600/90 flex items-center justify-center shadow-lg">
-                <Activity className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-green-600/90 flex items-center justify-center shadow-lg flex-shrink-0">
+                <Activity className="h-5 w-5 md:h-6 md:w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-green-600 dark:text-green-400">Frequência por Disciplina</h1>
-                <p className="text-muted-foreground">Acompanhe suas faltas por etapa do semestre</p>
+              <div className="min-w-0">
+                <h1 className="text-2xl md:text-3xl font-bold text-green-600 dark:text-green-400">Frequência por Disciplina</h1>
+                <p className="text-muted-foreground text-sm md:text-base">Acompanhe suas faltas por etapa do semestre</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex items-center space-x-2 w-full md:w-auto">
+                <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                  <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                  <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                  <SelectTrigger className={`w-full md:w-40 backdrop-blur-sm ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                       : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -173,7 +173,7 @@ export default function FrequenciaPage() {
               </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`${isLiquidGlass ? 'bg-black/30 dark:bg-gray-800/20' : 'bg-gray-50/60 dark:bg-gray-800/40'}`}
@@ -239,15 +239,15 @@ export default function FrequenciaPage() {
               <CardDescription>Uma linha por disciplina e colunas por unidade</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <table className="min-w-full text-xs md:text-sm">
                   <thead className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-b border-green-200 dark:border-green-800">
                     <tr className="text-center">
-                      <th className="py-3 pr-4 font-semibold text-center">Disciplina</th>
-                      <th className="py-3 px-2 font-semibold text-center">1ª Unidade</th>
-                      <th className="py-3 px-2 font-semibold text-center">2ª Unidade</th>
-                      <th className="py-3 px-2 font-semibold text-center">% Faltas</th>
-                      <th className="py-3 pl-2 font-semibold text-center">Ações</th>
+                      <th className="py-2 md:py-3 pr-2 md:pr-4 font-semibold text-center text-xs md:text-sm">Disciplina</th>
+                      <th className="py-2 md:py-3 px-1 md:px-2 font-semibold text-center text-xs md:text-sm">1ª Unidade</th>
+                      <th className="py-2 md:py-3 px-1 md:px-2 font-semibold text-center text-xs md:text-sm">2ª Unidade</th>
+                      <th className="py-2 md:py-3 px-1 md:px-2 font-semibold text-center text-xs md:text-sm">% Faltas</th>
+                      <th className="py-2 md:py-3 pl-1 md:pl-2 font-semibold text-center text-xs md:text-sm">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -256,20 +256,20 @@ export default function FrequenciaPage() {
                       const percBadgeVariant = perc >= 25 ? 'destructive' : perc >= 15 ? 'outline' : 'secondary'
                       return (
                         <tr key={d.id} className="border-t text-center">
-                          <td className="py-3 pr-4 text-center">
-                            <div className="font-medium inline-flex items-center gap-2 justify-center">
-                              <BookOpen className="h-4 w-4 text-muted-foreground" />
-                              {d.name}
+                          <td className="py-2 md:py-3 pr-2 md:pr-4 text-center">
+                            <div className="font-medium inline-flex items-center gap-1 md:gap-2 justify-center">
+                              <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate max-w-[120px] md:max-w-none">{d.name}</span>
                             </div>
-                            <div className="text-xs text-muted-foreground">{d.teacher}</div>
+                            <div className="text-xs text-muted-foreground truncate">{d.teacher}</div>
                           </td>
-                          <td className="py-3 px-2 text-center">{d.absencesByUnit.unit1}</td>
-                          <td className="py-3 px-2 text-center">{d.absencesByUnit.unit2}</td>
-                          <td className="py-3 px-2 text-center">
-                            <Badge variant={percBadgeVariant as any}>{perc}%</Badge>
+                          <td className="py-2 md:py-3 px-1 md:px-2 text-center">{d.absencesByUnit.unit1}</td>
+                          <td className="py-2 md:py-3 px-1 md:px-2 text-center">{d.absencesByUnit.unit2}</td>
+                          <td className="py-2 md:py-3 px-1 md:px-2 text-center">
+                            <Badge variant={percBadgeVariant as any} className="text-xs">{perc}%</Badge>
                           </td>
-                          <td className="py-3 pl-2 text-center">
-                            <Button size="sm" variant="outline" onClick={() => abrirModal(d)}>Ver Faltas</Button>
+                          <td className="py-2 md:py-3 pl-1 md:pl-2 text-center">
+                            <Button size="sm" variant="outline" onClick={() => abrirModal(d)} className="text-xs">Ver Faltas</Button>
                           </td>
                         </tr>
                       )

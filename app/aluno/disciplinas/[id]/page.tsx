@@ -620,33 +620,35 @@ export default function DisciplinaDetalhePage() {
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center mb-6">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 md:mb-6">
             <Link href="/aluno/disciplinas">
-              <Button variant="ghost" size="sm" className="mr-4">
+              <Button variant="ghost" size="sm" className="w-full sm:w-auto">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">{disciplina.nome}</h1>
-              <p className="text-muted-foreground">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground truncate">{disciplina.nome}</h1>
+              <p className="text-muted-foreground text-sm md:text-base">
                 {disciplina.codigo} • {disciplina.professor}
               </p>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
-              <TabsTrigger value="avisos">Avisos</TabsTrigger>
-              <TabsTrigger value="materiais">Materiais</TabsTrigger>
-              <TabsTrigger value="atividades">Atividades</TabsTrigger>
-              <TabsTrigger value="forum">Fórum</TabsTrigger>
-              <TabsTrigger value="videoaulas">Vídeo-aulas</TabsTrigger>
-              <TabsTrigger value="videochamadas">Vídeo-chamadas</TabsTrigger>
-              <TabsTrigger value="provas-online">Provas Online</TabsTrigger>
-              <TabsTrigger value="notas">Notas</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+            <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+              <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto min-w-max">
+                <TabsTrigger value="avisos" className="text-xs md:text-sm">Avisos</TabsTrigger>
+                <TabsTrigger value="materiais" className="text-xs md:text-sm">Materiais</TabsTrigger>
+                <TabsTrigger value="atividades" className="text-xs md:text-sm">Atividades</TabsTrigger>
+                <TabsTrigger value="forum" className="text-xs md:text-sm">Fórum</TabsTrigger>
+                <TabsTrigger value="videoaulas" className="text-xs md:text-sm">Vídeo-aulas</TabsTrigger>
+                <TabsTrigger value="videochamadas" className="text-xs md:text-sm">Vídeo-chamadas</TabsTrigger>
+                <TabsTrigger value="provas-online" className="text-xs md:text-sm">Provas</TabsTrigger>
+                <TabsTrigger value="notas" className="text-xs md:text-sm">Notas</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="avisos">
               <div className="space-y-4">
@@ -703,12 +705,12 @@ export default function DisciplinaDetalhePage() {
                 {(materialsQuery.data || []).map((material: MaterialItem) => (
                   <Card key={material.id}>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-8 w-8 text-primary" />
-                          <div>
-                            <h4 className="font-medium">{material.title ?? material.name ?? 'Material'}</h4>
-                            <p className="text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <FileText className="h-8 w-8 text-primary flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium truncate">{material.title ?? material.name ?? 'Material'}</h4>
+                            <p className="text-sm text-muted-foreground truncate">
                               {(() => {
                                 const first = Array.isArray(material.fileUrl) ? material.fileUrl[0] : undefined
                                 const ext = first ? first.split('.').pop()?.toUpperCase() : ''
@@ -719,7 +721,7 @@ export default function DisciplinaDetalhePage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex gap-2 flex-wrap justify-end">
+                        <div className="flex gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0 justify-start sm:justify-end">
                           {((Array.isArray(material.fileUrl) ? material.fileUrl : (material.fileUrl ? [material.fileUrl] : [])) as string[]).map((url: string, idx: number) => {
                             const downloadKey = `${material.id}-${url}`
                             const isDownloading = downloadingFiles.has(downloadKey)
@@ -776,6 +778,7 @@ export default function DisciplinaDetalhePage() {
                                 size="sm" 
                                 onClick={handleDownload}
                                 disabled={isDownloading}
+                                className="text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none"
                               >
                                 {isDownloading ? 'Baixando...' : name}
                               </Button>
@@ -1181,15 +1184,36 @@ export default function DisciplinaDetalhePage() {
                       <Card key={exam.id}>
                         <CardHeader>
                           <div className="flex items-start justify-between">
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <CardTitle className="text-lg">{exam.activity?.title || 'Prova'}</CardTitle>
-                              <CardDescription>
-                                {startDate && (
-                                  <>Disponível a partir de: {startDate.toLocaleString('pt-BR')} • </>
-                                )}
-                                {dueDate ? `Prazo final: ${dueDate.toLocaleString('pt-BR')}` : 'Sem prazo definido'}
-                                {exam.timeLimitMinutes && ` • Tempo limite: ${exam.timeLimitMinutes} minutos`}
-                                {exam.questions && ` • ${exam.questions.length} questão(ões)`}
+                              <CardDescription className="mt-2">
+                                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4">
+                                  {startDate && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Disponível a partir de: {startDate.toLocaleString('pt-BR')}</span>
+                                    </div>
+                                  )}
+                                  {dueDate && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Prazo final: {dueDate.toLocaleString('pt-BR')}</span>
+                                    </div>
+                                  )}
+                                  {!dueDate && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Sem prazo definido</span>
+                                    </div>
+                                  )}
+                                  {exam.timeLimitMinutes && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Tempo limite: {exam.timeLimitMinutes} minutos</span>
+                                    </div>
+                                  )}
+                                  {exam.questions && (
+                                    <div className="flex items-center gap-1">
+                                      <span>{exam.questions.length} questão(ões)</span>
+                                    </div>
+                                  )}
+                                </div>
                               </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1492,33 +1516,33 @@ export default function DisciplinaDetalhePage() {
                           )}
                         </CardHeader>
                         <CardContent>
-                          <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
+                          <div className="overflow-x-auto -mx-4 md:mx-0">
+                            <table className="w-full border-collapse min-w-full text-xs md:text-sm">
                               <thead>
                                 <tr className="border-b">
-                                  <th className="text-left p-3 font-semibold">Atividade</th>
-                                  <th className="text-left p-3 font-semibold">Tipo</th>
-                                  <th className="text-center p-3 font-semibold">Nota</th>
-                                  <th className="text-center p-3 font-semibold">Peso</th>
+                                  <th className="text-left p-2 md:p-3 font-semibold">Atividade</th>
+                                  <th className="text-left p-2 md:p-3 font-semibold">Tipo</th>
+                                  <th className="text-center p-2 md:p-3 font-semibold">Nota</th>
+                                  <th className="text-center p-2 md:p-3 font-semibold">Peso</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {unitActivities.map((activity) => (
                                   <tr key={activity.id} className="border-b hover:bg-muted/50">
-                                    <td className="p-3">{activity.title}</td>
-                                    <td className="p-3">
-                                      <Badge variant="outline">
+                                    <td className="p-2 md:p-3 truncate max-w-[150px] md:max-w-none">{activity.title}</td>
+                                    <td className="p-2 md:p-3">
+                                      <Badge variant="outline" className="text-xs">
                                         {formatActivityType(activity.type || 'homework')}
                                       </Badge>
                                     </td>
-                                    <td className="p-3 text-center">
+                                    <td className="p-2 md:p-3 text-center">
                                       {activity.grade ? (
                                         <span className="font-medium">{activity.grade.score.toFixed(2)}</span>
                                       ) : (
                                         <span className="text-muted-foreground">—</span>
                                       )}
                                     </td>
-                                    <td className="p-3 text-center">
+                                    <td className="p-2 md:p-3 text-center">
                                       {activity.maxScore ? (
                                         <span>{activity.maxScore.toFixed(2)}</span>
                                       ) : (
@@ -1528,11 +1552,11 @@ export default function DisciplinaDetalhePage() {
                                   </tr>
                                 ))}
                                 <tr className="border-t-2 font-semibold bg-muted/30">
-                                  <td className="p-3" colSpan={2}>Total</td>
-                                  <td className="p-3 text-center">
+                                  <td className="p-2 md:p-3" colSpan={2}>Total</td>
+                                  <td className="p-2 md:p-3 text-center">
                                     {totalScore > 0 ? totalScore.toFixed(2) : '—'}
                                   </td>
-                                  <td className="p-3 text-center">
+                                  <td className="p-2 md:p-3 text-center">
                                     {totalWeight > 0 ? totalWeight.toFixed(2) : '—'}
                                   </td>
                                 </tr>

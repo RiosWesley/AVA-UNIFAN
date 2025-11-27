@@ -95,41 +95,41 @@ export default function AlunodisciplinasPage() {
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className="p-4 md:p-6 lg:p-8">
           {/* Header aprimorado */}
-          <div className={`flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm gap-4 ${
+          <div className={`flex flex-col lg:flex-row lg:items-center justify-between mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 rounded-xl border backdrop-blur-sm gap-4 ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center hover:shadow-md">
-                  <BookOpen className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-600 rounded-2xl flex items-center justify-center hover:shadow-md">
+                  <BookOpen className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                  <Sparkles className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                 </div>
               </div>
-              <div>
-                <div className="flex items-center space-x-3">
-                  <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400">
                     Minhas Disciplinas
                   </h1>
-                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-sm px-3 py-1">
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-xs md:text-sm px-2 md:px-3 py-1 w-fit">
                     {semestres.find(s => s.id === semestreSelecionado)?.nome}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1">
                   Acompanhe o progresso das suas disciplinas
                 </p>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-              <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                 <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                  <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                  <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                       : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -155,7 +155,7 @@ export default function AlunodisciplinasPage() {
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             {disciplinasAtuais.map((disciplina, index) => (
               <Link 
                 key={disciplina.id} 
@@ -163,38 +163,43 @@ export default function AlunodisciplinasPage() {
                 className="block group"
               >
                 <div
-                  className={`transition-all duration-300 rounded-xl border border-border/50 px-6 py-5 hover:shadow-lg ${
+                  className={`transition-all duration-300 rounded-xl border border-border/50 px-4 md:px-6 py-4 md:py-5 hover:shadow-lg ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/40 dark:hover:bg-gray-800/30'
                       : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-gray-50/80 dark:hover:bg-gray-800/60'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center justify-between gap-3 md:gap-6">
                     {/* Ícone */}
-                    <div className="w-14 h-14 bg-green-600 rounded-xl flex items-center justify-center group-hover:bg-green-700 transition-colors flex-shrink-0">
-                      <BookOpen className="h-7 w-7 text-white" />
+                    <div className="w-10 h-10 md:w-14 md:h-14 bg-green-600 rounded-xl flex items-center justify-center group-hover:bg-green-700 transition-colors flex-shrink-0">
+                      <BookOpen className="h-5 w-5 md:h-7 md:w-7 text-white" />
                     </div>
 
                     {/* Informações da Disciplina */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors mb-1">
+                      <h3 className="text-base md:text-xl font-semibold text-gray-900 dark:text-gray-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors mb-1 truncate">
                         {disciplina.nome}
                       </h3>
-                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                      <p className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                         {disciplina.codigo}
                       </p>
                     </div>
 
                     {/* Professor */}
-                    <div className="flex items-center gap-2 text-base text-gray-700 dark:text-gray-300 min-w-0 flex-shrink-0">
-                      <User className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                      <span className="font-medium truncate max-w-[200px]">{disciplina.professor}</span>
+                    <div className="hidden sm:flex items-center gap-2 text-sm md:text-base text-gray-700 dark:text-gray-300 min-w-0 flex-shrink-0">
+                      <User className="h-4 w-4 md:h-5 md:w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                      <span className="font-medium truncate max-w-[150px] md:max-w-[200px]">{disciplina.professor}</span>
                     </div>
 
                     {/* Indicador de ação */}
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 opacity-0 group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
-                      <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+                    <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 flex-shrink-0">
+                      <ChevronRight className="h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
+                  </div>
+                  {/* Professor em mobile */}
+                  <div className="flex sm:hidden items-center gap-2 text-sm text-gray-700 dark:text-gray-300 mt-2">
+                    <User className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                    <span className="font-medium truncate">{disciplina.professor}</span>
                   </div>
                 </div>
               </Link>
