@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -560,6 +561,11 @@ export default function DisciplinaDetalhePage() {
     }
   }
 
+  // Estado de loading inicial (quando ainda não temos dados básicos)
+  const isLoadingInitial = useMemo(() => {
+    return classDetailsQuery.isLoading || !classId || !studentId
+  }, [classDetailsQuery.isLoading, classId, studentId])
+
   const handleResponderDiscussao = (texto: string, parentId?: number) => {
     if (!forumSelecionado || !studentId) return
     ;(async () => {
@@ -614,6 +620,52 @@ export default function DisciplinaDetalhePage() {
     })()
   }
 
+  if (isLoadingInitial) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 md:p-6">
+            {/* Skeleton do Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 md:mb-6">
+              <Skeleton className="h-9 w-24" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-5 w-48" />
+              </div>
+            </div>
+
+            {/* Skeleton das Tabs */}
+            <Tabs defaultValue="avisos" className="space-y-4 md:space-y-6">
+              <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+                <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto min-w-max">
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                </TabsList>
+              </div>
+              <TabsContent value="avisos">
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-20 w-full" />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -665,7 +717,15 @@ export default function DisciplinaDetalhePage() {
                     </CardHeader>
                   </Card>
                 )}
-                {(noticesQuery.data || []).map((aviso: Notice) => (
+                {!noticesQuery.isLoading && (noticesQuery.data || []).length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum aviso disponível ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  (noticesQuery.data || []).map((aviso: Notice) => (
                   <Card key={aviso.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -680,7 +740,8 @@ export default function DisciplinaDetalhePage() {
                       <p className="text-sm">{aviso.content}</p>
                     </CardContent>
                   </Card>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 
@@ -702,7 +763,15 @@ export default function DisciplinaDetalhePage() {
                     </CardContent>
                   </Card>
                 )}
-                {(materialsQuery.data || []).map((material: MaterialItem) => (
+                {!materialsQuery.isLoading && (materialsQuery.data || []).length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum material disponível ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  (materialsQuery.data || []).map((material: MaterialItem) => (
                   <Card key={material.id}>
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -788,7 +857,8 @@ export default function DisciplinaDetalhePage() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 
@@ -830,6 +900,17 @@ export default function DisciplinaDetalhePage() {
                       exam: exam,
                     } as ClassActivity & { type: string; examId: string; exam: ExamDTO })),
                   ]
+
+                  if (!activitiesQuery.isLoading && allActivities.length === 0) {
+                    return (
+                      <Card>
+                        <CardContent className="p-8 text-center">
+                          <FileCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">Nenhuma atividade disponível ainda</p>
+                        </CardContent>
+                      </Card>
+                    )
+                  }
 
                   return allActivities.map((atividade: ClassActivity & { type?: string; examId?: string; exam?: ExamDTO }) => {
                     const isVirtualExam = atividade.type === 'virtual_exam'
@@ -929,7 +1010,15 @@ export default function DisciplinaDetalhePage() {
                     </CardHeader>
                   </Card>
                 )}
-                {(forumsQuery.data || []).map((forum: Forum) => {
+                {!forumsQuery.isLoading && (forumsQuery.data || []).length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum fórum disponível ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  (forumsQuery.data || []).map((forum: Forum) => {
                   const titulo = forum.title
                   const autor = forum.authorName || (forum as any)?.createdBy?.name || '—'
                   const rawCreated: any = (forum as any)?.createdAt ?? (forum as any)?.created_at ?? null
@@ -977,7 +1066,8 @@ export default function DisciplinaDetalhePage() {
                       </div>
                     </CardContent>
                   </Card>
-                )})}
+                  )})
+                )}
               </div>
             </TabsContent>
 
@@ -1052,7 +1142,22 @@ export default function DisciplinaDetalhePage() {
             <TabsContent value="videochamadas">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center"><CalendarClock className="h-5 w-5 mr-2"/>Vídeo-chamadas</h3>
-                {videoChamadas.map((reuniao) => {
+                {liveSessionsQuery.isLoading && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Carregando vídeo-chamadas...</CardTitle>
+                    </CardHeader>
+                  </Card>
+                )}
+                {!liveSessionsQuery.isLoading && videoChamadas.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <Video className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhuma vídeo-chamada agendada ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  videoChamadas.map((reuniao) => {
                   const dataInicio = new Date(reuniao.startAt)
                   const dataTermino = new Date(reuniao.endAt)
                   const podeEntrar = reuniao.status === 'disponivel'
@@ -1086,10 +1191,11 @@ export default function DisciplinaDetalhePage() {
                             <Video className="h-4 w-4 mr-2"/> Entrar
                           </Button>
                         </div>
-                      </CardContent>
-                    </Card>
+                    </CardContent>
+                  </Card>
                   )
-                })}
+                  })
+                )}
               </div>
             </TabsContent>
 
