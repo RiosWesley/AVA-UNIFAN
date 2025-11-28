@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, Search, Edit, Mail, Eye, EyeOff, Ban, ChevronLeft, ChevronRight } from "lucide-react"
+import { Users, Plus, Search, Edit, Mail, Eye, EyeOff, Ban, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { ModalEditarUsuario, type Usuario as UsuarioType } from "@/components/modals/modal-editar-usuario"
 import { ModalDetalhesUsuario, type UsuarioDetalhes } from "@/components/modals/modal-detalhes-usuario"
 import { ModalConfirmacao } from "@/components/modals/modal-confirmacao"
@@ -31,6 +31,7 @@ export default function UsuariosAdministradorPage() {
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null)
   const [usuarioDetalhes, setUsuarioDetalhes] = useState<UsuarioDetalhes | null>(null)
   const [usuarioInativando, setUsuarioInativando] = useState<Usuario | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
   
   // Estados de paginação
   const [currentPage, setCurrentPage] = useState(1)
@@ -397,6 +398,7 @@ export default function UsuariosAdministradorPage() {
       return
     }
     
+    setIsCreating(true)
     try {
       setError(null)
       setCpfError(null)
@@ -499,6 +501,8 @@ export default function UsuariosAdministradorPage() {
         title: 'Erro ao cadastrar usuário',
         description: err.message || "Não foi possível criar o usuário. Tente novamente."
       })
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -1006,11 +1010,22 @@ export default function UsuariosAdministradorPage() {
                             status: "Ativo",
                           })
                         }
+                        disabled={isCreating}
                       >
                         Limpar
                       </Button>
-                      <Button type="submit">
-                        <Plus className="w-4 h-4 mr-2" /> Cadastrar
+                      <Button type="submit" disabled={isCreating}>
+                        {isCreating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Cadastrando...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Cadastrar
+                          </>
+                        )}
                       </Button>
                     </div>
                   </form>
