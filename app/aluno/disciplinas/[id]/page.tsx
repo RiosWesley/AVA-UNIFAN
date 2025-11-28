@@ -1825,7 +1825,7 @@ export default function DisciplinaDetalhePage() {
                   })
 
                   // Combinar atividades com notas e incluir campo unit
-                  interface ActivityWithGrade extends ClassActivity {
+                  interface ActivityWithGrade extends Omit<ClassActivity, 'grade'> {
                     unit?: string | null
                     type?: string
                     maxScore?: number | null
@@ -1861,7 +1861,7 @@ export default function DisciplinaDetalhePage() {
                         title: exam.activity.title || 'Prova',
                         description: exam.activity.description || exam.instructions || '',
                         dueDate: exam.activity.dueDate || '',
-                        unit: exam.activity.unit || null,
+                        unit: (exam.activity as any).unit || null,
                         type: 'virtual_exam',
                         maxScore: exam.activity.maxScore || null,
                         grade: attempt && attempt.score !== null && attempt.score !== undefined

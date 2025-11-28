@@ -112,10 +112,29 @@ async function getClassDetails(classId: string): Promise<{ enrollments: any[], g
       : []
 
     const attendances = attendanceTable.status === 'fulfilled'
-      ? (attendanceTable.value || []).map(row => ({
-        enrollmentId: row.enrollmentId,
-        percentage: row.attendancePercentage || row.presentPercentage || row.percentage || 0
-      }))
+      ? (attendanceTable.value || []).map(row => {
+          let percentage = 0
+          
+          // Se o backend já retornou a porcentagem calculada, usa ela
+          if (row.attendancePercentage !== undefined || row.presentPercentage !== undefined || row.frequency !== undefined || row.percentage !== undefined) {
+            percentage = Number(row.attendancePercentage ?? row.presentPercentage ?? row.frequency ?? row.percentage ?? 0)
+          } 
+          // Caso contrário, calcula a partir dos registros brutos de presença
+          else if (row.attendances && Array.isArray(row.attendances) && row.attendances.length > 0) {
+            const total = row.attendances.length
+            const present = row.attendances.filter(a => a.present === true).length
+            percentage = total > 0 ? (present / total) * 100 : 100
+          }
+          // Se não houver dados, assume 100% (sem faltas registradas)
+          else {
+            percentage = 100
+          }
+          
+          return {
+            enrollmentId: row.enrollmentId,
+            percentage: Math.round(percentage)
+          }
+        })
       : []
 
     return { enrollments, grades, attendances }

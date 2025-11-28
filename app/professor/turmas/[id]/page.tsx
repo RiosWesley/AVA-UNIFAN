@@ -190,8 +190,24 @@ export default function TurmaDetalhePage() {
 
         const freqMap = new Map<string, number>()
         for (const row of attendanceTable || []) {
-          const perc = (row.attendancePercentage ?? row.presentPercentage ?? row.frequency ?? row.percentage ?? 0)
-          freqMap.set(row.enrollmentId, Number(perc))
+          let perc = 0
+          
+          // Se o backend já retornou a porcentagem calculada, usa ela
+          if (row.attendancePercentage !== undefined || row.presentPercentage !== undefined || row.frequency !== undefined || row.percentage !== undefined) {
+            perc = Number(row.attendancePercentage ?? row.presentPercentage ?? row.frequency ?? row.percentage ?? 0)
+          } 
+          // Caso contrário, calcula a partir dos registros brutos de presença
+          else if (row.attendances && Array.isArray(row.attendances) && row.attendances.length > 0) {
+            const total = row.attendances.length
+            const present = row.attendances.filter(a => a.present === true).length
+            perc = total > 0 ? (present / total) * 100 : 100
+          }
+          // Se não houver dados, assume 100% (sem faltas registradas)
+          else {
+            perc = 100
+          }
+          
+          freqMap.set(row.enrollmentId, Math.round(perc))
         }
 
         const gradeMap = new Map<string, number>()
