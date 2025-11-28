@@ -472,7 +472,7 @@ export default function AgendaPage() {
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="professor" />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-8">
+        <div className="p-4 md:p-6 space-y-6 md:space-y-8">
           {/* Header Hero Section */}
           <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
@@ -481,42 +481,42 @@ export default function AgendaPage() {
           }`}>
             <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.05]" />
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-20 translate-x-20" />
-            <div className="relative p-8">
-              <div className="flex items-center justify-between">
-                <div className="space-y-3">
-                  <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+            <div className="relative p-4 md:p-8">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
+                <div className="space-y-3 min-w-0 flex-1">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400">
                     Minha Agenda
                   </h1>
-                  <p className="text-lg text-muted-foreground">
+                  <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
                     Organize suas aulas, reuniões e compromissos acadêmicos
                   </p>
-                    <div className="flex items-center gap-6 pt-2">
+                    <div className="flex flex-wrap items-center gap-3 md:gap-6 pt-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
                           <Calendar className="h-2 w-2 text-white" />
                         </div>
-                        <span className="text-sm font-medium">Agenda Inteligente</span>
+                        <span className="text-xs md:text-sm font-medium">Agenda Inteligente</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
                           <Bell className="h-2 w-2 text-white" />
                         </div>
-                        <span className="text-sm font-medium">Lembretes Ativos</span>
+                        <span className="text-xs md:text-sm font-medium">Lembretes Ativos</span>
                       </div>
-                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-3 py-1">
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border-green-200 dark:border-green-800 px-2 md:px-3 py-1 text-xs md:text-sm">
                         <Clock className="h-3 w-3 mr-1" />
                         Atualizado
                       </Badge>
                     </div>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="flex items-center space-x-2 md:space-x-4 w-full lg:w-auto">
+                  <div className="flex items-center space-x-2 flex-1 lg:flex-none">
+                    <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                     {loadingSemestres || semestres.length === 0 ? (
-                      <Skeleton className="h-10 w-40" />
+                      <Skeleton className="h-10 w-full lg:w-40" />
                     ) : (
                       <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                        <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                        <SelectTrigger className={`w-full lg:w-40 backdrop-blur-sm ${
                           isLiquidGlass
                             ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                             : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -541,7 +541,7 @@ export default function AgendaPage() {
                     )}
                   </div>
                 </div>
-                <div className="hidden md:flex items-center space-x-4">
+                <div className="hidden lg:flex items-center space-x-4">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center shadow-lg">
                     <Calendar className="h-10 w-10 text-white" />
                   </div>
@@ -560,22 +560,22 @@ export default function AgendaPage() {
             }`}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
-            <div className="relative p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-white" />
+            <div className="relative p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-4 md:mb-6">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
+                    <Clock className="h-5 w-5 md:h-6 md:w-6 text-white" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground">Grade Horária Semanal</h2>
-                    <p className="text-sm text-muted-foreground">{formatWeekRange()}</p>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-xl md:text-2xl font-bold text-foreground truncate">Grade Horária Semanal</h2>
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">{formatWeekRange()}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     onClick={() => setCurrentWeekOffset(currentWeekOffset - 1)}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -583,7 +583,7 @@ export default function AgendaPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     onClick={() => setCurrentWeekOffset(0)}
                   >
                     Hoje
@@ -591,7 +591,7 @@ export default function AgendaPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     onClick={() => setCurrentWeekOffset(currentWeekOffset + 1)}
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -599,53 +599,54 @@ export default function AgendaPage() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="p-3 text-left text-sm font-bold text-foreground border-b border-green-200/50 dark:border-green-800/50">
-                        Horário
-                      </th>
-                      {getWeekDays.map((day) => (
-                        <th key={day.dayName} className="p-3 text-center text-sm font-bold text-foreground border-b border-green-200/50 dark:border-green-800/50">
-                          <div>{day.dayName}</div>
-                          <div className="text-xs text-muted-foreground font-normal">{day.dateStr}</div>
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 md:px-0">
+                  <table className="w-full border-collapse min-w-[600px]">
+                    <thead>
+                      <tr>
+                        <th className="p-2 md:p-3 text-left text-xs md:text-sm font-bold text-foreground border-b border-green-200/50 dark:border-green-800/50">
+                          Horário
                         </th>
-                      ))}
-                    </tr>
-                  </thead>
+                        {getWeekDays.map((day) => (
+                          <th key={day.dayName} className="p-2 md:p-3 text-center text-xs md:text-sm font-bold text-foreground border-b border-green-200/50 dark:border-green-800/50">
+                            <div className="truncate">{day.dayName}</div>
+                            <div className="text-xs text-muted-foreground font-normal truncate">{day.dateStr}</div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
                   <tbody>
                     {getHorariosUnicos.length === 0 ? (
                       <tr>
-                        <td colSpan={getWeekDays.length + 1} className="p-8 text-center text-muted-foreground">
+                        <td colSpan={getWeekDays.length + 1} className="p-4 md:p-8 text-center text-xs md:text-sm text-muted-foreground">
                           Nenhuma aula agendada para esta semana
                         </td>
                       </tr>
                     ) : (
                       getHorariosUnicos.map((horarioInfo) => (
                         <tr key={horarioInfo.periodo} className="border-b border-green-200/30 dark:border-green-800/30">
-                          <td className="p-3 text-sm font-medium text-foreground whitespace-nowrap">
+                          <td className="p-2 md:p-3 text-xs md:text-sm font-medium text-foreground whitespace-nowrap">
                             {horarioInfo.periodo}
                           </td>
                             {getWeekDays.map((day) => {
                             const eventos = getEventosPorDiaHorario(day.dayName, horarioInfo.periodo)
                             return (
-                              <td key={`${day.dayName}-${horarioInfo.periodo}`} className="p-2">
+                              <td key={`${day.dayName}-${horarioInfo.periodo}`} className="p-1 md:p-2">
                                 {eventos.map((evento: Evento, idx: number) => {
                                   const tipoConfig = getTipoConfig(evento.tipo)
                                   const TipoIcon = tipoConfig.icon
                                   return (
                                     <div
                                       key={idx}
-                                      className={`mb-2 p-2 rounded-lg border transition-all duration-300 hover:shadow-md ${
+                                      className={`mb-1 md:mb-2 p-1.5 md:p-2 rounded-lg border transition-all duration-300 hover:shadow-md ${
                                         isLiquidGlass
                                           ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
                                           : `${tipoConfig.bgColor} ${tipoConfig.borderColor} border hover:shadow-lg`
                                       }`}
                                     >
-                                      <div className="flex items-start gap-2">
-                                        <div className={`w-6 h-6 rounded-lg ${tipoConfig.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                                          <TipoIcon className="h-3 w-3 text-white" />
+                                      <div className="flex items-start gap-1.5 md:gap-2">
+                                        <div className={`w-5 h-5 md:w-6 md:h-6 rounded-lg ${tipoConfig.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                          <TipoIcon className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="font-semibold text-xs text-foreground truncate">
@@ -672,6 +673,7 @@ export default function AgendaPage() {
                     )}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           </LiquidGlassCard>
@@ -686,22 +688,22 @@ export default function AgendaPage() {
             }`}
           >
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-500/20 to-transparent rounded-full -translate-y-16 translate-x-16" />
-              <div className="relative p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
-                      <Calendar className="h-6 w-6 text-white" />
+              <div className="relative p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-4 md:mb-6">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="h-5 w-5 md:h-6 md:w-6 text-white" />
                     </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">Calendário</h2>
-                      <p className="text-sm text-muted-foreground">Visualização mensal interativa</p>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-xl md:text-2xl font-bold text-foreground truncate">Calendário</h2>
+                      <p className="text-xs md:text-sm text-muted-foreground truncate">Visualização mensal interativa</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-full"
+                      className="rounded-full flex-1 sm:flex-none"
                       onClick={() => {
                         if (currentMonth === 0) {
                           setCurrentMonth(11)
@@ -713,14 +715,14 @@ export default function AgendaPage() {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <div className="text-center px-4">
-                      <div className="font-bold text-lg">{monthNames[currentMonth]}</div>
-                      <div className="text-sm text-muted-foreground">{currentYear}</div>
+                    <div className="text-center px-2 md:px-4 flex-1 sm:flex-none">
+                      <div className="font-bold text-sm md:text-lg">{monthNames[currentMonth]}</div>
+                      <div className="text-xs md:text-sm text-muted-foreground">{currentYear}</div>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="rounded-full"
+                      className="rounded-full flex-1 sm:flex-none"
                       onClick={() => {
                         if (currentMonth === 11) {
                           setCurrentMonth(0)
@@ -736,20 +738,20 @@ export default function AgendaPage() {
                 </div>
 
                 {/* Header dos dias da semana */}
-                <div className="grid grid-cols-7 gap-2 mb-4">
+                <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2 md:mb-4">
                   {diasSemana.map((dia) => (
-                    <div key={dia} className="p-3 text-center">
-                      <div className="font-bold text-sm text-foreground">{dia}</div>
+                    <div key={dia} className="p-2 md:p-3 text-center">
+                      <div className="font-bold text-xs md:text-sm text-foreground truncate">{dia}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Grid do calendário */}
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-1 md:gap-2">
                   {calendarDays.map((dayInfo, index) => (
                     <div
                       key={index}
-                      className={`p-3 rounded-2xl border transition-all duration-300 cursor-pointer group ${
+                      className={`p-1.5 md:p-3 rounded-lg md:rounded-2xl border transition-all duration-300 cursor-pointer group ${
                         dayInfo
                           ? dayInfo.hasEvents
                             ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 hover:shadow-lg'
@@ -759,23 +761,23 @@ export default function AgendaPage() {
                     >
                       {dayInfo ? (
                         <>
-                          <div className="font-semibold text-sm mb-2">{dayInfo.day}</div>
+                          <div className="font-semibold text-xs md:text-sm mb-1 md:mb-2">{dayInfo.day}</div>
                           {dayInfo.hasEvents && (() => {
                             const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayInfo.day).padStart(2, '0')}`
                             const eventosDoDia = eventosPorDataCalendario.get(dateStr) || []
                             return (
-                              <div className="space-y-1">
-                                {eventosDoDia.slice(0, 2).map((evento, idx) => (
+                              <div className="space-y-0.5 md:space-y-1">
+                                {eventosDoDia.slice(0, 1).map((evento, idx) => (
                                   <div
                                     key={idx}
-                                    className={`text-xs rounded-lg px-2 py-1 ${getTipoConfig(evento.tipo).bgColor} ${getTipoConfig(evento.tipo).borderColor} border`}
+                                    className={`text-xs rounded-lg px-1 md:px-2 py-0.5 md:py-1 ${getTipoConfig(evento.tipo).bgColor} ${getTipoConfig(evento.tipo).borderColor} border`}
                                   >
                                     <div className="font-medium truncate">{evento.titulo}</div>
                                   </div>
                                 ))}
-                                {eventosDoDia.length > 2 && (
+                                {eventosDoDia.length > 1 && (
                                   <div className="text-xs text-center text-muted-foreground font-medium">
-                                    +{eventosDoDia.length - 2}
+                                    +{eventosDoDia.length - 1}
                                   </div>
                                 )}
                               </div>
@@ -787,19 +789,19 @@ export default function AgendaPage() {
                   ))}
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-green-200/50 dark:border-green-800/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm">
+                <div className="mt-4 md:mt-6 pt-4 border-t border-green-200/50 dark:border-green-800/50">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm">
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0"></div>
                         <span>Com eventos</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                        <div className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0"></div>
                         <span>Sem eventos</span>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" className="rounded-full">
+                    <Button variant="outline" size="sm" className="rounded-full w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       Novo Evento
                     </Button>

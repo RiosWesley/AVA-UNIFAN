@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sidebar } from "@/components/layout/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ArrowLeft, Users, FileText, CheckCircle, Plus, Edit, Trash2, Download, Upload, X, MessageSquare, MessageCircle, Video, CalendarClock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff } from "lucide-react"
 import Link from "next/link"
 import * as XLSX from 'xlsx'
@@ -154,11 +155,13 @@ export default function TurmaDetalhePage() {
   const [avaliacaoDescricao, setAvaliacaoDescricao] = useState("")
 
   const [enrollmentsState, setEnrollmentsState] = useState<EnrollmentDTO[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Busca inicial
   useEffect(() => {
     const fetchAll = async () => {
       if (!classId) return
+      setLoading(true)
       try {
         const [
           clazz,
@@ -187,8 +190,24 @@ export default function TurmaDetalhePage() {
 
         const freqMap = new Map<string, number>()
         for (const row of attendanceTable || []) {
-          const perc = (row.attendancePercentage ?? row.presentPercentage ?? row.frequency ?? row.percentage ?? 0)
-          freqMap.set(row.enrollmentId, Number(perc))
+          let perc = 0
+          
+          // Se o backend já retornou a porcentagem calculada, usa ela
+          if (row.attendancePercentage !== undefined || row.presentPercentage !== undefined || row.frequency !== undefined || row.percentage !== undefined) {
+            perc = Number(row.attendancePercentage ?? row.presentPercentage ?? row.frequency ?? row.percentage ?? 0)
+          } 
+          // Caso contrário, calcula a partir dos registros brutos de presença
+          else if (row.attendances && Array.isArray(row.attendances) && row.attendances.length > 0) {
+            const total = row.attendances.length
+            const present = row.attendances.filter(a => a.present === true).length
+            perc = total > 0 ? (present / total) * 100 : 100
+          }
+          // Se não houver dados, assume 100% (sem faltas registradas)
+          else {
+            perc = 100
+          }
+          
+          freqMap.set(row.enrollmentId, Math.round(perc))
         }
 
         const gradeMap = new Map<string, number>()
@@ -298,6 +317,8 @@ export default function TurmaDetalhePage() {
           title: "Erro ao carregar dados",
           description: "Não foi possível carregar informações da turma."
         })
+      } finally {
+        setLoading(false)
       }
     }
     fetchAll()
@@ -1250,28 +1271,119 @@ export default function TurmaDetalhePage() {
   }, [router])
 
 
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="professor" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 md:p-6">
+            {/* Skeleton do Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 md:mb-6">
+              <Skeleton className="h-9 w-24" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-5 w-48" />
+              </div>
+            </div>
+
+            {/* Skeleton dos Cards de Estatísticas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-3 w-40" />
+                </CardContent>
+              </LiquidGlassCard>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-3 w-40" />
+                </CardContent>
+              </LiquidGlassCard>
+              <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-4 rounded" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16 mb-2" />
+                  <Skeleton className="h-3 w-40" />
+                </CardContent>
+              </LiquidGlassCard>
+            </div>
+
+            {/* Skeleton das Tabs */}
+            <Tabs defaultValue="alunos" className="space-y-4 md:space-y-6">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 h-auto flex-wrap">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+              </TabsList>
+              <TabsContent value="alunos">
+                <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-3 sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <Skeleton className="h-5 w-48 mb-2" />
+                            <Skeleton className="h-4 w-64" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-6 w-20" />
+                            <Skeleton className="h-9 w-28" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </LiquidGlassCard>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar userRole="professor" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center mb-6">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 md:mb-6">
             <Link href="/professor/turmas">
-              <LiquidGlassButton variant="ghost" size="sm" className="mr-4">
+              <LiquidGlassButton variant="ghost" size="sm" className="w-full sm:w-auto">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar
               </LiquidGlassButton>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">{turma.nome}</h1>
-              <p className="text-muted-foreground">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground truncate">{turma.nome}</h1>
+              <p className="text-sm md:text-base text-muted-foreground truncate">
                 {turma.disciplina} • {turma.alunos} alunos
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
             <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Média da Turma</CardTitle>
@@ -1306,15 +1418,15 @@ export default function TurmaDetalhePage() {
             </LiquidGlassCard>
           </div>
 
-          <Tabs defaultValue="alunos" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="alunos">Alunos</TabsTrigger>
-              <TabsTrigger value="atividades">Atividades</TabsTrigger>
-              <TabsTrigger value="materiais">Materiais</TabsTrigger>
-              <TabsTrigger value="forum">Fórum</TabsTrigger>
-              <TabsTrigger value="aula-online">Aula Online</TabsTrigger>
-              <TabsTrigger value="provas-virtuais">Provas Virtuais</TabsTrigger>
-              <TabsTrigger value="notas">Lançar Notas</TabsTrigger>
+          <Tabs defaultValue="alunos" className="space-y-4 md:space-y-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 h-auto flex-wrap">
+              <TabsTrigger value="alunos" className="text-xs sm:text-sm">Alunos</TabsTrigger>
+              <TabsTrigger value="atividades" className="text-xs sm:text-sm">Atividades</TabsTrigger>
+              <TabsTrigger value="materiais" className="text-xs sm:text-sm">Materiais</TabsTrigger>
+              <TabsTrigger value="forum" className="text-xs sm:text-sm">Fórum</TabsTrigger>
+              <TabsTrigger value="aula-online" className="text-xs sm:text-sm">Aula Online</TabsTrigger>
+              <TabsTrigger value="provas-virtuais" className="text-xs sm:text-sm">Provas Virtuais</TabsTrigger>
+              <TabsTrigger value="notas" className="text-xs sm:text-sm">Lançar Notas</TabsTrigger>
             </TabsList>
 
             <TabsContent value="alunos">
@@ -1324,16 +1436,22 @@ export default function TurmaDetalhePage() {
                   <CardDescription>Desempenho individual dos alunos</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {alunos.map((aluno) => (
-                      <div key={aluno.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{aluno.nome}</h4>
-                          <p className="text-sm text-muted-foreground">
+                  {!loading && alunos.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum aluno matriculado nesta turma</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {alunos.map((aluno) => (
+                      <div key={aluno.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-3 sm:gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-medium truncate">{aluno.nome}</h4>
+                          <p className="text-sm text-muted-foreground truncate">
                             Média: {aluno.media} • Frequência: {aluno.frequencia}%
                           </p>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                           <Badge
                             variant={
                               aluno.situacao === "Aprovado"
@@ -1342,6 +1460,7 @@ export default function TurmaDetalhePage() {
                                   ? "secondary"
                                   : "destructive"
                             }
+                            className="text-xs"
                           >
                             {aluno.situacao}
                           </Badge>
@@ -1349,39 +1468,49 @@ export default function TurmaDetalhePage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleVerDetalhesAluno(aluno)}
+                            className="flex-1 sm:flex-none"
                           >
                             Ver Detalhes
                           </LiquidGlassButton>
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  )}
                 </CardContent>
               </LiquidGlassCard>
             </TabsContent>
 
             <TabsContent value="atividades">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                   <h3 className="text-lg font-semibold">Atividades da Turma</h3>
-                  <LiquidGlassButton onClick={handleNovaAtividade}>
+                  <LiquidGlassButton onClick={handleNovaAtividade} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Atividade
                   </LiquidGlassButton>
                 </div>
 
-                {atividades.map((atividade) => (
+                {!loading && atividades.length === 0 ? (
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhuma atividade cadastrada ainda</p>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ) : (
+                  atividades.map((atividade) => (
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={atividade.id}>
                     <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{atividade.titulo}</CardTitle>
-                          <CardDescription>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-lg truncate">{atividade.titulo}</CardTitle>
+                          <CardDescription className="truncate">
                             {atividade.tipo} • Prazo: {atividade.prazo}
                           </CardDescription>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={atividade.status === "Concluída" ? "default" : "secondary"}>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant={atividade.status === "Concluída" ? "default" : "secondary"} className="text-xs">
                             {atividade.status}
                           </Badge>
                           <LiquidGlassButton
@@ -1402,51 +1531,62 @@ export default function TurmaDetalhePage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                         <p className="text-sm text-muted-foreground">
                           Entregues: {atividade.entregues}/{atividade.total}
                         </p>
                         <LiquidGlassButton 
                           size="sm" 
                           onClick={() => handleVerEntregas(atividade)}
+                          className="w-full sm:w-auto"
                         >
                           Ver Entregas
                         </LiquidGlassButton>
                       </div>
                     </CardContent>
                   </LiquidGlassCard>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="materiais">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                   <h3 className="text-lg font-semibold">Materiais da Disciplina</h3>
-                  <LiquidGlassButton onClick={handleNovoMaterial}>
+                  <LiquidGlassButton onClick={handleNovoMaterial} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Material
                   </LiquidGlassButton>
                 </div>
 
-                {materiais.map((material) => (
+                {!loading && materiais.length === 0 ? (
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum material disponível ainda</p>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ) : (
+                  materiais.map((material) => (
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={material.id}>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-8 w-8 text-primary" />
-                          <div>
-                            <h4 className="font-medium">{material.nome}</h4>
-                            <p className="text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <FileText className="h-8 w-8 text-primary flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium truncate">{material.nome}</h4>
+                            <p className="text-sm text-muted-foreground truncate">
                               {material.tipo} • {material.data}
                             </p>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
                           <LiquidGlassButton
                             size="sm"
                             variant="outline"
                             onClick={() => handleEditarMaterial(material)}
+                            className="flex-1 sm:flex-none"
                           >
                             <Edit className="h-4 w-4" />
                           </LiquidGlassButton>
@@ -1454,6 +1594,7 @@ export default function TurmaDetalhePage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleExcluirMaterial(material)}
+                            className="flex-1 sm:flex-none"
                           >
                             <Trash2 className="h-4 w-4" />
                           </LiquidGlassButton>
@@ -1461,32 +1602,41 @@ export default function TurmaDetalhePage() {
                       </div>
                     </CardContent>
                   </LiquidGlassCard>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="forum">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                   <h3 className="text-lg font-semibold">Fórum da Turma</h3>
-                  <LiquidGlassButton onClick={handleNovoForum}>
+                  <LiquidGlassButton onClick={handleNovoForum} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Novo Fórum
                   </LiquidGlassButton>
                 </div>
 
-                {forums.map((forum) => (
+                {!loading && forums.length === 0 ? (
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardContent className="p-8 text-center">
+                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum fórum criado ainda</p>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ) : (
+                  forums.map((forum) => (
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={forum.id}>
                     <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{forum.titulo}</CardTitle>
-                          <CardDescription>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-lg truncate">{forum.titulo}</CardTitle>
+                          <CardDescription className="truncate">
                             Criado por {forum.autor} em {forum.dataCriacao}
                           </CardDescription>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="secondary">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="secondary" className="text-xs">
                             {forum.comentarios.length} comentários
                           </Badge>
                           <LiquidGlassButton
@@ -1507,17 +1657,18 @@ export default function TurmaDetalhePage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">
+                      <p className="text-sm text-muted-foreground mb-3 break-words">
                         {forum.descricao}
                       </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <span className="text-xs text-muted-foreground truncate">
                           Última atualização: {forum.comentarios[forum.comentarios.length - 1]?.data || forum.dataCriacao}
                         </span>
                         <LiquidGlassButton 
                           size="sm" 
                           variant="outline"
                           onClick={() => handleVerDiscussao(forum)}
+                          className="w-full sm:w-auto"
                         >
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Ver Discussão
@@ -1525,24 +1676,33 @@ export default function TurmaDetalhePage() {
                       </div>
                     </CardContent>
                   </LiquidGlassCard>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="aula-online">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                   <h3 className="text-lg font-semibold flex items-center">
                     <Video className="h-5 w-5 mr-2" />
                     Aula Online
                   </h3>
-                  <LiquidGlassButton onClick={handleNovaVideoChamada}>
+                  <LiquidGlassButton onClick={handleNovaVideoChamada} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Videochamada
                   </LiquidGlassButton>
                 </div>
 
-                {videoChamadas.map((reuniao) => {
+                {!loading && videoChamadas.length === 0 ? (
+                  <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
+                    <CardContent className="p-8 text-center">
+                      <Video className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhuma videochamada agendada ainda</p>
+                    </CardContent>
+                  </LiquidGlassCard>
+                ) : (
+                  videoChamadas.map((reuniao) => {
                   const dataInicio = new Date(reuniao.startAt)
                   const dataTermino = new Date(reuniao.endAt)
                   const podeEntrar = reuniao.status === 'disponivel'
@@ -1551,32 +1711,33 @@ export default function TurmaDetalhePage() {
                   return (
                     <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={reuniao.id}>
                       <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="text-lg">{reuniao.titulo}</CardTitle>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg truncate">{reuniao.titulo}</CardTitle>
                             <CardDescription className="mt-2 space-y-1">
                               <div className="flex items-center gap-1">
-                                <CalendarClock className="h-3 w-3" />
-                                <span>Início: {dataInicio.toLocaleString('pt-BR')}</span>
+                                <CalendarClock className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">Início: {dataInicio.toLocaleString('pt-BR')}</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <CalendarClock className="h-3 w-3" />
-                                <span>Término: {dataTermino.toLocaleString('pt-BR')}</span>
+                                <CalendarClock className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">Término: {dataTermino.toLocaleString('pt-BR')}</span>
                               </div>
                             </CardDescription>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Badge variant={statusVariant as any} className="text-xs">{statusLabel}</Badge>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
                             <LiquidGlassButton
                               size="sm"
                               variant="outline"
                               onClick={() => handleEditarVideoChamada(reuniao)}
+                              className="flex-1 sm:flex-none"
                             >
                               <Edit className="h-4 w-4" />
                             </LiquidGlassButton>
@@ -1584,6 +1745,7 @@ export default function TurmaDetalhePage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeletarVideoChamada(reuniao)}
+                              className="flex-1 sm:flex-none"
                             >
                               <Trash2 className="h-4 w-4" />
                             </LiquidGlassButton>
@@ -1593,6 +1755,7 @@ export default function TurmaDetalhePage() {
                             variant={podeEntrar ? 'default' : 'outline'} 
                             disabled={!podeEntrar} 
                             onClick={() => entrarNaVideoChamada(reuniao)}
+                            className="w-full sm:w-auto"
                           >
                             <Video className="h-4 w-4 mr-2"/>
                             Entrar
@@ -1601,21 +1764,22 @@ export default function TurmaDetalhePage() {
                       </CardContent>
                     </LiquidGlassCard>
                   )
-                })}
+                  })
+                )}
               </div>
             </TabsContent>
 
             <TabsContent value="provas-virtuais">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                   <h3 className="text-lg font-semibold">Provas Virtuais</h3>
-                  <LiquidGlassButton onClick={handleNovaProva}>
+                  <LiquidGlassButton onClick={handleNovaProva} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Prova
                   </LiquidGlassButton>
                 </div>
 
-                {provas.length === 0 ? (
+                {!loading && provas.length === 0 ? (
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardContent className="p-8 text-center">
                       <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -1626,20 +1790,20 @@ export default function TurmaDetalhePage() {
                   provas.map((prova) => (
                     <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={prova.id}>
                       <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <CardTitle className="text-lg">{prova.activity?.title || 'Prova sem título'}</CardTitle>
-                            <CardDescription>
-                              {prova.questions?.length || 0} questão(ões)
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-lg truncate">{prova.activity?.title || 'Prova sem título'}</CardTitle>
+                            <CardDescription className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-2">
+                              <span>{prova.questions?.length || 0} questão(ões)</span>
                               {prova.activity?.startDate && (
-                                <> • Início: {new Date(prova.activity.startDate).toLocaleString('pt-BR')}</>
+                                <span className="truncate">Início: {new Date(prova.activity.startDate).toLocaleString('pt-BR')}</span>
                               )}
                               {prova.activity?.dueDate && (
-                                <> • Término: {new Date(prova.activity.dueDate).toLocaleString('pt-BR')}</>
+                                <span className="truncate">Término: {new Date(prova.activity.dueDate).toLocaleString('pt-BR')}</span>
                               )}
                             </CardDescription>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                             <LiquidGlassButton
                               size="sm"
                               variant="outline"
@@ -1653,7 +1817,7 @@ export default function TurmaDetalhePage() {
                               onClick={() => handleGerenciarQuestoes(prova)}
                             >
                               <FileText className="h-4 w-4 mr-1" />
-                              Questões
+                              <span className="hidden sm:inline">Questões</span>
                             </LiquidGlassButton>
                             <LiquidGlassButton
                               size="sm"
@@ -1661,7 +1825,7 @@ export default function TurmaDetalhePage() {
                               onClick={() => handleVerTentativas(prova)}
                             >
                               <Users className="h-4 w-4 mr-1" />
-                              Tentativas
+                              <span className="hidden sm:inline">Tentativas</span>
                             </LiquidGlassButton>
                             <LiquidGlassButton
                               size="sm"
@@ -1698,16 +1862,17 @@ export default function TurmaDetalhePage() {
             <TabsContent value="notas">
               <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                     <div className="mb-2">
                       <CardTitle>Lançamento de Notas</CardTitle>
                       <CardDescription>Registre as notas dos alunos</CardDescription>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                       <LiquidGlassButton
                         onClick={() => fileInputRef.current?.click()}
                         variant="outline"
                         disabled={!modoOperacao}
+                        className="w-full sm:w-auto"
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         Importar Notas
@@ -1716,13 +1881,13 @@ export default function TurmaDetalhePage() {
                         <LiquidGlassButton
                           onClick={clearImportedNotes}
                           variant="outline"
-                          className="text-destructive hover:text-destructive border-destructive/50 hover:border-destructive hover:bg-destructive/10"
+                          className="text-destructive hover:text-destructive border-destructive/50 hover:border-destructive hover:bg-destructive/10 w-full sm:w-auto"
                         >
                           <X className="h-4 w-4 mr-2" />
                           Limpar Importado
                         </LiquidGlassButton>
                       )}
-                      <LiquidGlassButton onClick={generateExcelModel} variant="outline" disabled={!modoOperacao}>
+                      <LiquidGlassButton onClick={generateExcelModel} variant="outline" disabled={!modoOperacao} className="w-full sm:w-auto">
                         <Download className="h-4 w-4 mr-2" />
                         Exportar Modelo Excel
                       </LiquidGlassButton>
@@ -1733,14 +1898,14 @@ export default function TurmaDetalhePage() {
                   <div className="space-y-6">
                     {/* Seleção Inicial de Modo */}
                     {modoOperacao === null && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <LiquidGlassButton
                           onClick={() => setModoOperacao('criar')}
                           className="h-24 flex flex-col items-center justify-center"
                           variant="outline"
                         >
                           <Plus className="h-6 w-6 mb-2" />
-                          <span className="font-semibold">Criar nova atividade</span>
+                          <span className="font-semibold text-sm sm:text-base text-center px-2">Criar nova atividade</span>
                         </LiquidGlassButton>
                         <LiquidGlassButton
                           onClick={() => setModoOperacao('associar')}
@@ -1748,7 +1913,7 @@ export default function TurmaDetalhePage() {
                           variant="outline"
                         >
                           <FileText className="h-6 w-6 mb-2" />
-                          <span className="font-semibold">Avaliar uma atividade ou prova existente</span>
+                          <span className="font-semibold text-sm sm:text-base text-center px-2">Avaliar uma atividade ou prova existente</span>
                         </LiquidGlassButton>
                       </div>
                     )}
@@ -1779,7 +1944,7 @@ export default function TurmaDetalhePage() {
                           </LiquidGlassButton>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="avaliacao-titulo" className="mb-2">Título *</Label>
                             <Input
@@ -1804,7 +1969,7 @@ export default function TurmaDetalhePage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="avaliacao-tipo" className="mb-2">Tipo *</Label>
                             <Select value={avaliacaoTipo} onValueChange={(value: ActivityType) => setAvaliacaoTipo(value)}>
@@ -1833,7 +1998,7 @@ export default function TurmaDetalhePage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="avaliacao-start-date" className="mb-2">Data de Início</Label>
                             <Input
@@ -1923,7 +2088,7 @@ export default function TurmaDetalhePage() {
                         {atividadeSelecionadaCompleta && (
                           <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                             <h4 className="font-medium">Dados da Atividade Selecionada</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                               <div>
                                 <span className="text-muted-foreground">Título:</span>
                                 <p className="font-medium">{atividadeSelecionadaCompleta.title}</p>
@@ -1993,7 +2158,7 @@ export default function TurmaDetalhePage() {
                           return (
                             <div
                               key={aluno.id}
-                              className={`flex items-center justify-between p-3 border rounded-lg transition-all duration-200 ${
+                              className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg transition-all duration-200 gap-3 sm:gap-4 ${
                                 notasImportadas[aluno.id]
                                   ? isLiquidGlass
                                     ? 'imported-note-container'
@@ -2001,15 +2166,15 @@ export default function TurmaDetalhePage() {
                                   : 'border-border hover:border-border/80'
                               }`}
                             >
-                              <div className="flex-1">
-                                <span className="font-medium">{aluno.nome}</span>
-                                <p className="text-sm text-muted-foreground">Matrícula: {aluno.matricula}</p>
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium truncate block">{aluno.nome}</span>
+                                <p className="text-sm text-muted-foreground truncate">Matrícula: {aluno.matricula}</p>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <Input
                                   type="number"
                                   placeholder="0.0"
-                                  className={`w-20 transition-all duration-200 ${
+                                  className={`w-full sm:w-20 transition-all duration-200 ${
                                     notasImportadas[aluno.id]
                                       ? isLiquidGlass
                                         ? 'imported-note-input'
@@ -2035,7 +2200,7 @@ export default function TurmaDetalhePage() {
                                   }}
                                 />
                                 {notasImportadas[aluno.id] && (
-                                  <CheckCircle className="h-4 w-4 text-accent animate-in fade-in duration-200" />
+                                  <CheckCircle className="h-4 w-4 text-accent animate-in fade-in duration-200 flex-shrink-0" />
                                 )}
                               </div>
                             </div>
@@ -2398,7 +2563,7 @@ export default function TurmaDetalhePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
             {/* Vídeo Local */}
-            <div className="relative">
+            <div className="relative min-h-[200px] md:min-h-0">
               <video ref={localVideoRef} autoPlay muted playsInline className="w-full h-full object-cover rounded-md bg-black"></video>
               <div className="absolute bottom-2 left-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
                 {isScreenSharing ? 'Sua Tela' : 'Sua Câmera'}
@@ -2406,7 +2571,7 @@ export default function TurmaDetalhePage() {
             </div>
             
             {/* Grid para Vídeos Remotos */}
-            <div className="grid grid-cols-2 grid-rows-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-h-[200px] md:min-h-0">
               {remoteStreams.size > 0 ? (
                 Array.from(remoteStreams.entries()).map(([socketId, stream]) => (
                   <div key={socketId} className="relative">
@@ -2417,7 +2582,7 @@ export default function TurmaDetalhePage() {
                   </div>
                 ))
               ) : (
-                <div className="col-span-2 row-span-2 flex items-center justify-center bg-muted/50 rounded-md">
+                <div className="col-span-1 sm:col-span-2 flex items-center justify-center bg-muted/50 rounded-md min-h-[200px]">
                   <p className="text-muted-foreground">Aguardando participantes...</p>
                 </div>
               )}

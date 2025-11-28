@@ -310,34 +310,34 @@ export default function CoordenadorCursosPage() {
       <Sidebar userRole="coordenador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-2xl border backdrop-blur-sm ${
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-8 p-4 sm:p-6 rounded-2xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <BookOpen className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                   Cursos
                 </h1>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mt-1">
                   {department ? (
                     <>Gerenciamento de cursos do departamento {coordenadorDepartamento}</>
                   ) : (
                     <>Carregando departamento...</>
                   )}
                 </p>
-                <Badge variant="secondary" className="mt-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                <Badge variant="secondary" className="mt-2 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-xs">
                   {cursosFiltrados.length} curso{cursosFiltrados.length !== 1 ? 's' : ''} encontrado{cursosFiltrados.length !== 1 ? 's' : ''}
                 </Badge>
               </div>
             </div>
-            <LiquidGlassButton onClick={handleAbrirModal} size="lg">
-              <Plus className="h-5 w-5 mr-2" />
+            <LiquidGlassButton onClick={handleAbrirModal} size="lg" className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
               Novo Curso
             </LiquidGlassButton>
           </div>
@@ -466,7 +466,7 @@ export default function CoordenadorCursosPage() {
       </main>
 
       <Dialog open={isModalOpen} onOpenChange={handleFecharModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center justify-between">
               <div>
@@ -483,7 +483,7 @@ export default function CoordenadorCursosPage() {
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto">
-            <div className="space-y-6 pr-1">
+            <div className="space-y-4 sm:space-y-6 pr-1 p-1 sm:p-0">
               <div>
                 <Label htmlFor="nome" className="text-sm font-medium">
                   Nome do Curso *

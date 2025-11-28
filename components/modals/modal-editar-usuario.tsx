@@ -997,8 +997,17 @@ export function ModalEditarUsuario({
             Cancelar
           </Button>
           <LiquidGlassButton onClick={handleSalvar} disabled={loading}>
-            <Save className="h-4 w-4 mr-2" />
-            {loading ? "Salvando..." : "Salvar Alterações"}
+            {loading && nome !== '' ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Alterações
+              </>
+            )}
           </LiquidGlassButton>
         </div>
       </DialogContent>

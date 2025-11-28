@@ -577,36 +577,36 @@ export default function DisponibilizacaoHorariosPage() {
       <Sidebar userRole="professor" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className="p-4 md:p-6 lg:p-8">
           {/* Header */}
           <div className={cn(
-            "flex flex-col lg:flex-row lg:items-center justify-between mb-8 p-6 rounded-xl border gap-4",
+            "flex flex-col lg:flex-row lg:items-center justify-between mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 rounded-xl border gap-4",
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           )}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Clock className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Clock className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                  <Calendar className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                 </div>
               </div>
-              <div>
-                <div className="flex items-center space-x-3">
-                  <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400 truncate">
                     Disponibilização de Horários
                   </h1>
-                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-sm px-3 py-1">
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-xs md:text-sm px-2 md:px-3 py-1 w-fit">
                     {semestres.find(s => s.id === semestreSelecionado)?.nome}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1">
                   Informe os turnos em que você está disponível
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
+                <div className="flex items-center mt-2 flex-wrap gap-2">
                   <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                     <User className="h-3 w-3 mr-1" />
                     Professor
@@ -624,15 +624,15 @@ export default function DisponibilizacaoHorariosPage() {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
               <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <Calendar className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                 {loading || semestres.length === 0 ? (
-                  <Skeleton className="h-10 w-40" />
+                  <Skeleton className="h-10 w-full sm:w-40" />
                 ) : (
                   <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
                     <SelectTrigger className={cn(
-                      "w-40 backdrop-blur-sm",
+                      "w-full sm:w-40 backdrop-blur-sm",
                       isLiquidGlass
                         ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                         : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -659,19 +659,19 @@ export default function DisponibilizacaoHorariosPage() {
             </div>
           </div>
 
-          <Tabs defaultValue="disponibilizar" className="space-y-6">
+          <Tabs defaultValue="disponibilizar" className="space-y-4 md:space-y-6">
             <TabsList className={cn(
               "grid w-full grid-cols-2 gap-1 backdrop-blur-sm",
               isLiquidGlass
                 ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                 : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
             )}>
-              <TabsTrigger value="disponibilizar" className="border-none flex items-center space-x-2">
-                <Clock className="h-4 w-4" />
-                <span>Disponibilizar Turnos</span>
+              <TabsTrigger value="disponibilizar" className="border-none flex items-center space-x-2 text-xs sm:text-sm">
+                <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="truncate">Disponibilizar Turnos</span>
               </TabsTrigger>
-              <TabsTrigger value="historico" className="border-none flex items-center space-x-2">
-                <History className="h-4 w-4" />
+              <TabsTrigger value="historico" className="border-none flex items-center space-x-2 text-xs sm:text-sm">
+                <History className="h-3 w-3 md:h-4 md:w-4" />
                 <span>Histórico</span>
               </TabsTrigger>
             </TabsList>
@@ -686,131 +686,20 @@ export default function DisponibilizacaoHorariosPage() {
                 )}
               >
                 <CardHeader>
-                  <CardTitle className="text-2xl text-gray-900 dark:text-gray-100">
+                  <CardTitle className="text-xl md:text-2xl text-gray-900 dark:text-gray-100">
                     Turnos Disponíveis
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs md:text-sm">
                     Selecione os turnos em que você está disponível para lecionar
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Seleção de Semestre */}
-                  <div className={cn(
-                    "p-5 rounded-lg border-2",
-                    isLiquidGlass
-                      ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
-                      : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
-                  )}>
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Calendar className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <Label htmlFor="semestre-form" className="text-base font-semibold block mb-1">
-                            Semestre
-                          </Label>
-                          <p className="text-sm text-muted-foreground">
-                            Selecione o semestre para disponibilizar seus horários
-                          </p>
-                        </div>
-                      </div>
-                      {loading || semestres.length === 0 ? (
-                        <Skeleton className="h-12 w-64" />
-                      ) : (
-                        <div className="flex-1 md:flex-initial md:w-auto">
-                          <Select 
-                            value={semestreSelecionado} 
-                            onValueChange={setSemestreSelecionado}
-                            disabled={status === 'aprovada' || status === 'enviada'}
-                          >
-                            <SelectTrigger id="semestre-form" className="h-12 text-base min-w-[280px]">
-                              {semestreSelecionado ? (
-                                <div className="flex items-center gap-2 w-full">
-                                  <span className="font-semibold text-base flex-1 text-left">
-                                    {semestres.find(s => s.id === semestreSelecionado)?.nome || 'Semestre selecionado'}
-                                  </span>
-                                  {semestres.find(s => s.id === semestreSelecionado)?.ativo && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs shrink-0">
-                                      Atual
-                                    </Badge>
-                                  )}
-                                </div>
-                              ) : (
-                                <SelectValue placeholder="Selecione um semestre" />
-                              )}
-                            </SelectTrigger>
-                            <SelectContent className="min-w-[280px]">
-                              {semestres.map((semestre) => (
-                                <SelectItem key={semestre.id} value={semestre.id} className="text-base py-3">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="font-medium">{semestre.nome}</span>
-                                    {semestre.ativo && (
-                                      <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
-                                        Atual
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                    </div>
-                    {semestreSelecionado && (
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1.5">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            <span className="font-semibold">Semestre selecionado:</span>
-                            <span className="ml-1 font-bold">{semestres.find(s => s.id === semestreSelecionado)?.nome}</span>
-                          </Badge>
-                          {semestres.find(s => s.id === semestreSelecionado)?.ativo && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-sm px-3 py-1.5">
-                              Semestre Atual
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-3">
-                          Sua disponibilidade será registrada para o semestre <span className="font-semibold text-foreground">{semestres.find(s => s.id === semestreSelecionado)?.nome}</span>
-                        </p>
-                      </div>
-                    )}
-                    {!semestreSelecionado && (
-                      <div className="mt-4 pt-4 border-t">
-                        <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                          <AlertCircle className="h-4 w-4" />
-                          Selecione um semestre acima para continuar
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Seleção de Turnos por Dia da Semana */}
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-base font-semibold">
-                        Turnos Disponíveis por Dia da Semana
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Selecione os turnos específicos para cada dia da semana em que você está disponível
-                      </p>
-                    </div>
-                    
-                    <div className={cn(
-                      "p-4 rounded-lg border",
-                      isLiquidGlass
-                        ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
-                        : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
-                    )}>
-                      <ShiftGrid
-                        selectedShifts={selectedShifts}
-                        onChange={setSelectedShifts}
-                        disabled={status === 'aprovada' || status === 'enviada'}
-                      />
-                    </div>
-                  </div>
+                <CardContent className="space-y-4 md:space-y-6">
+                  {/* Seleção de Turnos */}
+                  <ShiftGrid
+                    selectedShifts={selectedShifts}
+                    onChange={setSelectedShifts}
+                    disabled={status === 'aprovada' || status === 'enviada'}
+                  />
 
                   {/* Resumo da Seleção */}
                   {temAlgumTurnoSelecionado() && (
@@ -1052,7 +941,7 @@ export default function DisponibilizacaoHorariosPage() {
               </LiquidGlassCard>
             </TabsContent>
 
-            <TabsContent value="historico" className="space-y-6">
+            <TabsContent value="historico" className="space-y-4 md:space-y-6">
               <LiquidGlassCard
                 intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
                 className={cn(
@@ -1062,10 +951,10 @@ export default function DisponibilizacaoHorariosPage() {
                 )}
               >
                 <CardHeader>
-                  <CardTitle className="text-2xl text-gray-900 dark:text-gray-100">
+                  <CardTitle className="text-xl md:text-2xl text-gray-900 dark:text-gray-100">
                     Histórico de Disponibilizações
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-xs md:text-sm">
                     Visualize suas disponibilizações anteriores
                   </CardDescription>
                 </CardHeader>
@@ -1076,7 +965,7 @@ export default function DisponibilizacaoHorariosPage() {
                       <p>Nenhuma disponibilização encontrada</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3 md:space-y-4">
                       {historico.map((item) => {
                         const StatusIcon = getStatusIcon(item.status)
                         const turnosSelecionados = TURNOS.filter(t => item.turnos[t.id])
@@ -1085,20 +974,20 @@ export default function DisponibilizacaoHorariosPage() {
                           <div
                             key={item.id}
                             className={cn(
-                              "p-4 rounded-xl border",
+                              "p-3 md:p-4 rounded-xl border",
                               isLiquidGlass
                                 ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
                                 : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
                             )}
                           >
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-3">
-                                <StatusIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                                <div>
-                                  <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3">
+                              <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                                <StatusIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-medium text-sm md:text-base text-gray-900 dark:text-gray-100 truncate">
                                     {semestres.find(s => s.id === item.semestre)?.nome || `Semestre ${item.semestre}`}
                                   </h3>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
                                     Criado em {item.dataCriacao.toLocaleDateString('pt-BR')}
                                     {item.dataEnvio && ` • Enviado em ${item.dataEnvio.toLocaleDateString('pt-BR')}`}
                                   </p>
@@ -1107,6 +996,7 @@ export default function DisponibilizacaoHorariosPage() {
                               <Badge
                                 variant="outline"
                                 className={cn(
+                                  "text-xs w-fit",
                                   item.status === 'aprovada' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
                                   item.status === 'enviada' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
                                   item.status === 'rascunho' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300'
@@ -1117,7 +1007,7 @@ export default function DisponibilizacaoHorariosPage() {
                             </div>
                             
                             {item.observacoes && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-3">
                                 {item.observacoes}
                               </p>
                             )}

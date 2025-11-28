@@ -231,14 +231,14 @@ export default function AlunoFinanceiroPage() {
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 md:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
-              <p className="text-muted-foreground">Acompanhe suas mensalidades e pagamentos</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Financeiro</h1>
+              <p className="text-muted-foreground text-sm md:text-base">Acompanhe suas mensalidades e pagamentos</p>
             </div>
-            <div className="flex gap-2">
-              <LiquidGlassButton variant="outline" onClick={handleOpenReceipts}>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <LiquidGlassButton variant="outline" onClick={handleOpenReceipts} className="w-full sm:w-auto text-sm md:text-base">
                 <Download className="h-4 w-4 mr-2" />
                 Comprovantes
               </LiquidGlassButton>
@@ -251,6 +251,7 @@ export default function AlunoFinanceiroPage() {
                     toast.info("Nenhuma cobrança pendente para pagamento.")
                   }
                 }}
+                className="w-full sm:w-auto text-sm md:text-base"
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 Pagar Agora
@@ -258,7 +259,7 @@ export default function AlunoFinanceiroPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
             <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Valor Total Anual</CardTitle>
@@ -345,19 +346,19 @@ export default function AlunoFinanceiroPage() {
                       {installments.map((installment) => (
                         <div
                           key={installment.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border rounded-lg"
                         >
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h4 className="font-semibold text-lg">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                              <h4 className="font-semibold text-base md:text-lg">
                                 {formatMonthYear(installment.month, installment.year)}
                               </h4>
-                              <Badge variant={getStatusColor(installment.status)}>
+                              <Badge variant={getStatusColor(installment.status)} className="text-xs">
                                 {getStatusIcon(installment.status)}
                                 {getStatusLabel(installment.status)}
                               </Badge>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-xs md:text-sm">
                               <div>
                                 <p className="text-muted-foreground">Valor</p>
                                 <p className="font-medium">
@@ -384,9 +385,9 @@ export default function AlunoFinanceiroPage() {
                               )}
                             </div>
                           </div>
-                          <div className="flex flex-col space-y-2">
+                          <div className="flex flex-row sm:flex-col gap-2 sm:space-y-2 w-full sm:w-auto">
                             {(installment.status === "pending" || installment.status === "overdue") && (
-                              <LiquidGlassButton size="sm" onClick={() => handlePayInstallment(installment.id)}>
+                              <LiquidGlassButton size="sm" onClick={() => handlePayInstallment(installment.id)} className="flex-1 sm:flex-none text-xs md:text-sm">
                                 <CreditCard className="h-4 w-4 mr-2" />
                                 Pagar
                               </LiquidGlassButton>
@@ -401,13 +402,14 @@ export default function AlunoFinanceiroPage() {
                                     handleDownloadReceipt(payment.id)
                                   }
                                 }}
+                                className="flex-1 sm:flex-none text-xs md:text-sm"
                               >
                                 <Download className="h-4 w-4 mr-2" />
                                 Comprovante
                               </LiquidGlassButton>
                             )}
                             {installment.status === "scheduled" && (
-                              <LiquidGlassButton variant="outline" size="sm" disabled>
+                              <LiquidGlassButton variant="outline" size="sm" disabled className="flex-1 sm:flex-none text-xs md:text-sm">
                                 Agendado
                               </LiquidGlassButton>
                             )}
@@ -436,30 +438,30 @@ export default function AlunoFinanceiroPage() {
                       {payments.map((payment) => (
                         <div
                           key={payment.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border rounded-lg"
                         >
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-1">
-                              <h4 className="font-medium">{payment.description}</h4>
-                              <Badge variant={getStatusColor(payment.status)}>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                              <h4 className="font-medium text-sm md:text-base truncate">{payment.description}</h4>
+                              <Badge variant={getStatusColor(payment.status)} className="text-xs">
                                 {getStatusIcon(payment.status)}
                                 {getStatusLabel(payment.status)}
                               </Badge>
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs md:text-sm text-muted-foreground">
                               <span>{formatDate(payment.paymentDate)}</span>
                               <span>{getPaymentMethodLabel(payment.method)}</span>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-lg">
+                          <div className="text-left sm:text-right flex-shrink-0">
+                            <p className="font-semibold text-base md:text-lg">
                               R$ {payment.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                             </p>
                             {payment.receiptUrl && (
                               <LiquidGlassButton
                                 variant="outline"
                                 size="sm"
-                                className="mt-1 bg-transparent"
+                                className="mt-1 bg-transparent w-full sm:w-auto text-xs md:text-sm"
                                 onClick={() => handleDownloadReceipt(payment.id)}
                                 disabled={downloadReceiptMutation.isPending}
                               >

@@ -268,46 +268,46 @@ export default function AlunoDashboard() {
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className="p-4 md:p-6 lg:p-8">
           {/* Header com gradiente e animações */}
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm ${
+          <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-0 mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Star className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Star className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                  <Sparkles className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Sparkles className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400 truncate">
                   Bem-vindo, {student?.name || 'Aluno'}!
                 </h1>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1">
                   Aqui está um resumo das suas atividades acadêmicas
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
-                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                <div className="flex items-center mt-2 space-x-2 flex-wrap">
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
                     <Activity className="h-3 w-3 mr-1" />
                     Ativo
                   </Badge>
-                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-xs">
                     <Target className="h-3 w-3 mr-1" />
                     Meta: 9.0
                   </Badge>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                 <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                  <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                  <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                       : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -332,26 +332,26 @@ export default function AlunoDashboard() {
               </div>
               <LiquidGlassButton
                 variant="outline"
-                size="lg"
-                className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30 transition-all duration-300"
+                size="sm"
+                className="w-full sm:w-auto sm:size-lg bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/30 transition-all duration-300"
               >
-                <Bell className="h-5 w-5 mr-2 text-green-600" />
-                <span className="font-semibold">3 Notificações</span>
+                <Bell className="h-4 w-4 md:h-5 md:w-5 mr-2 text-green-600" />
+                <span className="font-semibold text-sm md:text-base">3 Notificações</span>
               </LiquidGlassButton>
             </div>
           </div>
 
           {/* Mural de Avisos (Carrossel) */}
-          <div className="mb-8">
+          <div className="mb-4 md:mb-6 lg:mb-8">
             <Carousel
               images={carouselImages}
-              heightClass="h-120 md:h-125 lg:h-140"
+              heightClass="h-48 md:h-64 lg:h-80"
               className={isLiquidGlass ? "bg-black/20" : "bg-white/50 dark:bg-gray-800/50 rounded-xl"}
             />
           </div>
 
           {/* Cards de estatísticas aprimorados */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6 lg:mb-8">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
               className={`group transition-all duration-300 border border-border/50 hover:border-border/80 ${
@@ -452,7 +452,7 @@ export default function AlunoDashboard() {
             </LiquidGlassCard>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6">
             <div className="xl:col-span-8">
               {/* Próximas Aulas */}
               <LiquidGlassCard
@@ -466,30 +466,30 @@ export default function AlunoDashboard() {
                 `}
               >
                 <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <div className="p-2 bg-green-500/20 rounded-lg mr-3">
-                      <Calendar className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <CardTitle className="flex items-center text-base md:text-lg">
+                    <div className="p-2 bg-green-500/20 rounded-lg mr-2 md:mr-3">
+                      <Calendar className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400" />
                     </div>
                     Próximas Aulas
                   </CardTitle>
-                  <CardDescription className="text-base">Suas aulas de hoje e próximas</CardDescription>
+                  <CardDescription className="text-sm md:text-base">Suas aulas de hoje e próximas</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     {upcomingSchedules && upcomingSchedules.length > 0 ? (
                       upcomingSchedules.map((aula) => (
-                        <div key={aula.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 backdrop-blur-lg ${
+                        <div key={aula.id} className={`group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 md:p-4 rounded-xl border transition-all duration-300 backdrop-blur-lg ${
                           isLiquidGlass
                             ? 'bg-transparent/50 hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
                             : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
                         }`}>
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-                            <div>
-                              <h4 className="font-semibold text-gray-900 dark:text-gray-100">{aula.discipline}</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">{aula.professor}</p>
-                              <div className="flex items-center mt-1">
-                                <Badge variant="outline" className="text-xs mr-2">
+                          <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+                            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0"></div>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-sm md:text-base text-gray-900 dark:text-gray-100 truncate">{aula.discipline}</h4>
+                              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 truncate">{aula.professor}</p>
+                              <div className="flex items-center mt-1 flex-wrap gap-1">
+                                <Badge variant="outline" className="text-xs">
                                   {aula.type}
                                 </Badge>
                                 <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
@@ -498,16 +498,16 @@ export default function AlunoDashboard() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          <div className="text-left sm:text-right flex-shrink-0">
+                            <p className="text-xs md:text-sm font-semibold text-gray-900 dark:text-gray-100">
                               {aula.startTime} - {aula.endTime}
                             </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{aula.room}</p>
+                            <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{aula.room}</p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-500 text-center py-4">Nenhuma aula agendada</p>
+                      <p className="text-gray-500 text-center py-4 text-sm md:text-base">Nenhuma aula agendada</p>
                     )}
                   </div>
                 </CardContent>
@@ -525,13 +525,13 @@ export default function AlunoDashboard() {
                 }`}
               >
                 <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <div className="p-2 bg-red-500/20 rounded-lg mr-3">
-                      <Bell className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  <CardTitle className="flex items-center text-base md:text-lg">
+                    <div className="p-2 bg-red-500/20 rounded-lg mr-2 md:mr-3">
+                      <Bell className="h-4 w-4 md:h-5 md:w-5 text-red-600 dark:text-red-400" />
                     </div>
                     Comunicados
                   </CardTitle>
-                  <CardDescription className="text-base">Avisos importantes</CardDescription>
+                  <CardDescription className="text-sm md:text-base">Avisos importantes</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -603,36 +603,36 @@ export default function AlunoDashboard() {
                 }`}
               >
                 <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <div className="p-2 bg-green-500/20 rounded-lg mr-3">
-                      <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <CardTitle className="flex items-center text-base md:text-lg">
+                    <div className="p-2 bg-green-500/20 rounded-lg mr-2 md:mr-3">
+                      <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400" />
                     </div>
                     Últimas Notas
                   </CardTitle>
-                  <CardDescription className="text-base">Suas avaliações recentes</CardDescription>
+                  <CardDescription className="text-sm md:text-base">Suas avaliações recentes</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     {recentGrades && recentGrades.length > 0 ? (
                       recentGrades.map((nota) => (
-                        <div key={nota.id} className={`group flex items-center justify-between p-4 rounded-xl border transition-all duration-300 ${
+                        <div key={nota.id} className={`group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 md:p-4 rounded-xl border transition-all duration-300 ${
                           isLiquidGlass
                             ? 'bg-transparent hover:bg-white/10 dark:hover:bg-gray-800/10 border-green-200/30 dark:border-green-800/30'
                             : 'bg-white/60 dark:bg-gray-800/60 border-green-200/50 dark:border-green-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
                         }`}>
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          <div className="flex items-center space-x-2 md:space-x-3 flex-1 min-w-0">
+                            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                               nota.value >= 9 ? "bg-green-500/20" :
                               nota.value >= 8 ? "bg-green-500/20" :
                               nota.value >= 6 ? "bg-yellow-500/20" : "bg-red-500/20"
                             }`}>
-                              <span className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                              <span className="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300">
                                 {nota.value}
                               </span>
                             </div>
-                            <div>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100">{nota.discipline}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-sm md:text-base text-gray-900 dark:text-gray-100 truncate">{nota.discipline}</p>
+                              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                                 {new Date(nota.date).toLocaleDateString('pt-BR')}
                               </p>
                               <Badge
@@ -648,8 +648,8 @@ export default function AlunoDashboard() {
                               </Badge>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className={`text-sm font-semibold ${
+                          <div className="text-left sm:text-right flex-shrink-0">
+                            <div className={`text-sm md:text-base font-semibold ${
                               nota.value >= 9 ? "text-green-600 dark:text-green-400" :
                               nota.value >= 8 ? "text-green-600 dark:text-green-400" :
                               nota.value >= 6 ? "text-yellow-600 dark:text-yellow-400" :
@@ -661,7 +661,7 @@ export default function AlunoDashboard() {
                         </div>
                       ))
                     ) : (
-                      <p className="text-gray-500 text-center py-4">Nenhuma nota disponível</p>
+                      <p className="text-gray-500 text-center py-4 text-sm md:text-base">Nenhuma nota disponível</p>
                     )}
                   </div>
                 </CardContent>

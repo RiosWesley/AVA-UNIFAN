@@ -627,10 +627,10 @@ export default function ConfiguracoesAdministradorPage() {
       <Sidebar userRole="administrador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Configurações</h1>
-            <p className="text-muted-foreground">Gerencie as configurações do sistema</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Configurações</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Gerencie as configurações do sistema</p>
           </div>
 
           <Tabs defaultValue="periodo-letivo" className="space-y-6">
@@ -642,15 +642,15 @@ export default function ConfiguracoesAdministradorPage() {
             <TabsContent value="periodo-letivo" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5" />
+                      <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                         Períodos Letivos
                       </CardTitle>
-                      <CardDescription>Gerencie os períodos letivos do sistema</CardDescription>
+                      <CardDescription className="text-xs sm:text-sm">Gerencie os períodos letivos do sistema</CardDescription>
                     </div>
-                    <Button onClick={handleOpenCreateModal}>
+                    <Button onClick={handleOpenCreateModal} className="w-full sm:w-auto">
                       <Plus className="w-4 h-4 mr-2" />
                       Adicionar Período
                     </Button>
@@ -679,10 +679,10 @@ export default function ConfiguracoesAdministradorPage() {
                         academicPeriods.map((periodo) => (
                           <Card key={periodo.id} className="border-l-4 border-l-blue-500">
                             <CardContent className="p-4">
-                              <div className="flex items-center justify-between gap-4">
-                                <div className="space-y-1">
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div className="space-y-1 flex-1">
                                   <div className="flex items-center gap-3">
-                                    <h3 className="font-semibold text-lg">{periodo.period}</h3>
+                                    <h3 className="font-semibold text-base sm:text-lg">{periodo.period}</h3>
                                   </div>
                                   <div className="text-sm text-muted-foreground space-y-1">
                                     <div>
@@ -693,12 +693,13 @@ export default function ConfiguracoesAdministradorPage() {
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleOpenEditModal(periodo)}
                                     title="Editar período"
+                                    className="flex-1 sm:flex-initial"
                                   >
                                     <Edit className="w-4 h-4" />
                                   </Button>
@@ -707,6 +708,7 @@ export default function ConfiguracoesAdministradorPage() {
                                     size="sm"
                                     onClick={() => handleOpenDeleteModal(periodo)}
                                     title="Excluir período"
+                                    className="flex-1 sm:flex-initial"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
@@ -725,17 +727,17 @@ export default function ConfiguracoesAdministradorPage() {
             <TabsContent value="mural-institucional" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <ImageIcon className="w-5 h-5" />
+                      <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                         Mural Institucional
                       </CardTitle>
-                      <CardDescription>Gerencie as imagens exibidas nos dashboards de alunos e professores</CardDescription>
+                      <CardDescription className="text-xs sm:text-sm">Gerencie as imagens exibidas nos dashboards de alunos e professores</CardDescription>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                       <Select value={muralFiltro} onValueChange={(value) => setMuralFiltro(value as MuralTargetRole | "todos")}>
-                        <SelectTrigger className="w-40">
+                        <SelectTrigger className="w-full sm:w-40">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -744,7 +746,7 @@ export default function ConfiguracoesAdministradorPage() {
                           <SelectItem value="professor">Professor</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Button onClick={handleOpenMuralCreateModal}>
+                      <Button onClick={handleOpenMuralCreateModal} className="w-full sm:w-auto">
                         <Plus className="w-4 h-4 mr-2" />
                         Adicionar Imagem
                       </Button>
@@ -848,7 +850,7 @@ export default function ConfiguracoesAdministradorPage() {
       <Dialog open={isCreateModalOpen} onOpenChange={(open) => {
         if (!open) handleCloseCreateModal()
       }}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Adicionar Período Letivo</DialogTitle>
             <DialogDescription>
@@ -876,7 +878,7 @@ export default function ConfiguracoesAdministradorPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate-create">Data de Início *</Label>
                 <Input
@@ -921,7 +923,7 @@ export default function ConfiguracoesAdministradorPage() {
       <Dialog open={isEditModalOpen} onOpenChange={(open) => {
         if (!open) handleCloseEditModal()
       }}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Editar Período Letivo</DialogTitle>
             <DialogDescription>
@@ -949,7 +951,7 @@ export default function ConfiguracoesAdministradorPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate-edit">Data de Início *</Label>
                 <Input
@@ -1009,7 +1011,7 @@ export default function ConfiguracoesAdministradorPage() {
       <Dialog open={isMuralCreateModalOpen} onOpenChange={(open) => {
         if (!open) handleCloseMuralCreateModal()
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Adicionar Imagem ao Mural</DialogTitle>
             <DialogDescription>
@@ -1065,7 +1067,7 @@ export default function ConfiguracoesAdministradorPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="mural-order-create">Ordem</Label>
                 <Input
@@ -1165,7 +1167,7 @@ export default function ConfiguracoesAdministradorPage() {
       <Dialog open={isMuralEditModalOpen} onOpenChange={(open) => {
         if (!open) handleCloseMuralEditModal()
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Mural</DialogTitle>
             <DialogDescription>
@@ -1220,7 +1222,7 @@ export default function ConfiguracoesAdministradorPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="mural-order-edit">Ordem</Label>
                 <Input

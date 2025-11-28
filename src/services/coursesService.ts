@@ -216,6 +216,18 @@ export async function updateDisciplineSemester(
   return data;
 }
 
+export async function updateDisciplineType(
+  courseId: string,
+  disciplineId: string,
+  type: 'required' | 'optional',
+): Promise<BackendCourse> {
+  const { data } = await api.patch<BackendCourse>(
+    `/courses/${courseId}/disciplines/${disciplineId}/type`,
+    { type },
+  );
+  return data;
+}
+
 export async function createClass(payload: CreateClassPayload): Promise<BackendClass> {
   const { data } = await api.post<BackendClass>('/classes', payload);
   return data;
@@ -249,10 +261,11 @@ export async function associateDisciplineToCourse(
   courseId: string,
   disciplineId: string,
   semester?: number,
+  type?: 'required' | 'optional',
 ): Promise<BackendCourse> {
   const { data } = await api.post<BackendCourse>(
     `/courses/${courseId}/disciplines`,
-    { disciplineId, semester },
+    { disciplineId, semester, type },
   );
   return data;
 }

@@ -228,45 +228,45 @@ export default function AlunoBoletimPage() {
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm ${
+        <div className="p-4 md:p-6 lg:p-8">
+          <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <GraduationCap className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <GraduationCap className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
-                  <Award className="h-3 w-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-yellow-500 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center">
+                  <Award className="h-2.5 w-2.5 md:h-3 md:w-3 text-white" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-emerald-600 dark:text-emerald-400">
                   Boletim Digital
                 </h1>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1">
                   Suas notas e desempenho acadêmico
                 </p>
-                <div className="flex items-center mt-2 space-x-2">
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                <div className="flex items-center mt-2 space-x-2 flex-wrap">
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-xs">
                     <Trophy className="h-3 w-3 mr-1" />
                     Média: {geralFiltrado.mediaGeral.toFixed(1)}
                   </Badge>
-                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800">
+                  <Badge variant="outline" className="text-green-600 border-green-200 dark:text-green-400 dark:border-green-800 text-xs">
                     <Medal className="h-3 w-3 mr-1" />
                     {geralFiltrado.disciplinasAprovadas}/{geralFiltrado.totalDisciplinas} aprovadas
                   </Badge>
                 </div>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <GraduationCap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                  <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                  <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                     isLiquidGlass
                       ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                       : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -289,27 +289,27 @@ export default function AlunoBoletimPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
+              <LiquidGlassButton variant="outline" size="sm" className={`w-full sm:w-auto sm:size-lg backdrop-blur-sm text-sm md:text-base ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
                   : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
               }`}>
-                <Download className="h-5 w-5 mr-2 text-emerald-600" />
+                <Download className="h-4 w-4 md:h-5 md:w-5 mr-2 text-emerald-600" />
                 <span className="font-semibold">Exportar PDF</span>
               </LiquidGlassButton>
-              <LiquidGlassButton variant="outline" size="lg" className={`backdrop-blur-sm ${
+              <LiquidGlassButton variant="outline" size="sm" className={`w-full sm:w-auto sm:size-lg backdrop-blur-sm text-sm md:text-base ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20 hover:bg-black/50 dark:hover:bg-gray-800/30'
                   : 'bg-gray-50/60 dark:bg-gray-800/40 hover:bg-black/80 dark:hover:bg-gray-800/60'
               }`}>
-                <Calendar className="h-5 w-5 mr-2 text-green-600" />
+                <Calendar className="h-4 w-4 md:h-5 md:w-5 mr-2 text-green-600" />
                 <span className="font-semibold">Histórico</span>
               </LiquidGlassButton>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Desempenho por Disciplina</h2>
+          <div className="space-y-4 md:space-y-6">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 md:mb-4">Desempenho por Disciplina</h2>
             {disciplinas.map((disciplina, index) => {
               const notasCompletas = processarNotasDisciplina(disciplina);
               return (
@@ -348,13 +348,13 @@ export default function AlunoBoletimPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 md:space-y-6">
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-                      <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
+                    <h4 className="font-semibold text-sm md:text-base text-gray-900 dark:text-gray-100 mb-3 md:mb-4 flex items-center">
+                      <Trophy className="h-3 w-3 md:h-4 md:w-4 mr-2 text-yellow-500" />
                       Notas por unidade
                     </h4>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                       {notasCompletas.map((nota, noteIndex) => (
                         <div
                           key={noteIndex}

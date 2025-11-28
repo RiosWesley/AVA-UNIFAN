@@ -32,7 +32,7 @@ type InboxItem = {
 
 export default function AdministradorComunicacaoPage() {
   const router = useRouter()
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -309,18 +309,18 @@ export default function AdministradorComunicacaoPage() {
       <Sidebar userRole="administrador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Administração de Comunicação</h1>
-              <p className="text-muted-foreground">Monitore e gerencie toda a comunicação do sistema</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Administração de Comunicação</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Monitore e gerencie toda a comunicação do sistema</p>
             </div>
-            <div className="flex gap-2">
-              <LiquidGlassButton variant="outline">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <LiquidGlassButton variant="outline" className="w-full sm:w-auto">
                 <Shield className="h-4 w-4 mr-2" />
                 Moderação
               </LiquidGlassButton>
-              <LiquidGlassButton>
+              <LiquidGlassButton className="w-full sm:w-auto">
                 <Settings className="h-4 w-4 mr-2" />
                 Configurações
               </LiquidGlassButton>
@@ -392,22 +392,22 @@ export default function AdministradorComunicacaoPage() {
             </TabsList>
 
             <TabsContent value="mensagens">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                 <h3 className="text-lg font-semibold">Mensagens</h3>
-                <LiquidGlassButton onClick={() => { setDefaultDestinatarioId(null); setIsNovaMensagemOpen(true) }}>
+                <LiquidGlassButton onClick={() => { setDefaultDestinatarioId(null); setIsNovaMensagemOpen(true) }} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Nova Mensagem
                 </LiquidGlassButton>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1">
+              <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="w-full lg:col-span-1">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <MessageSquare className="h-5 w-5 mr-2" />
+                      <CardTitle className="flex items-center text-sm sm:text-base">
+                        <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                         Caixa de Entrada
                       </CardTitle>
-                      <CardDescription>{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
+                      <CardDescription className="text-xs sm:text-sm">{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
@@ -418,8 +418,8 @@ export default function AdministradorComunicacaoPage() {
                             className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
                           >
                             <div className="flex items-start justify-between mb-1">
-                              <h5 className="font-medium text-sm">{item.otherUser.name}</h5>
-                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full" />}
+                              <h5 className="font-medium text-sm truncate flex-1">{item.otherUser.name}</h5>
+                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 ml-2" />}
                             </div>
                             <p className="font-medium text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
                             <p className="text-xs text-muted-foreground">
@@ -432,7 +432,7 @@ export default function AdministradorComunicacaoPage() {
                   </LiquidGlassCard>
                 </div>
 
-                <div className="lg:col-span-2">
+                <div className="w-full lg:col-span-2">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
                       <CardTitle>
@@ -458,17 +458,17 @@ export default function AdministradorComunicacaoPage() {
                     <CardContent>
                       {selectedOtherUserId ? (
                         <div className="space-y-4">
-                          <div className="h-80 overflow-y-auto pr-2 space-y-4">
+                          <div className="h-64 sm:h-80 overflow-y-auto pr-2 space-y-4">
                             {conversation.map((m) => (
                               <div key={m.id} className={`flex ${m.senderId === (currentUserId || '') ? "justify-end" : "justify-start"}`}>
-                                <div className={`max-w-[80%] rounded-lg p-3 text-sm ${m.senderId === (currentUserId || '') ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                                  <p>{m.content}</p>
+                                <div className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-3 text-sm ${m.senderId === (currentUserId || '') ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                                  <p className="break-words">{m.content}</p>
                                   <p className="mt-1 text-[10px] opacity-70">{new Date(m.sentAt).toLocaleString("pt-BR")}</p>
                                 </div>
                               </div>
                             ))}
                           </div>
-                          <div className="flex items-center gap-2 pt-2">
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">
                             <Input
                               placeholder="Digite sua mensagem..."
                               value={replyText}
@@ -479,14 +479,15 @@ export default function AdministradorComunicacaoPage() {
                                   handleReply()
                                 }
                               }}
+                              className="flex-1"
                             />
-                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()}>
+                            <LiquidGlassButton onClick={handleReply} disabled={!replyText.trim()} className="w-full sm:w-auto">
                               Enviar
                             </LiquidGlassButton>
                           </div>
                         </div>
                       ) : (
-                        <div className="text-sm text-muted-foreground">Nenhuma conversa aberta.</div>
+                        <div className="text-sm text-muted-foreground text-center py-8">Nenhuma conversa aberta.</div>
                       )}
                     </CardContent>
                   </LiquidGlassCard>
@@ -495,10 +496,10 @@ export default function AdministradorComunicacaoPage() {
             </TabsContent>
 
             <TabsContent value="analytics">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
                 <h3 className="text-lg font-semibold">Analytics</h3>
                 <select
-                  className="border rounded px-3 py-2 text-sm bg-background"
+                  className="border rounded px-3 py-2 text-sm bg-background w-full sm:w-auto"
                   value={periodDays}
                   onChange={(e) => setPeriodDays(e.target.value as '7' | '30' | '90')}
                 >
@@ -507,7 +508,7 @@ export default function AdministradorComunicacaoPage() {
                   <option value="90">Últimos 90 dias</option>
                 </select>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Evolução da Comunicação</CardTitle>
@@ -519,15 +520,17 @@ export default function AdministradorComunicacaoPage() {
                     ) : overTimeError ? (
                       <div className="text-sm text-destructive">{overTimeError}</div>
                     ) : (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={overTimeData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="bucket" />
-                          <YAxis />
-                          <Tooltip />
-                          <Line type="monotone" dataKey="mensagens" stroke="#15803d" strokeWidth={3} name="Mensagens" />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      <div className="min-h-[250px]">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={overTimeData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="bucket" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="mensagens" stroke="#15803d" strokeWidth={3} name="Mensagens" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -547,15 +550,17 @@ export default function AdministradorComunicacaoPage() {
                       </CardContent>
                     ) : (
                       <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <BarChart data={roleChartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="categoria" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="quantidade" fill="#15803d" />
-                          </BarChart>
-                        </ResponsiveContainer>
+                        <div className="min-h-[250px]">
+                          <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={roleChartData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="categoria" />
+                              <YAxis />
+                              <Tooltip />
+                              <Bar dataKey="quantidade" fill="#15803d" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       </CardContent>
                     )}
                 </Card>
@@ -569,7 +574,8 @@ export default function AdministradorComunicacaoPage() {
         <ModalNovaMensagem
           isOpen={isNovaMensagemOpen}
           onClose={() => setIsNovaMensagemOpen(false)}
-          currentUserId={currentUserId}
+          currentUserId={currentUserId || ""}
+          apiBaseUrl={API_URL}
           context="admin"
           defaultDestinatarioId={defaultDestinatarioId}
           onSend={({ destinatarioId }) => {

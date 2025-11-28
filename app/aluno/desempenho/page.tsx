@@ -270,32 +270,32 @@ export default function DesempenhoPage() {
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-8">
+        <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6 lg:space-y-8">
           {/* Header com gradiente e animações */}
-          <div className={`flex items-center justify-between mb-8 p-6 rounded-xl border backdrop-blur-sm ${
+          <div className={`flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 rounded-xl border backdrop-blur-sm ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="w-16 h-16 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <GraduationCap className="h-8 w-8 text-white" />
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <GraduationCap className="h-6 w-6 md:h-8 md:w-8 text-white" />
                 </div>
               </div>
-              <div>
-                <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400">
                   Meu Desempenho
                 </h1>
-                <p className="text-muted-foreground text-lg mt-1">
+                <p className="text-muted-foreground text-sm md:text-base lg:text-lg mt-1">
                   Acompanhe seu progresso acadêmico e conquistas com métricas detalhadas
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex items-center space-x-2 w-full md:w-auto">
+              <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
               <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                <SelectTrigger className={`w-full md:w-40 backdrop-blur-sm ${
                   isLiquidGlass
                     ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                     : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -321,7 +321,7 @@ export default function DesempenhoPage() {
           </div>
           
           {/* Métricas Animadas */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
             {metrics.map((metrica, index) => {
               const Icon = 
                 metrica.title.includes('Média') ? GraduationCap :
@@ -371,36 +371,36 @@ export default function DesempenhoPage() {
             })}
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">            
+          <div className="grid gap-4 md:gap-6 lg:gap-8 md:grid-cols-2 lg:grid-cols-3">            
             {/* Gráfico de Barras Interativo */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`col-span-3 ${
+              className={`col-span-1 md:col-span-2 lg:col-span-3 ${
               isLiquidGlass
                 ? 'bg-black/30 dark:bg-gray-800/20'
                 : 'bg-gray-50/60 dark:bg-gray-800/40'
                 }`}
               >
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-foreground">Performance por Disciplina</h2>
+                <div className="p-4 md:p-6">
+                  <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <h2 className="text-xl md:text-2xl font-bold text-foreground">Performance por Disciplina</h2>
                   </div>
 
-                <div className="h-64 w-full">
-                <div className="flex justify-around h-full gap-2 px-2">
+                <div className="h-48 md:h-64 w-full overflow-x-auto">
+                <div className="flex justify-around h-full gap-1 md:gap-2 px-1 md:px-2 min-w-max">
                               
                   {performanceByDiscipline.map((item: { disc: string; nota: number }, i: number) => (
-                    <div key={i} className="flex flex-col justify-end items-center w-full group">
+                    <div key={i} className="flex flex-col justify-end items-center w-12 md:w-16 lg:w-20 group">
                                   
                       <div 
-                      className={`w-full max-w-16 ${barColors[i % barColors.length]} rounded-t-lg shadow-lg group-hover:opacity-80 transition-all duration-300 flex items-center justify-center`}
+                      className={`w-full max-w-12 md:max-w-16 ${barColors[i % barColors.length]} rounded-t-lg shadow-lg group-hover:opacity-80 transition-all duration-300 flex items-center justify-center`}
                         style={{
                         height: `${Math.max(item.nota, 0.5) * 10}%`
                         }}
                         >
-                          <span className="text-white font-bold text-sm">{item.nota.toFixed(1)}</span>
+                          <span className="text-white font-bold text-xs md:text-sm">{item.nota.toFixed(1)}</span>
                       </div>
-                        <span className="text-xs font-medium mt-2 text-center break-words">{item.disc}</span>
+                        <span className="text-xs font-medium mt-1 md:mt-2 text-center break-words px-1">{item.disc}</span>
                       </div>
                   ))}
                     </div>

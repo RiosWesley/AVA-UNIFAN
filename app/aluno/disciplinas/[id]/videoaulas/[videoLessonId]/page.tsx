@@ -69,17 +69,17 @@ export default function VideoAulaPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="border-b bg-background/95 backdrop-blur px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="border-b bg-background/95 backdrop-blur px-3 md:px-4 py-2 md:py-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
             <Link href={`/aluno/disciplinas/${classId}`}>
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
+              <Button variant="ghost" size="sm" className="flex-shrink-0">
+                <ArrowLeft className="h-4 w-4 mr-1 md:mr-2" />
+                <span className="hidden sm:inline">Voltar</span>
               </Button>
             </Link>
-            <div>
-              <h1 className="text-lg font-semibold leading-tight">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-sm md:text-lg font-semibold leading-tight truncate">
                 {details?.title ?? "Vídeo-aula"}
               </h1>
               {details?.durationSeconds ? (
@@ -99,9 +99,9 @@ export default function VideoAulaPage() {
 
       <main className="flex-1">
         <div className="w-full p-0">
-          <div className="flex min-h-[70vh]">
+          <div className="flex flex-col md:flex-row min-h-[70vh]">
             {/* Sidebar de navegação */}
-            <aside className={cn("border-r border-border/50 bg-background/95 backdrop-blur transition-all duration-200", collapsed ? "w-14" : "w-80")}>
+            <aside className={cn("border-r border-b md:border-b-0 border-border/50 bg-background/95 backdrop-blur transition-all duration-200", collapsed ? "w-full md:w-14" : "w-full md:w-80")}>
               <div className={cn("border-b border-border/50 flex items-center", collapsed ? "justify-center p-2" : "justify-between p-4 bg-gradient-to-r from-primary/15 to-primary/5")}>
                 <div className="flex items-center gap-2 text-foreground">
                   <Film className="h-5 w-5 text-primary" />
@@ -165,8 +165,8 @@ export default function VideoAulaPage() {
             </aside>
 
             {/* Player */}
-            <div className="flex-1 ml-0">
-              <div className="min-h-[70vh] bg-black rounded-none overflow-hidden shadow-none grid grid-rows-[1fr_auto]">
+            <div className="flex-1 md:ml-0">
+              <div className="min-h-[50vh] md:min-h-[70vh] bg-black rounded-none overflow-hidden shadow-none grid grid-rows-[1fr_auto]">
                 {src ? (
                   <video
                     controls
@@ -177,14 +177,14 @@ export default function VideoAulaPage() {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-white">
                     <div className="text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                      <p>Preparando o vídeo...</p>
+                      <div className="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-b-2 border-white mx-auto mb-4"></div>
+                      <p className="text-sm md:text-base">Preparando o vídeo...</p>
                     </div>
                   </div>
                 )}
-                <div className="p-3 bg-gradient-to-t from-black/60 to-transparent text-white flex items-center gap-2">
-                  <Play className="h-5 w-5" />
-                  <span className="text-sm">
+                <div className="p-2 md:p-3 bg-gradient-to-t from-black/60 to-transparent text-white flex items-center gap-2">
+                  <Play className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                  <span className="text-xs md:text-sm truncate">
                     {details?.title ?? "Vídeo-aula"}
                   </span>
                 </div>

@@ -45,33 +45,33 @@ export default function PerfilCoordenadorPage() {
 
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
-          <p className="text-gray-600">Gerencie suas informações de coordenação e configurações</p>
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Meu Perfil</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Gerencie suas informações de coordenação e configurações</p>
         </div>
       </div>
 
       <Tabs defaultValue="perfil" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="perfil">Perfil</TabsTrigger>
-          <TabsTrigger value="coordenacao">Coordenação</TabsTrigger>
-          <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-          <TabsTrigger value="seguranca">Segurança</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 overflow-x-auto">
+          <TabsTrigger value="perfil" className="text-xs sm:text-sm">Perfil</TabsTrigger>
+          <TabsTrigger value="coordenacao" className="text-xs sm:text-sm">Coordenação</TabsTrigger>
+          <TabsTrigger value="configuracoes" className="text-xs sm:text-sm">Configurações</TabsTrigger>
+          <TabsTrigger value="seguranca" className="text-xs sm:text-sm">Segurança</TabsTrigger>
         </TabsList>
 
         <TabsContent value="perfil" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
             <Card className="md:col-span-1">
               <CardHeader>
-                <CardTitle>Foto do Perfil</CardTitle>
-                <CardDescription>Atualize sua foto de perfil</CardDescription>
+                <CardTitle className="text-base sm:text-lg">Foto do Perfil</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Atualize sua foto de perfil</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
-                <Avatar className="w-32 h-32">
+                <Avatar className="w-24 h-24 sm:w-32 sm:h-32">
                   <AvatarImage src="/coordinator-profile-photo.jpg" />
-                  <AvatarFallback className="text-2xl">MO</AvatarFallback>
+                  <AvatarFallback className="text-xl sm:text-2xl">MO</AvatarFallback>
                 </Avatar>
                 <Button variant="outline" className="w-full bg-transparent">
                   <Camera className="w-4 h-4 mr-2" />
@@ -82,11 +82,11 @@ export default function PerfilCoordenadorPage() {
 
             <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle>Informações Pessoais</CardTitle>
-                <CardDescription>Atualize suas informações básicas</CardDescription>
+                <CardTitle className="text-base sm:text-lg">Informações Pessoais</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Atualize suas informações básicas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="nome">Nome Completo</Label>
                     <Input id="nome" defaultValue="Maria Oliveira Santos" />
@@ -103,12 +103,12 @@ export default function PerfilCoordenadorPage() {
                     <Label htmlFor="nascimento">Data de Nascimento</Label>
                     <Input id="nascimento" type="date" defaultValue="1980-08-10" />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2 sm:col-span-2">
                     <Label htmlFor="endereco">Endereço</Label>
                     <Input id="endereco" defaultValue="Rua Augusta, 500 - São Paulo, SP" />
                   </div>
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">Salvar Alterações</Button>
+                <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Salvar Alterações</Button>
               </CardContent>
             </Card>
           </div>
@@ -117,14 +117,14 @@ export default function PerfilCoordenadorPage() {
         <TabsContent value="coordenacao" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Building className="w-4 h-4 sm:w-5 sm:h-5" />
                 Informações de Coordenação
               </CardTitle>
-              <CardDescription>Dados sobre sua função de coordenação</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Dados sobre sua função de coordenação</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="cargo">Cargo</Label>
                   <Input id="cargo" defaultValue="Coordenadora de Curso" />
@@ -152,7 +152,7 @@ export default function PerfilCoordenadorPage() {
                 />
               </div>
 
-              <Button className="bg-green-600 hover:bg-green-700">Salvar Informações</Button>
+              <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Salvar Informações</Button>
             </CardContent>
           </Card>
 
@@ -185,11 +185,11 @@ export default function PerfilCoordenadorPage() {
         <TabsContent value="configuracoes" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
                 Notificações
               </CardTitle>
-              <CardDescription>Configure como você deseja receber notificações</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Configure como você deseja receber notificações</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
@@ -227,11 +227,11 @@ export default function PerfilCoordenadorPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
                 Preferências de Gestão
               </CardTitle>
-              <CardDescription>Configure suas preferências de coordenação</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Configure suas preferências de coordenação</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -267,11 +267,11 @@ export default function PerfilCoordenadorPage() {
         <TabsContent value="seguranca" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
                 Segurança da Conta
               </CardTitle>
-              <CardDescription>Gerencie a segurança da sua conta</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">Gerencie a segurança da sua conta</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">

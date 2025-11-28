@@ -210,20 +210,20 @@ export default function AdministradorVideoAulasPage() {
       <Sidebar userRole="administrador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
-          <div className="flex items-center mb-6">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
             <Link href="/administrador">
-              <LiquidGlassButton variant="ghost" size="sm" className="mr-4">
+              <LiquidGlassButton variant="ghost" size="sm" className="w-full sm:w-auto">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar
               </LiquidGlassButton>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Video className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+                <Video className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 dark:text-purple-400" />
                 Inserir Vídeo-aula
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Adicione uma nova vídeo-aula ao sistema
               </p>
             </div>
@@ -278,7 +278,7 @@ export default function AdministradorVideoAulasPage() {
                   <Label className="text-sm font-medium mb-2 block">
                     Tipo de Entrada *
                   </Label>
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                     <LiquidGlassButton
                       type="button"
                       variant={tipoEntrada === 'url' ? 'default' : 'outline'}
@@ -359,11 +359,11 @@ export default function AdministradorVideoAulasPage() {
                         {formData.arquivo ? 'Alterar Arquivo' : 'Selecionar Arquivo'}
                       </LiquidGlassButton>
                       {formData.arquivo && (
-                        <div className="mt-3 p-3 border rounded-lg bg-muted/50 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <FileVideo className="h-5 w-5 text-primary" />
-                            <div>
-                              <p className="text-sm font-medium">{formData.arquivo.name}</p>
+                        <div className="mt-3 p-3 border rounded-lg bg-muted/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <FileVideo className="h-5 w-5 text-primary flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">{formData.arquivo.name}</p>
                               <p className="text-xs text-muted-foreground">
                                 {formatarTamanhoArquivo(formData.arquivo.size)}
                               </p>
@@ -379,6 +379,7 @@ export default function AdministradorVideoAulasPage() {
                                 fileInputRef.current.value = ''
                               }
                             }}
+                            className="flex-shrink-0"
                           >
                             <X className="h-4 w-4" />
                           </LiquidGlassButton>
@@ -478,9 +479,9 @@ export default function AdministradorVideoAulasPage() {
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Link href="/administrador">
-                    <LiquidGlassButton variant="outline">
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
+                  <Link href="/administrador" className="w-full sm:w-auto">
+                    <LiquidGlassButton variant="outline" className="w-full sm:w-auto">
                       <X className="h-4 w-4 mr-2" />
                       Cancelar
                     </LiquidGlassButton>
@@ -488,6 +489,7 @@ export default function AdministradorVideoAulasPage() {
                   <LiquidGlassButton
                     onClick={handleSubmit}
                     disabled={salvarVideoAulaMutation.isPending}
+                    className="w-full sm:w-auto"
                   >
                     {salvarVideoAulaMutation.isPending ? (
                       <>

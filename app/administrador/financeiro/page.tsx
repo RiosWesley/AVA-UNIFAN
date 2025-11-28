@@ -358,15 +358,15 @@ export default function AdministradorFinanceiroPage() {
       <Sidebar userRole="administrador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Gestão Financeira</h1>
-              <p className="text-muted-foreground">Dashboard financeiro completo da instituição</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão Financeira</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Dashboard financeiro completo da instituição</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -376,15 +376,16 @@ export default function AdministradorFinanceiroPage() {
                   <SelectItem value="year">Ano</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={handleGenerateReport} disabled={generateReportMutation.isPending}>
+              <Button variant="outline" onClick={handleGenerateReport} disabled={generateReportMutation.isPending} className="w-full sm:w-auto">
                 <Download className="h-4 w-4 mr-2" />
-                {generateReportMutation.isPending ? "Gerando..." : "Exportar Relatório"}
+                <span className="hidden sm:inline">{generateReportMutation.isPending ? "Gerando..." : "Exportar Relatório"}</span>
+                <span className="sm:hidden">{generateReportMutation.isPending ? "Gerando..." : "Exportar"}</span>
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-6">
-            <Card className="lg:col-span-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6 mb-6">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Receita Mensal</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -397,7 +398,7 @@ export default function AdministradorFinanceiroPage() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Despesas Mensais</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -410,7 +411,7 @@ export default function AdministradorFinanceiroPage() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -423,7 +424,7 @@ export default function AdministradorFinanceiroPage() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-3">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-3">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Taxa de Inadimplência</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
@@ -439,7 +440,7 @@ export default function AdministradorFinanceiroPage() {
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-3">
+            <Card className="col-span-1 md:col-span-2 lg:col-span-3">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Margem de Lucro</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -452,12 +453,12 @@ export default function AdministradorFinanceiroPage() {
             </Card>
           </div>
 
-          <Tabs defaultValue="dashboard" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="inadimplencia">Inadimplência</TabsTrigger>
-              <TabsTrigger value="fluxo">Fluxo de Caixa</TabsTrigger>
-              <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+          <Tabs defaultValue="dashboard" className="space-y-4 sm:space-y-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 overflow-x-auto">
+              <TabsTrigger value="dashboard" className="text-xs sm:text-sm">Dashboard</TabsTrigger>
+              <TabsTrigger value="inadimplencia" className="text-xs sm:text-sm">Inadimplência</TabsTrigger>
+              <TabsTrigger value="fluxo" className="text-xs sm:text-sm">Fluxo de Caixa</TabsTrigger>
+              <TabsTrigger value="relatorios" className="text-xs sm:text-sm">Relatórios</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard">
@@ -469,30 +470,32 @@ export default function AdministradorFinanceiroPage() {
                   </CardHeader>
                   <CardContent>
                     {chartRevenueEvolution.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={chartRevenueEvolution}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="mes" />
-                          <YAxis />
-                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="receita"
-                            stroke="#15803d"
-                            strokeWidth={3}
-                            name="Receita"
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="despesas"
-                            stroke="#be123c"
-                            strokeWidth={3}
-                            name="Despesas"
-                          />
-                          <Line type="monotone" dataKey="lucro" stroke="#84cc16" strokeWidth={3} name="Lucro" />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      <div className="min-h-[250px]">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={chartRevenueEvolution}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="mes" />
+                            <YAxis />
+                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                            <Legend />
+                            <Line
+                              type="monotone"
+                              dataKey="receita"
+                              stroke="#15803d"
+                              strokeWidth={3}
+                              name="Receita"
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="despesas"
+                              stroke="#be123c"
+                              strokeWidth={3}
+                              name="Despesas"
+                            />
+                            <Line type="monotone" dataKey="lucro" stroke="#84cc16" strokeWidth={3} name="Lucro" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
                     ) : (
                       <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                         <p>Nenhum dado disponível</p>
@@ -509,24 +512,26 @@ export default function AdministradorFinanceiroPage() {
                   <CardContent>
                     {chartRevenueCategory.length > 0 ? (
                       <>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <PieChart>
-                            <Pie
-                              data={chartRevenueCategory}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={100}
-                              paddingAngle={5}
-                              dataKey="valor"
-                            >
-                              {chartRevenueCategory.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.cor} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                          </PieChart>
-                        </ResponsiveContainer>
+                        <div className="min-h-[250px]">
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <Pie
+                                data={chartRevenueCategory}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={100}
+                                paddingAngle={5}
+                                dataKey="valor"
+                              >
+                                {chartRevenueCategory.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.cor} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
                         <div className="mt-4 space-y-2">
                           {chartRevenueCategory.map((item, index) => (
                             <div key={index} className="flex items-center justify-between">
@@ -553,23 +558,25 @@ export default function AdministradorFinanceiroPage() {
                   <CardTitle>Despesas por Categoria</CardTitle>
                   <CardDescription>Distribuição dos gastos mensais</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  {chartExpensesCategory.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={chartExpensesCategory}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="categoria" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        <Bar dataKey="valor" fill="#15803d" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                      <p>Nenhum dado disponível</p>
-                    </div>
-                  )}
-                </CardContent>
+                  <CardContent>
+                    {chartExpensesCategory.length > 0 ? (
+                      <div className="min-h-[250px]">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={chartExpensesCategory}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="categoria" />
+                            <YAxis />
+                            <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                            <Bar dataKey="valor" fill="#15803d" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                        <p>Nenhum dado disponível</p>
+                      </div>
+                    )}
+                  </CardContent>
               </Card>
             </TabsContent>
 
@@ -618,19 +625,19 @@ export default function AdministradorFinanceiroPage() {
                         {filteredDefaultingStudents.map((student) => (
                           <Card key={student.id}>
                             <CardContent className="p-4">
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-3 mb-2">
-                                    <h4 className="font-semibold text-lg">{student.name}</h4>
-                                    {student.className && <Badge variant="outline">{student.className}</Badge>}
-                                    <Badge variant={getInadimplenciaBadgeVariant(student.monthsOverdue)}>
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div className="flex-1 min-w-0 w-full">
+                                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                                    <h4 className="font-semibold text-base sm:text-lg truncate">{student.name}</h4>
+                                    {student.className && <Badge variant="outline" className="flex-shrink-0">{student.className}</Badge>}
+                                    <Badge variant={getInadimplenciaBadgeVariant(student.monthsOverdue)} className="flex-shrink-0">
                                       {student.monthsOverdue} {student.monthsOverdue === 1 ? "mês" : "meses"} em atraso
                                     </Badge>
                                   </div>
-                                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
                                     <div>
                                       <p className="text-muted-foreground">Valor devido</p>
-                                      <p className="font-semibold text-destructive text-lg">
+                                      <p className="font-semibold text-destructive text-base sm:text-lg">
                                         {formatCurrency(student.totalDue)}
                                       </p>
                                     </div>
@@ -644,38 +651,41 @@ export default function AdministradorFinanceiroPage() {
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Email</p>
-                                      <p className="font-medium flex items-center gap-1">
-                                        <Mail className="h-3 w-3" />
-                                        {student.email}
+                                      <p className="font-medium flex items-center gap-1 truncate">
+                                        <Mail className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{student.email}</span>
                                       </p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Telefone</p>
                                       <p className="font-medium flex items-center gap-1">
-                                        <Phone className="h-3 w-3" />
-                                        {student.phone || "Não informado"}
+                                        <Phone className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{student.phone || "Não informado"}</span>
                                       </p>
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => openContactDialog(student.studentId)}
+                                    className="flex-1 sm:flex-initial"
                                   >
                                     <Mail className="h-4 w-4 mr-2" />
-                                    Contatar
+                                    <span className="hidden sm:inline">Contatar</span>
                                   </Button>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => openPaymentDialog(student.studentId, student.name)}
+                                    className="flex-1 sm:flex-initial"
                                   >
                                     <CreditCard className="h-4 w-4 mr-2" />
-                                    Lançar Pagamento
+                                    <span className="hidden sm:inline">Lançar Pagamento</span>
+                                    <span className="sm:hidden">Pagamento</span>
                                   </Button>
-                                  <Button size="sm">Ver Detalhes</Button>
+                                  <Button size="sm" className="flex-1 sm:flex-initial">Ver Detalhes</Button>
                                 </div>
                               </div>
                             </CardContent>
@@ -691,13 +701,13 @@ export default function AdministradorFinanceiroPage() {
             <TabsContent value="fluxo">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
-                      <CardTitle>Fluxo de Caixa</CardTitle>
-                      <CardDescription>Entradas e saídas</CardDescription>
+                      <CardTitle className="text-base sm:text-lg">Fluxo de Caixa</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">Entradas e saídas</CardDescription>
                     </div>
                     <Select value={cashFlowGroupBy} onValueChange={(v) => setCashFlowGroupBy(v as CashFlowGroupBy)}>
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-full sm:w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -710,17 +720,19 @@ export default function AdministradorFinanceiroPage() {
                 </CardHeader>
                 <CardContent>
                   {chartCashFlow.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={400}>
-                      <BarChart data={chartCashFlow}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="data" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        <Legend />
-                        <Bar dataKey="entrada" fill="#15803d" name="Entradas" />
-                        <Bar dataKey="saida" fill="#be123c" name="Saídas" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div className="min-h-[250px]">
+                      <ResponsiveContainer width="100%" height={400}>
+                        <BarChart data={chartCashFlow}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="data" />
+                          <YAxis />
+                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                          <Legend />
+                          <Bar dataKey="entrada" fill="#15803d" name="Entradas" />
+                          <Bar dataKey="saida" fill="#be123c" name="Saídas" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   ) : (
                     <div className="h-[400px] flex items-center justify-center text-muted-foreground">
                       <p>Nenhum dado disponível</p>
@@ -738,7 +750,7 @@ export default function AdministradorFinanceiroPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>Tipo de Relatório</Label>
                         <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
@@ -801,7 +813,7 @@ export default function AdministradorFinanceiroPage() {
       </main>
 
       <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Registrar Contato</DialogTitle>
             <DialogDescription>Registre o contato realizado com o aluno inadimplente</DialogDescription>
@@ -829,11 +841,11 @@ export default function AdministradorFinanceiroPage() {
                 rows={4}
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setContactDialogOpen(false)}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
+              <Button variant="outline" onClick={() => setContactDialogOpen(false)} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button onClick={handleRegisterContact} disabled={registerContactMutation.isPending}>
+              <Button onClick={handleRegisterContact} disabled={registerContactMutation.isPending} className="w-full sm:w-auto">
                 {registerContactMutation.isPending ? "Registrando..." : "Registrar Contato"}
               </Button>
             </div>
@@ -853,7 +865,7 @@ export default function AdministradorFinanceiroPage() {
           }, 200)
         }
       }}>
-        <DialogContent className="max-w-2xl" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Lançar Pagamento</DialogTitle>
             <DialogDescription>

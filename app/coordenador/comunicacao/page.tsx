@@ -41,7 +41,7 @@ export default function CoordenadorComunicacaoPage() {
     conteudo?: string
   }>>([])
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || ""
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Inbox e conversas (mensagens diretas)
@@ -337,14 +337,14 @@ export default function CoordenadorComunicacaoPage() {
       <Sidebar userRole="coordenador" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Comunicação Institucional</h1>
-              <p className="text-muted-foreground">Gerencie comunicados e mensagens institucionais</p>
+        <div className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Comunicação Institucional</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Gerencie comunicados e mensagens institucionais</p>
             </div>
-            <div className="flex gap-2">
-              <LiquidGlassButton variant="outline">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <LiquidGlassButton variant="outline" className="w-full sm:w-auto">
                 <Bell className="h-4 w-4 mr-2" />
                 Notificações
               </LiquidGlassButton>
@@ -360,11 +360,11 @@ export default function CoordenadorComunicacaoPage() {
             </TabsList>
 
             <TabsContent value="mensagens">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Mensagens</h3>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold">Mensagens</h3>
                 <Dialog open={isNovaMensagemOpen}>
                   <DialogTrigger asChild onClick={() => setIsNovaMensagemOpen(true)}>
-                    <LiquidGlassButton disabled={!currentUserId}>
+                    <LiquidGlassButton disabled={!currentUserId} className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       Nova Mensagem
                     </LiquidGlassButton>
@@ -373,7 +373,8 @@ export default function CoordenadorComunicacaoPage() {
                     <ModalNovaMensagem
                       isOpen={isNovaMensagemOpen}
                       onClose={() => setIsNovaMensagemOpen(false)}
-                      currentUserId={currentUserId}
+                      currentUserId={currentUserId || ""}
+                      apiBaseUrl={API_URL}
                       context="coordinator"
                       onSend={({ destinatarioId }) => {
                         setIsNovaMensagemOpen(false)
@@ -388,12 +389,12 @@ export default function CoordenadorComunicacaoPage() {
                   )}
                 </Dialog>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                 <div className="lg:col-span-1">
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY}>
                     <CardHeader>
-                      <CardTitle>Caixa de Entrada</CardTitle>
-                      <CardDescription>{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
+                      <CardTitle className="text-base sm:text-lg">Caixa de Entrada</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">{inbox.reduce((acc, i) => acc + (i.unreadCount || 0), 0)} mensagens não lidas</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
@@ -401,13 +402,13 @@ export default function CoordenadorComunicacaoPage() {
                           <div
                             key={item.otherUser.id}
                             onClick={() => handleSelectInboxItem(item.otherUser.id)}
-                            className={`p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
+                            className={`p-2 sm:p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${item.unreadCount > 0 ? "bg-primary/5 border-primary/20" : ""}`}
                           >
-                            <div className="flex items-start justify-between mb-1">
-                              <h5 className="font-medium text-sm">{item.otherUser.name}</h5>
-                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full" />}
+                            <div className="flex items-start justify-between mb-1 gap-2">
+                              <h5 className="font-medium text-xs sm:text-sm truncate flex-1">{item.otherUser.name}</h5>
+                              {item.unreadCount > 0 && <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />}
                             </div>
-                            <p className="font-medium text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
+                            <p className="font-medium text-xs sm:text-sm mb-1 line-clamp-1">{item.lastMessage?.content || ''}</p>
                             <p className="text-xs text-muted-foreground">
                               {new Date(item.lastMessage?.sentAt || Date.now()).toLocaleString('pt-BR')}
                             </p>
@@ -480,9 +481,9 @@ export default function CoordenadorComunicacaoPage() {
 
             <TabsContent value="avisos">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Meus Avisos</h3>
-                  <LiquidGlassButton onClick={openCreateAviso}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                  <h3 className="text-base sm:text-lg font-semibold">Meus Avisos</h3>
+                  <LiquidGlassButton onClick={openCreateAviso} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     Criar Aviso
                   </LiquidGlassButton>
@@ -491,16 +492,16 @@ export default function CoordenadorComunicacaoPage() {
                 {comunicadosPublicados.map((aviso) => (
                   <LiquidGlassCard intensity={LIQUID_GLASS_DEFAULT_INTENSITY} key={aviso.id}>
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-lg mb-2">{aviso.titulo}</h4>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <Badge variant="outline">{aviso.publico}</Badge>
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-base sm:text-lg mb-2">{aviso.titulo}</h4>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                            <Badge variant="outline" className="text-xs">{aviso.publico}</Badge>
                             <span>{aviso.data}</span>
                             <span>{aviso.visualizacoes} visualizações</span>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-2 w-full sm:w-auto justify-end sm:justify-start">
                           <LiquidGlassButton variant="outline" size="sm" onClick={() => openEditAviso(aviso.id)}>
                             <Edit className="h-4 w-4" />
                           </LiquidGlassButton>

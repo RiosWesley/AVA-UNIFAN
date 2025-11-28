@@ -34,30 +34,52 @@ export function Combobox({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
+    console.log('[Combobox] Filtrando opções:', { query: q, totalOptions: options.length, options })
     if (!q) return options
-    return options.filter(o => o.label.toLowerCase().includes(q))
+    const result = options.filter(o => o.label.toLowerCase().includes(q))
+    console.log('[Combobox] Resultado do filtro:', result.length, 'opções')
+    return result
   }, [options, query])
 
   useEffect(() => {
+    if (!open) return
+    
     const handler = (e: MouseEvent) => {
       if (!containerRef.current) return
-      if (!containerRef.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      if (target && containerRef.current.contains(target)) return
+      setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    
+    // Usar setTimeout para garantir que o handler seja adicionado após o render
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handler, true)
+    }, 0)
+    
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handler, true)
+    }
+  }, [open])
 
   useEffect(() => {
     const checkDarkMode = () => {
-      setIsDark(document.documentElement.classList.contains('dark'))
+      if (document.documentElement) {
+        setIsDark(document.documentElement.classList.contains('dark'))
+      }
     }
     checkDarkMode()
+    
+    if (!document.documentElement) return
+    
     const observer = new MutationObserver(checkDarkMode)
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['class']
     })
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+    }
   }, [])
 
   return (
@@ -79,7 +101,7 @@ export function Combobox({
           borderStyle: 'solid' 
         }}
       />
-      {open && (
+      {open && containerRef.current && (
         <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-md border bg-popover text-popover-foreground shadow-md">
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">Nenhum resultado</div>

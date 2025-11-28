@@ -257,51 +257,51 @@ export default function AtividadesPage() {
     <div className={`flex h-screen ${isLiquidGlass ? 'bg-gray-50/30 dark:bg-gray-900/20' : 'bg-background'}`}>
       <Sidebar userRole="aluno" />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-8">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6 lg:space-y-8">
           {/* Header Hero Section */}
-          <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm mb-8 p-6 ${
+          <div className={`relative overflow-hidden rounded-xl border backdrop-blur-sm mb-4 md:mb-6 lg:mb-8 p-4 md:p-6 ${
             isLiquidGlass
               ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
               : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
           }`}>
             <div className="absolute inset-0 bg-grid-white/[0.02] dark:bg-grid-white/[0.05]" />
-            <div className="relative p-8">
-              <div className="flex items-center justify-between">
+            <div className="relative p-4 md:p-6 lg:p-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="space-y-2">
-                  <h1 className="text-4xl font-bold text-green-600 dark:text-green-400">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-green-600 dark:text-green-400">
                     Minhas Atividades
                   </h1>
-                  <p className="text-lg text-muted-foreground">
+                  <p className="text-sm md:text-base lg:text-lg text-muted-foreground">
                     Gerencie suas tarefas e atividades acadêmicas com estilo
                   </p>
-                  <div className="flex items-center gap-6 pt-2">
+                  <div className="flex items-center gap-4 md:gap-6 pt-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-sm font-medium">Pendentes</span>
-                      <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                      <span className="text-xs md:text-sm font-medium">Pendentes</span>
+                      <Badge className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 text-xs">
                         {atividadesPendentes.length}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-sm font-medium">Concluídas</span>
-                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                      <span className="text-xs md:text-sm font-medium">Concluídas</span>
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
                         {atividadesConcluidas.length}
                       </Badge>
                     </div>
                   </div>
                 </div>
-                <div className="hidden md:flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">Total de Atividades:</div>
-                    <div className="text-2xl font-bold text-foreground">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:space-x-4">
+                  <div className="hidden md:block text-right">
+                    <div className="text-xs md:text-sm text-muted-foreground">Total de Atividades:</div>
+                    <div className="text-xl md:text-2xl font-bold text-foreground">
                       {atividadesPendentes.length + atividadesConcluidas.length}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <div className="flex items-center space-x-2 w-full sm:w-auto">
+                    <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400 flex-shrink-0" />
                     <Select value={semestreSelecionado} onValueChange={setSemestreSelecionado}>
-                      <SelectTrigger className={`w-40 backdrop-blur-sm ${
+                      <SelectTrigger className={`w-full sm:w-40 backdrop-blur-sm ${
                         isLiquidGlass
                           ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                           : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
@@ -330,31 +330,31 @@ export default function AtividadesPage() {
           </div>
 
           {/* Barra de busca */}
-          <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex flex-col lg:flex-row gap-3 md:gap-4">
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
-              className={`flex-1 p-6 rounded-xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
+              className={`flex-1 p-4 md:p-6 rounded-xl border backdrop-blur-sm transition-all duration-300 border-border/50 hover:border-border/80 ${
                 isLiquidGlass
                   ? 'bg-black/30 dark:bg-gray-800/20'
                   : 'bg-gray-50/60 dark:bg-gray-800/40'
               }`}
             >
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors">
-                  <Search className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="p-2 bg-green-500/20 rounded-lg group-hover:bg-green-500/30 transition-colors flex-shrink-0">
+                  <Search className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <Input
                   placeholder="Buscar atividades..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 border-none bg-transparent focus-visible:ring-0 text-lg placeholder:text-muted-foreground/60"
+                  className="flex-1 border-none bg-transparent focus-visible:ring-0 text-sm md:text-base lg:text-lg placeholder:text-muted-foreground/60"
                 />
               </div>
             </LiquidGlassCard>
           </div>
           
           {/* Cards de Atividades */}
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-4 md:gap-6 lg:gap-8 md:grid-cols-2">
             {/* Atividades Pendentes */}
             <LiquidGlassCard
               intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
@@ -380,33 +380,33 @@ export default function AtividadesPage() {
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {filteredPendentes.map((atividade) => {
                     return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
+                      <div key={atividade.id} className={`group relative p-3 md:p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
                         isLiquidGlass
                           ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40 '
                           : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
                       }`}>
                         <div className="relative">
-                          <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-foreground transition-colors">
+                          <div className="flex items-start justify-between mb-2 md:mb-3">
+                            <h3 className="font-bold text-sm md:text-base text-foreground transition-colors flex-1 min-w-0 pr-2">
                               {atividade.titulo}
                             </h3>
                             
                           </div>
-                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                          <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4 leading-relaxed line-clamp-2">
                             {atividade.descricao}
                           </p>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
+                          <div className="space-y-2 md:space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex items-center gap-2 md:gap-3">
                                 <div className="flex items-center gap-1 text-xs">
-                                  <BookOpen className="h-3 w-3" />
-                                  <span className="font-medium">{atividade.disciplina}</span>
+                                  <BookOpen className="h-3 w-3 flex-shrink-0" />
+                                  <span className="font-medium truncate">{atividade.disciplina}</span>
                                 </div>
                                 
                               </div>
-                              <div className="text-right">
+                              <div className="text-left sm:text-right">
                                 <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                  <CalIcon className="h-3 w-3" />
+                                  <CalIcon className="h-3 w-3 flex-shrink-0" />
                                   <span className="font-bold">Vence: {atividade.dataVencimento}</span>
                                 </div>
                               </div>
@@ -448,7 +448,7 @@ export default function AtividadesPage() {
                                 // Só mostrar botão se pode iniciar/continuar
                                 if (!isFinalized && canStart && attempt?.status !== 'submitted' && attempt?.status !== 'graded') {
                                   return (
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col sm:flex-row gap-2">
                                       <Button
                                         onClick={async () => {
                                           if (!studentId) return;
@@ -483,10 +483,10 @@ export default function AtividadesPage() {
                                             });
                                           }
                                         }}
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
                                       >
-                                        <ActionIconComponent className="h-4 w-4" />
-                                        <span>{actionLabel}</span>
+                                        <ActionIconComponent className="h-3 w-3 md:h-4 md:w-4" />
+                                        <span className="truncate">{actionLabel}</span>
                                       </Button>
                                     </div>
                                   );
@@ -498,29 +498,29 @@ export default function AtividadesPage() {
                               
                               // Para atividades normais, mostrar os dois botões
                               return (
-                                <div className="flex gap-2">
+                                <div className="flex flex-col sm:flex-row gap-2">
                                   <Button
                                     onClick={() => handleAbrirModalEnviar(atividade)}
                                     disabled={uploadActivityMutation.isPending}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
                                   >
-                                    <Upload className="h-4 w-4" />
-                                    <span>Enviar Atividade</span>
+                                    <Upload className="h-3 w-3 md:h-4 md:w-4" />
+                                    <span className="truncate">Enviar Atividade</span>
                                   </Button>
                                   <Button
                                     onClick={() => handleCompleteActivity(atividade.id)}
                                     disabled={completeActivityMutation.isPending}
-                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
                                   >
                                     {completeActivityMutation.isPending ? (
                                       <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        <span>Concluindo...</span>
+                                        <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-white"></div>
+                                        <span className="truncate">Concluindo...</span>
                                       </>
                                     ) : (
                                       <>
-                                        <CheckCircle className="h-4 w-4" />
-                                        <span>Marcar como Concluída</span>
+                                        <CheckCircle className="h-3 w-3 md:h-4 md:w-4" />
+                                        <span className="truncate">Marcar como Concluída</span>
                                       </>
                                     )}
                                   </Button>
@@ -573,36 +573,36 @@ export default function AtividadesPage() {
                     const isVirtualExam = atividade.type === 'virtual_exam' && examData;
                     
                     return (
-                      <div key={atividade.id} className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
+                      <div key={atividade.id} className={`group relative p-3 md:p-4 rounded-xl border transition-all duration-300 hover:shadow-md ${
                         isLiquidGlass
                           ? 'bg-transparent hover:bg-white/15 dark:hover:bg-gray-800/15 border-green-200/40 dark:border-green-800/40'
                           : 'bg-white/70 dark:bg-gray-800/70 border-green-200/60 dark:border-green-800/60 hover:bg-white/90 dark:hover:bg-gray-800/90'
                       }`}>
                         <div className="relative">
-                          <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-foreground transition-colors">
+                          <div className="flex items-start justify-between mb-2 md:mb-3 gap-2">
+                            <h3 className="font-bold text-sm md:text-base text-foreground transition-colors flex-1 min-w-0">
                               {atividade.titulo}
                             </h3>
                             {atividade.nota !== null && atividade.nota !== undefined && (
-                              <Badge variant="default" className="ml-2">
+                              <Badge variant="default" className="ml-2 flex-shrink-0 text-xs">
                                 Nota: {atividade.nota.toFixed(2)}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                          <p className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4 leading-relaxed line-clamp-2">
                             {atividade.descricao}
                           </p>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
+                          <div className="space-y-2 md:space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex items-center gap-2 md:gap-3">
                                 <div className="flex items-center gap-1 text-xs">
-                                  <BookOpen className="h-3 w-3" />
-                                  <span className="font-medium">{atividade.disciplina}</span>
+                                  <BookOpen className="h-3 w-3 flex-shrink-0" />
+                                  <span className="font-medium truncate">{atividade.disciplina}</span>
                                 </div>
                               </div>
-                              <div className="text-right">
+                              <div className="text-left sm:text-right">
                                 <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                  <CheckCircle className="h-3 w-3" />
+                                  <CheckCircle className="h-3 w-3 flex-shrink-0" />
                                   <span className="font-bold">Concluída: {atividade.dataConclusao}</span>
                                 </div>
                               </div>
@@ -618,10 +618,10 @@ export default function AtividadesPage() {
                                     setAttemptIdParaResultado(examData.attempt!.id)
                                     setModalResultadoProvaOpen(true)
                                   }}
-                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-xs md:text-sm"
                                 >
-                                  <FileCheck className="h-4 w-4" />
-                                  <span>Ver Resultado</span>
+                                  <FileCheck className="h-3 w-3 md:h-4 md:w-4" />
+                                  <span className="truncate">Ver Resultado</span>
                                 </Button>
                               </div>
                             )}

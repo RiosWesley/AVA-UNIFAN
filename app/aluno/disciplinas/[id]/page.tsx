@@ -4,15 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff, GraduationCap } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff, GraduationCap, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
+import { ModalDiscussaoForum, ModalVideoChamada, ModalVerEntrega } from '@/components/modals'
 import { ModalRealizarProva, ModalResultadoProva } from '@/components/modals'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
@@ -156,6 +157,24 @@ export default function DisciplinaDetalhePage() {
   const [uploadFiles, setUploadFiles] = useState<Record<string, File | null>>({})
   const [uploadComments, setUploadComments] = useState<Record<string, string>>({})
 
+  // Modal de visualização de entrega
+  const [modalVerEntregaOpen, setModalVerEntregaOpen] = useState(false)
+  const [selectedActivityForView, setSelectedActivityForView] = useState<{
+    activityId: string
+    activityTitle: string
+    submissionId?: string | null
+    grade?: number | null
+    maxScore?: number | null
+  } | null>(null)
+
+  // Estado para controlar quais atividades estão em modo de retificação
+  const [retifyingActivities, setRetifyingActivities] = useState<Set<string>>(new Set())
+
+  // Estados para busca e paginação de atividades
+  const [searchActivityTerm, setSearchActivityTerm] = useState("")
+  const [currentActivityPage, setCurrentActivityPage] = useState(1)
+  const ACTIVITIES_PER_PAGE = 5
+
   // Upload activity mutation
   const uploadActivityMutation = useMutation({
     mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment: string }) => {
@@ -188,6 +207,12 @@ export default function DisciplinaDetalhePage() {
           grade: null
         }
       }))
+      // Sair do modo de retificação após envio bem-sucedido
+      setRetifyingActivities(prev => {
+        const next = new Set(prev)
+        next.delete(variables.activityId)
+        return next
+      })
     },
     onError: (error, variables) => {
       toast({
@@ -560,6 +585,11 @@ export default function DisciplinaDetalhePage() {
     }
   }
 
+  // Estado de loading inicial (quando ainda não temos dados básicos)
+  const isLoadingInitial = useMemo(() => {
+    return classDetailsQuery.isLoading || !classId || !studentId
+  }, [classDetailsQuery.isLoading, classId, studentId])
+
   const handleResponderDiscussao = (texto: string, parentId?: number) => {
     if (!forumSelecionado || !studentId) return
     ;(async () => {
@@ -614,39 +644,87 @@ export default function DisciplinaDetalhePage() {
     })()
   }
 
+  if (isLoadingInitial) {
+    return (
+      <div className="flex h-screen bg-background">
+        <Sidebar userRole="aluno" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 md:p-6">
+            {/* Skeleton do Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 md:mb-6">
+              <Skeleton className="h-9 w-24" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-5 w-48" />
+              </div>
+            </div>
+
+            {/* Skeleton das Tabs */}
+            <Tabs defaultValue="avisos" className="space-y-4 md:space-y-6">
+              <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+                <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto min-w-max">
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                </TabsList>
+              </div>
+              <TabsContent value="avisos">
+                <Card>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-20 w-full" />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-background">
       <Sidebar userRole="aluno" />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center mb-6">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 md:mb-6">
             <Link href="/aluno/disciplinas">
-              <Button variant="ghost" size="sm" className="mr-4">
+              <Button variant="ghost" size="sm" className="w-full sm:w-auto">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Voltar
               </Button>
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">{disciplina.nome}</h1>
-              <p className="text-muted-foreground">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground truncate">{disciplina.nome}</h1>
+              <p className="text-muted-foreground text-sm md:text-base">
                 {disciplina.codigo} • {disciplina.professor}
               </p>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
-              <TabsTrigger value="avisos">Avisos</TabsTrigger>
-              <TabsTrigger value="materiais">Materiais</TabsTrigger>
-              <TabsTrigger value="atividades">Atividades</TabsTrigger>
-              <TabsTrigger value="forum">Fórum</TabsTrigger>
-              <TabsTrigger value="videoaulas">Vídeo-aulas</TabsTrigger>
-              <TabsTrigger value="videochamadas">Vídeo-chamadas</TabsTrigger>
-              <TabsTrigger value="provas-online">Provas Online</TabsTrigger>
-              <TabsTrigger value="notas">Notas</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+            <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+              <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto min-w-max">
+                <TabsTrigger value="avisos" className="text-xs md:text-sm">Avisos</TabsTrigger>
+                <TabsTrigger value="materiais" className="text-xs md:text-sm">Materiais</TabsTrigger>
+                <TabsTrigger value="atividades" className="text-xs md:text-sm">Atividades</TabsTrigger>
+                <TabsTrigger value="forum" className="text-xs md:text-sm">Fórum</TabsTrigger>
+                <TabsTrigger value="videoaulas" className="text-xs md:text-sm">Vídeo-aulas</TabsTrigger>
+                <TabsTrigger value="videochamadas" className="text-xs md:text-sm">Vídeo-chamadas</TabsTrigger>
+                <TabsTrigger value="provas-online" className="text-xs md:text-sm">Provas</TabsTrigger>
+                <TabsTrigger value="notas" className="text-xs md:text-sm">Notas</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="avisos">
               <div className="space-y-4">
@@ -663,7 +741,15 @@ export default function DisciplinaDetalhePage() {
                     </CardHeader>
                   </Card>
                 )}
-                {(noticesQuery.data || []).map((aviso: Notice) => (
+                {!noticesQuery.isLoading && (noticesQuery.data || []).length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum aviso disponível ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  (noticesQuery.data || []).map((aviso: Notice) => (
                   <Card key={aviso.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
@@ -678,7 +764,8 @@ export default function DisciplinaDetalhePage() {
                       <p className="text-sm">{aviso.content}</p>
                     </CardContent>
                   </Card>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 
@@ -700,15 +787,23 @@ export default function DisciplinaDetalhePage() {
                     </CardContent>
                   </Card>
                 )}
-                {(materialsQuery.data || []).map((material: MaterialItem) => (
+                {!materialsQuery.isLoading && (materialsQuery.data || []).length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum material disponível ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  (materialsQuery.data || []).map((material: MaterialItem) => (
                   <Card key={material.id}>
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-8 w-8 text-primary" />
-                          <div>
-                            <h4 className="font-medium">{material.title ?? material.name ?? 'Material'}</h4>
-                            <p className="text-sm text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex items-center space-x-3 min-w-0 flex-1">
+                          <FileText className="h-8 w-8 text-primary flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-medium truncate">{material.title ?? material.name ?? 'Material'}</h4>
+                            <p className="text-sm text-muted-foreground truncate">
                               {(() => {
                                 const first = Array.isArray(material.fileUrl) ? material.fileUrl[0] : undefined
                                 const ext = first ? first.split('.').pop()?.toUpperCase() : ''
@@ -719,7 +814,7 @@ export default function DisciplinaDetalhePage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex gap-2 flex-wrap justify-end">
+                        <div className="flex gap-2 flex-wrap sm:flex-nowrap sm:flex-shrink-0 justify-start sm:justify-end">
                           {((Array.isArray(material.fileUrl) ? material.fileUrl : (material.fileUrl ? [material.fileUrl] : [])) as string[]).map((url: string, idx: number) => {
                             const downloadKey = `${material.id}-${url}`
                             const isDownloading = downloadingFiles.has(downloadKey)
@@ -776,6 +871,7 @@ export default function DisciplinaDetalhePage() {
                                 size="sm" 
                                 onClick={handleDownload}
                                 disabled={isDownloading}
+                                className="text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none"
                               >
                                 {isDownloading ? 'Baixando...' : name}
                               </Button>
@@ -785,7 +881,8 @@ export default function DisciplinaDetalhePage() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 
@@ -799,58 +896,220 @@ export default function DisciplinaDetalhePage() {
                   </Card>
                 )}
                 {(() => {
-                  // Mapear tentativas por activityId
-                  const attemptsByActivityId = new Map<string, ExamAttemptDTO>()
-                  ;(attemptsQuery.data || []).forEach((attempt) => {
-                    const activityId = attempt.exam?.activity?.id
-                    if (activityId) {
-                      attemptsByActivityId.set(activityId, attempt)
+                  // Filtrar atividades: remover exam e virtual_exam
+                  const filteredActivities = (activitiesQuery.data || []).filter(
+                    (activity: ClassActivity) => activity.type !== 'exam' && activity.type !== 'virtual_exam'
+                  )
+
+                  // Aplicar busca
+                  const searchTermLower = searchActivityTerm.toLowerCase().trim()
+                  const searchedActivities = searchTermLower
+                    ? filteredActivities.filter((activity: ClassActivity) =>
+                        activity.title.toLowerCase().includes(searchTermLower) ||
+                        activity.description?.toLowerCase().includes(searchTermLower) ||
+                        activity.unit?.toLowerCase().includes(searchTermLower)
+                      )
+                    : filteredActivities
+
+                  // Paginação
+                  const totalPages = Math.ceil(searchedActivities.length / ACTIVITIES_PER_PAGE)
+                  const startIndex = (currentActivityPage - 1) * ACTIVITIES_PER_PAGE
+                  const endIndex = startIndex + ACTIVITIES_PER_PAGE
+                  const paginatedActivities = searchedActivities.slice(startIndex, endIndex)
+
+                  // Resetar página se necessário
+                  if (currentActivityPage > totalPages && totalPages > 0) {
+                    setCurrentActivityPage(1)
+                  }
+
+                  if (!activitiesQuery.isLoading && filteredActivities.length === 0) {
+                    return (
+                      <Card>
+                        <CardContent className="p-8 text-center">
+                          <FileCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                          <p className="text-muted-foreground">Nenhuma atividade disponível ainda</p>
+                        </CardContent>
+                      </Card>
+                    )
+                  }
+
+                  // Barra de pesquisa
+                  const searchBar = (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar atividades..."
+                          value={searchActivityTerm}
+                          onChange={(e) => {
+                            setSearchActivityTerm(e.target.value)
+                            setCurrentActivityPage(1) // Resetar para primeira página ao buscar
+                          }}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                  )
+
+                  // Criar mapa de notas por activityId (mesma lógica da aba de notas)
+                  const gradeMap = new Map<string, { score: number; gradedAt: string | null }>()
+                  const grades = gradesQuery.data || []
+                  
+                  // Notas de grades (tabela grades)
+                  grades.forEach((grade: GradeDTO) => {
+                    if (grade.activity?.id) {
+                      gradeMap.set(grade.activity.id, {
+                        score: grade.score,
+                        gradedAt: grade.gradedAt
+                      })
                     }
                   })
 
-                  // Filtrar provas virtuais da turma
-                  const virtualExams = (examsQuery.data || []).filter(
-                    (exam) => exam.activity?.class?.id === classId && exam.activity?.type === 'virtual_exam'
-                  )
+                  // Notas de provas online (virtual_exam)
+                  ;(attemptsQuery.data || []).forEach((attempt: ExamAttemptDTO) => {
+                    const activityId = attempt.exam?.activity?.id
+                    if (activityId && attempt.score !== null && attempt.score !== undefined) {
+                      gradeMap.set(activityId, {
+                        score: attempt.score,
+                        gradedAt: attempt.createdAt || null
+                      })
+                    }
+                  })
 
-                  // Combinar atividades normais e provas virtuais
-                  const allActivities: Array<ClassActivity & { type?: string; examId?: string; exam?: ExamDTO }> = [
-                    ...(activitiesQuery.data || []),
-                    ...virtualExams.map((exam) => ({
-                      id: exam.activity.id,
-                      title: exam.activity.title || 'Prova',
-                      description: exam.activity.description || exam.instructions || '',
-                      dueDate: exam.activity.dueDate || '',
-                      type: exam.activity.type,
-                      maxScore: exam.activity.maxScore || null,
-                      examId: exam.id,
-                      exam: exam,
-                    } as ClassActivity & { type: string; examId: string; exam: ExamDTO })),
-                  ]
+                  // Notas de activity_submissions (submissionStatusByActivity)
+                  Object.values(submissionStatusByActivity).forEach((status) => {
+                    if (status.grade !== null && status.grade !== undefined) {
+                      // Só adiciona se não houver nota no gradeMap (prioridade para grades)
+                      if (!gradeMap.has(status.activityId)) {
+                        gradeMap.set(status.activityId, {
+                          score: status.grade,
+                          gradedAt: status.submittedAt || null
+                        })
+                      }
+                    }
+                  })
 
-                  return allActivities.map((atividade: ClassActivity & { type?: string; examId?: string; exam?: ExamDTO }) => {
-                    const isVirtualExam = atividade.type === 'virtual_exam'
-                    const attempt = isVirtualExam ? attemptsByActivityId.get(atividade.id) : undefined
-                    const isFinalized = attempt && (attempt.status === 'submitted' || attempt.status === 'graded')
-                    
-                    // Para atividades normais, usar lógica existente
-                    if (!isVirtualExam) {
+                  return (
+                    <>
+                      {searchBar}
+                      
+                      {searchedActivities.length === 0 ? (
+                        <Card>
+                          <CardContent className="p-8 text-center">
+                            <FileCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-muted-foreground">
+                              {searchActivityTerm ? 'Nenhuma atividade encontrada com o termo pesquisado.' : 'Nenhuma atividade disponível ainda'}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <>
+                          {paginatedActivities.map((atividade: ClassActivity & { unit?: string | null }) => {
                       const status = submissionStatusByActivity[String(atividade.id)]
                       const normalized = (status?.status || '').toString().toLowerCase()
                       const isCompleted = normalized === 'submitted' || normalized === 'graded' || normalized === 'completed'
                       const badgeLabel = isCompleted ? "Concluída" : "Pendente"
                       const badgeVariant = isCompleted ? "default" : "destructive"
                       
+                      // Buscar nota do gradeMap (prioridade) ou do status
+                      const gradeFromMap = gradeMap.get(atividade.id)
+                      const activityGrade = gradeFromMap?.score ?? status?.grade ?? null
+                      
+                      // Formatar tipo de atividade
+                      const formatActivityType = (type?: string) => {
+                        const typeMap: Record<string, string> = {
+                          'homework': 'Trabalho',
+                          'exam': 'Prova',
+                          'virtual_exam': 'Prova Online',
+                          'project': 'Projeto'
+                        }
+                        return typeMap[type || 'homework'] || type || 'Atividade'
+                      }
+
+                      // Verificar se está antes ou depois do prazo
+                      const dueDate = atividade.dueDate ? new Date(atividade.dueDate) : null
+                      const now = new Date()
+                      const isBeforeDeadline = dueDate ? now < dueDate : true
+                      const startDate = atividade.startDate ? new Date(atividade.startDate) : null
+
+                      // Formatar data com hora
+                      const formatDateTime = (date: Date | null) => {
+                        if (!date) return 'Não informado'
+                        return date.toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      }
+
+                      // Obter submissionId se disponível
+                      const submissionId = status?.id || null
+                      
                       return (
                         <Card key={atividade.id}>
                           <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <CardTitle className="text-lg">{atividade.title}</CardTitle>
-                                <CardDescription>Prazo: {new Date(atividade.dueDate).toLocaleDateString('pt-BR')}</CardDescription>
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg mb-2">{atividade.title}</CardTitle>
+                                <div className="space-y-1">
+                                  {/* Unidade */}
+                                  {atividade.unit && (
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Badge variant="secondary" className="text-xs">
+                                        {atividade.unit}
+                                      </Badge>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Tipo da Atividade */}
+                                  {atividade.type && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {formatActivityType(atividade.type)}
+                                      </Badge>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Período de Início */}
+                                  {startDate && (
+                                    <CardDescription className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      Início: {formatDateTime(startDate)}
+                                    </CardDescription>
+                                  )}
+                                  
+                                  {/* Prazo com horário */}
+                                  {dueDate && (
+                                    <CardDescription className="flex items-center gap-1">
+                                      <CalendarClock className="h-3 w-3" />
+                                      Prazo: {formatDateTime(dueDate)}
+                                    </CardDescription>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                {typeof status?.grade === 'number' && <Badge variant="default">Nota: {status.grade}</Badge>}
+                              <div className="flex flex-col items-end gap-2">
+                                {/* Nota */}
+                                {typeof activityGrade === 'number' ? (
+                                  <Badge variant="default" className="text-sm">
+                                    Nota: {activityGrade.toFixed(2)}
+                                    {atividade.maxScore && ` / ${atividade.maxScore.toFixed(2)}`}
+                                  </Badge>
+                                ) : isCompleted ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Aguardando correção
+                                  </Badge>
+                                ) : null}
+                                
+                                {/* Peso */}
+                                {atividade.maxScore && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Peso: {atividade.maxScore.toFixed(2)}
+                                  </Badge>
+                                )}
+                                
+                                {/* Status */}
                                 <Badge variant={badgeVariant as any}>
                                   {isCompleted ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
                                   {badgeLabel}
@@ -860,7 +1119,10 @@ export default function DisciplinaDetalhePage() {
                           </CardHeader>
                           <CardContent>
                             <p className="text-sm mb-4">{atividade.description}</p>
-                            {!isCompleted && (
+                            
+                            {/* Lógica de botões baseada no prazo e status */}
+                            {!isCompleted ? (
+                              // Não entregue: mostrar formulário de upload
                               <div className="space-y-4 border-t pt-4">
                                 <div>
                                   <Label htmlFor={`arquivo-${atividade.id}`}>Enviar Arquivo</Label>
@@ -890,7 +1152,7 @@ export default function DisciplinaDetalhePage() {
                                 </div>
                                 <Button
                                   onClick={() => handleSubmitActivity({ id: String(atividade.id) })}
-                                  disabled={uploadActivityMutation.isPending}
+                                  disabled={uploadActivityMutation.isPending || !isBeforeDeadline}
                                   className="w-full"
                                 >
                                   {uploadActivityMutation.isPending ? (
@@ -905,13 +1167,158 @@ export default function DisciplinaDetalhePage() {
                                     </>
                                   )}
                                 </Button>
+                                {!isBeforeDeadline && (
+                                  <p className="text-xs text-muted-foreground text-center">
+                                    O prazo para entrega já passou.
+                                  </p>
+                                )}
+                              </div>
+                            ) : isBeforeDeadline ? (
+                              // Entregue e antes do prazo: botão Retificar
+                              <div className="space-y-4 border-t pt-4">
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedActivityForView({
+                                        activityId: String(atividade.id),
+                                        activityTitle: atividade.title,
+                                        submissionId,
+                                        grade: activityGrade,
+                                        maxScore: atividade.maxScore ?? null
+                                      })
+                                      setModalVerEntregaOpen(true)
+                                    }}
+                                    className="flex-1"
+                                  >
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    Ver Entrega
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      // Ativar modo de retificação
+                                      setRetifyingActivities(prev => new Set(prev).add(String(atividade.id)))
+                                      // Limpar estado anterior e permitir nova entrega
+                                      setUploadFiles(prev => ({ ...prev, [String(atividade.id)]: null }))
+                                      setUploadComments(prev => ({ ...prev, [String(atividade.id)]: '' }))
+                                    }}
+                                    className="flex-1"
+                                  >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Retificar
+                                  </Button>
+                                </div>
+                                {/* Formulário de retificação (mostrado quando em modo de retificação) */}
+                                {retifyingActivities.has(String(atividade.id)) && (
+                                  <div className="space-y-4 border-t pt-4">
+                                    <div>
+                                      <Label htmlFor={`arquivo-retificar-${atividade.id}`}>Novo Arquivo</Label>
+                                      <Input
+                                        id={`arquivo-retificar-${atividade.id}`}
+                                        type="file"
+                                        className="mt-1"
+                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                                        onChange={(e) => handleFileChange(String(atividade.id), e.target.files?.[0] || null)}
+                                      />
+                                      {uploadFiles[String(atividade.id)] && (
+                                        <p className="text-sm text-green-600 mt-1 flex items-center gap-2">
+                                          <CheckCircle className="h-4 w-4" />
+                                          {uploadFiles[String(atividade.id)]?.name} ({(uploadFiles[String(atividade.id)]?.size! / 1024).toFixed(1)} KB)
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`comentario-retificar-${atividade.id}`}>Comentário (opcional)</Label>
+                                      <Textarea
+                                        id={`comentario-retificar-${atividade.id}`}
+                                        placeholder="Adicione um comentário..."
+                                        className="mt-1"
+                                        value={uploadComments[String(atividade.id)] || ''}
+                                        onChange={(e) => setUploadComments(prev => ({ ...prev, [String(atividade.id)]: e.target.value }))}
+                                      />
+                                    </div>
+                                    <Button
+                                      onClick={() => handleSubmitActivity({ id: String(atividade.id) })}
+                                      disabled={uploadActivityMutation.isPending}
+                                      className="w-full"
+                                    >
+                                      {uploadActivityMutation.isPending ? (
+                                        <>
+                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                          Enviando...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Upload className="h-4 w-4 mr-2" />
+                                          Enviar Nova Versão
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              // Entregue e após o prazo: apenas botão Ver Entrega
+                              <div className="border-t pt-4">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedActivityForView({
+                                      activityId: String(atividade.id),
+                                      activityTitle: atividade.title,
+                                      submissionId,
+                                      grade: activityGrade,
+                                      maxScore: atividade.maxScore ?? null
+                                    })
+                                    setModalVerEntregaOpen(true)
+                                  }}
+                                  className="w-full"
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Ver Entrega
+                                </Button>
                               </div>
                             )}
                           </CardContent>
                         </Card>
                       )
-                    }
-                  })
+                          })}
+                          
+                          {/* Paginação */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                              <div className="text-sm text-muted-foreground">
+                                Mostrando {startIndex + 1} a {Math.min(endIndex, searchedActivities.length)} de {searchedActivities.length} atividade(s)
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentActivityPage(prev => Math.max(1, prev - 1))}
+                                  disabled={currentActivityPage === 1}
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                  Anterior
+                                </Button>
+                                <div className="text-sm text-muted-foreground">
+                                  Página {currentActivityPage} de {totalPages}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentActivityPage(prev => Math.min(totalPages, prev + 1))}
+                                  disabled={currentActivityPage === totalPages}
+                                >
+                                  Próxima
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )
                 })()}
               </div>
             </TabsContent>
@@ -926,7 +1333,15 @@ export default function DisciplinaDetalhePage() {
                     </CardHeader>
                   </Card>
                 )}
-                {(forumsQuery.data || []).map((forum: Forum) => {
+                {!forumsQuery.isLoading && (forumsQuery.data || []).length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhum fórum disponível ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  (forumsQuery.data || []).map((forum: Forum) => {
                   const titulo = forum.title
                   const autor = forum.authorName || (forum as any)?.createdBy?.name || '—'
                   const rawCreated: any = (forum as any)?.createdAt ?? (forum as any)?.created_at ?? null
@@ -974,7 +1389,8 @@ export default function DisciplinaDetalhePage() {
                       </div>
                     </CardContent>
                   </Card>
-                )})}
+                  )})
+                )}
               </div>
             </TabsContent>
 
@@ -1049,7 +1465,22 @@ export default function DisciplinaDetalhePage() {
             <TabsContent value="videochamadas">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center"><CalendarClock className="h-5 w-5 mr-2"/>Vídeo-chamadas</h3>
-                {videoChamadas.map((reuniao) => {
+                {liveSessionsQuery.isLoading && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Carregando vídeo-chamadas...</CardTitle>
+                    </CardHeader>
+                  </Card>
+                )}
+                {!liveSessionsQuery.isLoading && videoChamadas.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <Video className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">Nenhuma vídeo-chamada agendada ainda</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  videoChamadas.map((reuniao) => {
                   const dataInicio = new Date(reuniao.startAt)
                   const dataTermino = new Date(reuniao.endAt)
                   const podeEntrar = reuniao.status === 'disponivel'
@@ -1083,10 +1514,11 @@ export default function DisciplinaDetalhePage() {
                             <Video className="h-4 w-4 mr-2"/> Entrar
                           </Button>
                         </div>
-                      </CardContent>
-                    </Card>
+                    </CardContent>
+                  </Card>
                   )
-                })}
+                  })
+                )}
               </div>
             </TabsContent>
 
@@ -1181,15 +1613,36 @@ export default function DisciplinaDetalhePage() {
                       <Card key={exam.id}>
                         <CardHeader>
                           <div className="flex items-start justify-between">
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <CardTitle className="text-lg">{exam.activity?.title || 'Prova'}</CardTitle>
-                              <CardDescription>
-                                {startDate && (
-                                  <>Disponível a partir de: {startDate.toLocaleString('pt-BR')} • </>
-                                )}
-                                {dueDate ? `Prazo final: ${dueDate.toLocaleString('pt-BR')}` : 'Sem prazo definido'}
-                                {exam.timeLimitMinutes && ` • Tempo limite: ${exam.timeLimitMinutes} minutos`}
-                                {exam.questions && ` • ${exam.questions.length} questão(ões)`}
+                              <CardDescription className="mt-2">
+                                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4">
+                                  {startDate && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Disponível a partir de: {startDate.toLocaleString('pt-BR')}</span>
+                                    </div>
+                                  )}
+                                  {dueDate && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Prazo final: {dueDate.toLocaleString('pt-BR')}</span>
+                                    </div>
+                                  )}
+                                  {!dueDate && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Sem prazo definido</span>
+                                    </div>
+                                  )}
+                                  {exam.timeLimitMinutes && (
+                                    <div className="flex items-center gap-1">
+                                      <span>Tempo limite: {exam.timeLimitMinutes} minutos</span>
+                                    </div>
+                                  )}
+                                  {exam.questions && (
+                                    <div className="flex items-center gap-1">
+                                      <span>{exam.questions.length} questão(ões)</span>
+                                    </div>
+                                  )}
+                                </div>
                               </CardDescription>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1372,7 +1825,7 @@ export default function DisciplinaDetalhePage() {
                   })
 
                   // Combinar atividades com notas e incluir campo unit
-                  interface ActivityWithGrade extends ClassActivity {
+                  interface ActivityWithGrade extends Omit<ClassActivity, 'grade'> {
                     unit?: string | null
                     type?: string
                     maxScore?: number | null
@@ -1408,7 +1861,7 @@ export default function DisciplinaDetalhePage() {
                         title: exam.activity.title || 'Prova',
                         description: exam.activity.description || exam.instructions || '',
                         dueDate: exam.activity.dueDate || '',
-                        unit: exam.activity.unit || null,
+                        unit: (exam.activity as any).unit || null,
                         type: 'virtual_exam',
                         maxScore: exam.activity.maxScore || null,
                         grade: attempt && attempt.score !== null && attempt.score !== undefined
@@ -1492,33 +1945,33 @@ export default function DisciplinaDetalhePage() {
                           )}
                         </CardHeader>
                         <CardContent>
-                          <div className="overflow-x-auto">
-                            <table className="w-full border-collapse">
+                          <div className="overflow-x-auto -mx-4 md:mx-0">
+                            <table className="w-full border-collapse min-w-full text-xs md:text-sm">
                               <thead>
                                 <tr className="border-b">
-                                  <th className="text-left p-3 font-semibold">Atividade</th>
-                                  <th className="text-left p-3 font-semibold">Tipo</th>
-                                  <th className="text-center p-3 font-semibold">Nota</th>
-                                  <th className="text-center p-3 font-semibold">Peso</th>
+                                  <th className="text-left p-2 md:p-3 font-semibold">Atividade</th>
+                                  <th className="text-left p-2 md:p-3 font-semibold">Tipo</th>
+                                  <th className="text-center p-2 md:p-3 font-semibold">Nota</th>
+                                  <th className="text-center p-2 md:p-3 font-semibold">Peso</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {unitActivities.map((activity) => (
                                   <tr key={activity.id} className="border-b hover:bg-muted/50">
-                                    <td className="p-3">{activity.title}</td>
-                                    <td className="p-3">
-                                      <Badge variant="outline">
+                                    <td className="p-2 md:p-3 truncate max-w-[150px] md:max-w-none">{activity.title}</td>
+                                    <td className="p-2 md:p-3">
+                                      <Badge variant="outline" className="text-xs">
                                         {formatActivityType(activity.type || 'homework')}
                                       </Badge>
                                     </td>
-                                    <td className="p-3 text-center">
+                                    <td className="p-2 md:p-3 text-center">
                                       {activity.grade ? (
                                         <span className="font-medium">{activity.grade.score.toFixed(2)}</span>
                                       ) : (
                                         <span className="text-muted-foreground">—</span>
                                       )}
                                     </td>
-                                    <td className="p-3 text-center">
+                                    <td className="p-2 md:p-3 text-center">
                                       {activity.maxScore ? (
                                         <span>{activity.maxScore.toFixed(2)}</span>
                                       ) : (
@@ -1528,11 +1981,11 @@ export default function DisciplinaDetalhePage() {
                                   </tr>
                                 ))}
                                 <tr className="border-t-2 font-semibold bg-muted/30">
-                                  <td className="p-3" colSpan={2}>Total</td>
-                                  <td className="p-3 text-center">
+                                  <td className="p-2 md:p-3" colSpan={2}>Total</td>
+                                  <td className="p-2 md:p-3 text-center">
                                     {totalScore > 0 ? totalScore.toFixed(2) : '—'}
                                   </td>
-                                  <td className="p-3 text-center">
+                                  <td className="p-2 md:p-3 text-center">
                                     {totalWeight > 0 ? totalWeight.toFixed(2) : '—'}
                                   </td>
                                 </tr>
@@ -1719,6 +2172,22 @@ export default function DisciplinaDetalhePage() {
         }}
         attemptId={attemptIdParaResultado}
       />
+      {/* Modal de Visualização de Entrega */}
+      {selectedActivityForView && studentId && (
+        <ModalVerEntrega
+          isOpen={modalVerEntregaOpen}
+          onClose={() => {
+            setModalVerEntregaOpen(false)
+            setSelectedActivityForView(null)
+          }}
+          activityId={selectedActivityForView.activityId}
+          studentId={studentId}
+          activityTitle={selectedActivityForView.activityTitle}
+          submissionId={selectedActivityForView.submissionId}
+          grade={selectedActivityForView.grade}
+          maxScore={selectedActivityForView.maxScore}
+        />
+      )}
     </div>
   )
 }

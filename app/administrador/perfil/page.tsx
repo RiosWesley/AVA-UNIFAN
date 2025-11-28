@@ -48,33 +48,33 @@ export default function PerfilAdministradorPage() {
     <div className="flex h-screen bg-background">
       <Sidebar userRole="administrador" />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Meu Perfil</h1>
-          <p className="text-gray-600">Gerencie suas informações administrativas e configurações</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Meu Perfil</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Gerencie suas informações administrativas e configurações</p>
         </div>
       </div>
 
-      <Tabs defaultValue="perfil" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="perfil">Perfil</TabsTrigger>
-          <TabsTrigger value="administracao">Administração</TabsTrigger>
-          <TabsTrigger value="configuracoes">Configurações</TabsTrigger>
-          <TabsTrigger value="seguranca">Segurança</TabsTrigger>
+      <Tabs defaultValue="perfil" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 overflow-x-auto">
+          <TabsTrigger value="perfil" className="text-xs sm:text-sm">Perfil</TabsTrigger>
+          <TabsTrigger value="administracao" className="text-xs sm:text-sm">Administração</TabsTrigger>
+          <TabsTrigger value="configuracoes" className="text-xs sm:text-sm">Configurações</TabsTrigger>
+          <TabsTrigger value="seguranca" className="text-xs sm:text-sm">Segurança</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="perfil" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card className="md:col-span-1">
+        <TabsContent value="perfil" className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
+            <Card className="w-full md:w-auto md:flex-1">
               <CardHeader>
-                <CardTitle>Foto do Perfil</CardTitle>
-                <CardDescription>Atualize sua foto de perfil</CardDescription>
+                <CardTitle className="text-base sm:text-lg">Foto do Perfil</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Atualize sua foto de perfil</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center space-y-4">
-                <Avatar className="w-32 h-32">
+                <Avatar className="w-24 h-24 sm:w-32 sm:h-32">
                   <AvatarImage src="/administrator-profile-photo.jpg" />
-                  <AvatarFallback className="text-2xl">CS</AvatarFallback>
+                  <AvatarFallback className="text-xl sm:text-2xl">CS</AvatarFallback>
                 </Avatar>
                 <Button variant="outline" className="w-full bg-transparent">
                   <Camera className="w-4 h-4 mr-2" />
@@ -83,35 +83,35 @@ export default function PerfilAdministradorPage() {
               </CardContent>
             </Card>
 
-            <Card className="md:col-span-2">
+            <Card className="w-full md:flex-[2]">
               <CardHeader>
                 <CardTitle>Informações Pessoais</CardTitle>
                 <CardDescription>Atualize suas informações básicas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                  <div className="space-y-2 md:col-span-1">
                     <Label htmlFor="nome">Nome Completo</Label>
-                    <Input id="nome" defaultValue="Carlos Silva Santos" />
+                    <Input id="nome" defaultValue="Carlos Silva Santos" className="w-full" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-1">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue="carlos.silva@escola.com" />
+                    <Input id="email" type="email" defaultValue="carlos.silva@escola.com" className="w-full" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-1">
                     <Label htmlFor="telefone">Telefone</Label>
-                    <Input id="telefone" defaultValue="(11) 96666-6666" />
+                    <Input id="telefone" defaultValue="(11) 96666-6666" className="w-full" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-1">
                     <Label htmlFor="nascimento">Data de Nascimento</Label>
-                    <Input id="nascimento" type="date" defaultValue="1975-12-05" />
+                    <Input id="nascimento" type="date" defaultValue="1975-12-05" className="w-full" />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="endereco">Endereço</Label>
-                    <Input id="endereco" defaultValue="Av. Faria Lima, 2000 - São Paulo, SP" />
+                    <Input id="endereco" defaultValue="Av. Faria Lima, 2000 - São Paulo, SP" className="w-full" />
                   </div>
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">Salvar Alterações</Button>
+                <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Salvar Alterações</Button>
               </CardContent>
             </Card>
           </div>
@@ -205,30 +205,30 @@ export default function PerfilAdministradorPage() {
               <CardDescription>Configure como você deseja receber notificações</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">Notificações por Email</p>
-                  <p className="text-sm text-gray-600">Relatórios do sistema e alertas críticos</p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-1 flex-1">
+                  <p className="font-medium text-sm sm:text-base">Notificações por Email</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Relatórios do sistema e alertas críticos</p>
                 </div>
                 <Switch
                   checked={notificacoes.email}
                   onCheckedChange={(checked) => setNotificacoes({ ...notificacoes, email: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">Notificações Push</p>
-                  <p className="text-sm text-gray-600">Alertas em tempo real sobre o sistema</p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-1 flex-1">
+                  <p className="font-medium text-sm sm:text-base">Notificações Push</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Alertas em tempo real sobre o sistema</p>
                 </div>
                 <Switch
                   checked={notificacoes.push}
                   onCheckedChange={(checked) => setNotificacoes({ ...notificacoes, push: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="font-medium">Notificações por SMS</p>
-                  <p className="text-sm text-gray-600">Emergências e falhas críticas</p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-1 flex-1">
+                  <p className="font-medium text-sm sm:text-base">Notificações por SMS</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Emergências e falhas críticas</p>
                 </div>
                 <Switch
                   checked={notificacoes.sms}
@@ -263,7 +263,7 @@ export default function PerfilAdministradorPage() {
                 <Label>Timeout de Sessão (minutos)</Label>
                 <Input type="number" defaultValue="30" />
               </div>
-              <Button className="bg-green-600 hover:bg-green-700">Salvar Preferências</Button>
+              <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Salvar Preferências</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -291,7 +291,7 @@ export default function PerfilAdministradorPage() {
                   <Label htmlFor="confirmar-senha">Confirmar Nova Senha</Label>
                   <Input id="confirmar-senha" type="password" />
                 </div>
-                <Button className="bg-green-600 hover:bg-green-700">Alterar Senha</Button>
+                <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">Alterar Senha</Button>
               </div>
 
               <div className="border-t pt-6">

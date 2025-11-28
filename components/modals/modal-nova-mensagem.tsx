@@ -33,7 +33,7 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
   const [remoteOptions, setRemoteOptions] = useState<DestinatarioOption[]>([])
   const [lastQuery, setLastQuery] = useState("")
 
-  const API_URL = apiBaseUrl || process.env.NEXT_PUBLIC_API_URL || ""
+  const API_URL = apiBaseUrl || process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? 'http://localhost:3001' : '')
 
   useEffect(() => {
     if (!isOpen) {
@@ -55,7 +55,10 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
 
   const handleSearch = useCallback(async (query: string) => {
     setLastQuery(query)
-    if (!role || !API_URL) return
+    if (!role || !API_URL || !currentUserId) {
+      console.log('[handleSearch] Retornando cedo:', { role, API_URL: !!API_URL, currentUserId: !!currentUserId })
+      return
+    }
     const q = (query ?? '').trim()
     try {
       const params = new URLSearchParams({ role, q, page: '1', limit: '10' })
@@ -66,24 +69,38 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
       } else if (context === 'student') {
         params.set('studentId', currentUserId)
       } // admin não precisa parâmetro extra
-      const res = await fetch(`${API_URL}/communications/recipients?${params.toString()}`, {
+      
+      const url = `${API_URL}/communications/recipients?${params.toString()}`
+      console.log('[handleSearch] Fazendo requisição:', url)
+      console.log('[handleSearch] Parâmetros:', { role, q, context, currentUserId })
+      
+      const res = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
         },
       })
+      
+      console.log('[handleSearch] Resposta status:', res.status, res.statusText)
+      
       if (!res.ok) {
-        throw new Error('Falha ao buscar destinatários')
+        const errorText = await res.text()
+        console.error('[handleSearch] Erro na resposta:', errorText)
+        throw new Error(`Falha ao buscar destinatários: ${res.status}`)
       }
       const json = await res.json()
+      console.log('[handleSearch] Dados recebidos:', json)
+      
       const opts: DestinatarioOption[] = (json?.data ?? []).map((u: any) => ({
         id: u.id,
         label: `${u.name} (${u.email})`,
       }))
+      console.log('[handleSearch] Opções mapeadas:', opts)
       setRemoteOptions(opts)
-    } catch {
+    } catch (error) {
+      console.error('[handleSearch] Erro ao buscar destinatários:', error)
       setRemoteOptions([])
     }
-  }, [role, API_URL, currentUserId])
+  }, [role, API_URL, currentUserId, context])
 
   const handleSend = async () => {
     if (!selectedDestinatarioId || !API_URL) return
@@ -114,7 +131,15 @@ export function ModalNovaMensagem({ isOpen, onClose, onSend, currentUserId, apiB
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="role">Público</Label>
-              <Select value={role} onValueChange={(v) => { setRole(v as any); setSelectedDestinatarioId(null); setRemoteOptions([]); if (lastQuery) handleSearch(lastQuery) }}>
+              <Select value={role} onValueChange={(v) => { 
+                setRole(v as any); 
+                setSelectedDestinatarioId(null); 
+                setRemoteOptions([]); 
+                // Se houver uma query anterior, refazer a busca com o novo role
+                if (lastQuery) {
+                  setTimeout(() => handleSearch(lastQuery), 0)
+                }
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o público" />
                 </SelectTrigger>
