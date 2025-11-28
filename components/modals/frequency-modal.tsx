@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { LiquidGlassButton } from "@/components/liquid-glass"
 import { Switch } from "@/components/ui/switch"
 import { Turma, Aula } from "@/src/services/ProfessorTurmasService"
+import { Loader2 } from "lucide-react"
 
 interface FrequencyModalProps {
   isOpen: boolean
@@ -14,6 +15,7 @@ interface FrequencyModalProps {
   onFrequenciaChange: (alunoId: string, horarioId: string, presente: boolean) => void
   onMarkAll: (presente: boolean) => void
   onSave: () => void
+  saving?: boolean
 }
 
 // Função para ordenar aulas por horário
@@ -34,7 +36,8 @@ export function FrequencyModal({
   frequenciaData,
   onFrequenciaChange,
   onMarkAll,
-  onSave
+  onSave,
+  saving = false
 }: FrequencyModalProps) {
   // Ordenar aulas por horário
   const sortedAulas = sortAulasByTime(aulas)
@@ -169,11 +172,26 @@ export function FrequencyModal({
         </div>
 
         <DialogFooter className="gap-2">
-          <LiquidGlassButton variant="outline" onClick={onClose}>
+          <LiquidGlassButton 
+            variant="outline" 
+            onClick={onClose}
+            disabled={saving}
+          >
             Cancelar
           </LiquidGlassButton>
-          <LiquidGlassButton onClick={onSave}>
-            {sortedAulas.every(aula => aula.status === 'agendada') ? 'Lançar Frequência' : 'Salvar Alterações'}
+          <LiquidGlassButton 
+            onClick={onSave}
+            disabled={saving}
+            className="min-w-[140px]"
+          >
+            {saving ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Salvando...
+              </span>
+            ) : (
+              sortedAulas.every(aula => aula.status === 'agendada') ? 'Lançar Frequência' : 'Salvar Alterações'
+            )}
           </LiquidGlassButton>
         </DialogFooter>
       </DialogContent>
