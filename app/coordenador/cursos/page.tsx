@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { BookOpen, Plus, Search, Users, Eye, X, Loader2, GraduationCap } from "lucide-react"
+import { BookOpen, Plus, Search, Users, Eye, X, Loader2, GraduationCap, Clock } from "lucide-react"
 import { toast } from "@/components/ui/toast"
 import { getDepartments, type Department } from "@/src/services/departmentsService"
 import { createCourse, getCourses, getCourseClasses, type BackendCourse } from "@/src/services/coursesService"
@@ -429,6 +429,14 @@ export default function CoordenadorCursosPage() {
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Visualizar
+                        </LiquidGlassButton>
+                        <LiquidGlassButton
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => router.push(`/coordenador/cursos/${curso.id}/disponibilizacoes`)}
+                        >
+                          <Clock className="h-4 w-4 mr-2" />
+                          Disponibilizações
                         </LiquidGlassButton>
                       </div>
                     </CardContent>

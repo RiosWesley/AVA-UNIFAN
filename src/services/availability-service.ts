@@ -8,15 +8,26 @@ export interface DisponibilidadeTurnos {
   noite: boolean
 }
 
+export type DayOfWeek = 'domingo' | 'segunda-feira' | 'terca-feira' | 'quarta-feira' | 'quinta-feira' | 'sexta-feira' | 'sabado'
+export type ShiftType = 'morning' | 'afternoon' | 'evening'
+
+export interface Shift {
+  dayOfWeek: DayOfWeek
+  shift: ShiftType
+}
+
 export interface DisponibilizacaoHorarios {
   id: string
   teacherId: string
-  semesterId: string
+  academicPeriod: { id: string; period: string }
   status: 'draft' | 'submitted' | 'approved'
-  morning: boolean
-  afternoon: boolean
-  evening: boolean
+  shifts: Shift[]
   observations?: string | null
+  disciplines?: Array<{
+    id: string
+    name: string
+    code: string
+  }>
   createdAt: string
   submittedAt?: string | null
   approvedAt?: string | null
@@ -24,17 +35,15 @@ export interface DisponibilizacaoHorarios {
 }
 
 export interface CreateAvailabilityRequest {
-  semesterId: string
-  morning: boolean
-  afternoon: boolean
-  evening: boolean
+  teacherId: string
+  academicPeriodId: string
+  shifts: Shift[]
   observations?: string
+  disciplineIds?: string[]
 }
 
 export interface UpdateAvailabilityRequest {
-  morning: boolean
-  afternoon: boolean
-  evening: boolean
+  shifts: Shift[]
   observations?: string
 }
 
@@ -114,23 +123,41 @@ export async function approveAvailability(
   return data
 }
 
-export function mapBackendToFrontendTurnos(
-  availability: DisponibilizacaoHorarios
-): DisponibilidadeTurnos {
-  return {
-    manha: availability.morning,
-    tarde: availability.afternoon,
-    noite: availability.evening,
+export interface CourseAvailabilitySummary {
+  course: {
+    id: string
+    name: string
+    code: string
   }
+  academicPeriod: {
+    id: string
+    period: string
+  }
+  teachers: Array<{
+    id: string
+    name: string
+    email: string
+    shifts: Shift[]
+    disciplines: Array<{
+      id: string
+      name: string
+      code: string
+    }>
+    status: 'draft' | 'submitted' | 'approved'
+    observations: string | null
+    submittedAt: string | null
+    approvedAt: string | null
+  }>
 }
 
-export function mapFrontendToBackendTurnos(
-  turnos: DisponibilidadeTurnos
-): Pick<CreateAvailabilityRequest, 'morning' | 'afternoon' | 'evening'> {
-  return {
-    morning: turnos.manha,
-    afternoon: turnos.tarde,
-    evening: turnos.noite,
-  }
+export async function getCourseAvailabilitySummary(
+  courseId: string,
+  semesterId: string
+): Promise<CourseAvailabilitySummary> {
+  // Aceita tanto UUID quanto string do período (ex: "2026.2")
+  const { data } = await api.get<CourseAvailabilitySummary>(
+    `/teacher-semester-availabilities/course/${courseId}/semester/${semesterId}/summary`
+  )
+  return data
 }
 

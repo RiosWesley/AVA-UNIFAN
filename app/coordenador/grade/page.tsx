@@ -12,11 +12,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, MapPin, Users, BookOpen, Plus, Search, Trash2, AlertCircle, CheckCircle, X, GraduationCap, Loader2 } from "lucide-react"
+import { Calendar, Clock, MapPin, Users, BookOpen, Plus, Search, Trash2, AlertCircle, CheckCircle, X, GraduationCap, Loader2, Eye, Sparkles, Sun, Sunset, Moon } from "lucide-react"
 import { toast } from "@/components/ui/toast"
-import { getSemestresDisponiveisCoordenador } from "@/src/services/coordenador-dashboard"
+import { getSemestresDisponiveisCoordenador, getCoordinatorDepartments, getCoursesByDepartments } from "@/src/services/coordenador-dashboard"
 import { getCurrentUser } from "@/src/services/professor-dashboard"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getCourseAvailabilitySummary, type CourseAvailabilitySummary } from "@/src/services/availability-service"
+import { getCourses, type BackendCourse } from "@/src/services/coursesService"
+import { cn } from "@/lib/utils"
 
 type HorarioAula = {
   id: string
@@ -58,6 +61,14 @@ export default function GradeHorariaPage() {
   const [loadingSemestres, setLoadingSemestres] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [activeMainTab, setActiveMainTab] = useState<"ver-grade" | "gerar-grade">("ver-grade")
+  const [coordinatorId, setCoordinatorId] = useState<string | null>(null)
+  const [courses, setCourses] = useState<BackendCourse[]>([])
+  const [selectedCourseForGeneration, setSelectedCourseForGeneration] = useState<string>("")
+  const [selectedSemesterForGeneration, setSelectedSemesterForGeneration] = useState<string>("")
+  const [availabilitySummary, setAvailabilitySummary] = useState<CourseAvailabilitySummary | null>(null)
+  const [loadingAvailabilitySummary, setLoadingAvailabilitySummary] = useState(false)
+  const [generatingSchedule, setGeneratingSchedule] = useState(false)
   const [modalData, setModalData] = useState<Partial<HorarioAula>>({
     disciplina: "",
     professor: "",
@@ -152,11 +163,11 @@ export default function GradeHorariaPage() {
     return () => observer.disconnect()
   }, [])
 
-  // Buscar semestres disponíveis
+  // Buscar usuário e dados iniciais
   useEffect(() => {
     let mounted = true
 
-    async function loadSemestres() {
+    async function loadInitialData() {
       try {
         setLoading(true)
         setLoadingSemestres(true)
@@ -171,7 +182,14 @@ export default function GradeHorariaPage() {
           return
         }
 
-        const semestresDisponiveis = await getSemestresDisponiveisCoordenador(user.id)
+        setCoordinatorId(user.id)
+
+        // Buscar semestres e cursos em paralelo
+        const [semestresDisponiveis, departments] = await Promise.all([
+          getSemestresDisponiveisCoordenador(user.id),
+          getCoordinatorDepartments(user.id)
+        ])
+
         if (!mounted) return
 
         setSemestres(semestresDisponiveis)
@@ -180,11 +198,20 @@ export default function GradeHorariaPage() {
         const semestreAtivo = semestresDisponiveis.find(s => s.ativo)
         if (semestreAtivo) {
           setSemestreSelecionado(semestreAtivo.id)
+          setSelectedSemesterForGeneration(semestreAtivo.id)
         } else if (semestresDisponiveis.length > 0) {
           setSemestreSelecionado(semestresDisponiveis[0].id)
+          setSelectedSemesterForGeneration(semestresDisponiveis[0].id)
+        }
+
+        // Buscar cursos do departamento
+        if (departments.length > 0) {
+          const departmentIds = departments.map(d => d.id)
+          const coordinatorCourses = await getCoursesByDepartments(departmentIds)
+          setCourses(coordinatorCourses)
         }
       } catch (err) {
-        console.error('Erro ao buscar semestres:', err)
+        console.error('Erro ao buscar dados iniciais:', err)
         if (mounted) {
           router.push("/")
         }
@@ -196,12 +223,44 @@ export default function GradeHorariaPage() {
       }
     }
 
-    loadSemestres()
+    loadInitialData()
 
     return () => {
       mounted = false
     }
   }, [router])
+
+  // Buscar resumo de disponibilizações quando curso e semestre são selecionados
+  useEffect(() => {
+    const loadAvailabilitySummary = async () => {
+      if (!selectedCourseForGeneration || !selectedSemesterForGeneration) {
+        setAvailabilitySummary(null)
+        return
+      }
+
+      try {
+        setLoadingAvailabilitySummary(true)
+        const summary = await getCourseAvailabilitySummary(selectedCourseForGeneration, selectedSemesterForGeneration)
+        setAvailabilitySummary(summary)
+      } catch (error: any) {
+        console.error("Erro ao carregar resumo de disponibilizações:", error)
+        if (error.response?.status !== 404) {
+          toast({
+            variant: "error",
+            title: "Erro",
+            description: "Não foi possível carregar as disponibilizações"
+          })
+        }
+        setAvailabilitySummary(null)
+      } finally {
+        setLoadingAvailabilitySummary(false)
+      }
+    }
+
+    if (activeMainTab === "gerar-grade") {
+      loadAvailabilitySummary()
+    }
+  }, [selectedCourseForGeneration, selectedSemesterForGeneration, activeMainTab])
 
   const horariosFiltrados = horarios.filter(horario => {
     const matchesSearch = 
@@ -491,19 +550,32 @@ export default function GradeHorariaPage() {
             </div>
           </div>
 
-          <Tabs defaultValue="grade" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="grade">Grade Semanal</TabsTrigger>
-              <TabsTrigger value="lista">Lista de Horários</TabsTrigger>
-              <TabsTrigger value="conflitos">
-                Conflitos
-                {conflitos.length > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {conflitos.length}
-                  </Badge>
-                )}
+          <Tabs value={activeMainTab} onValueChange={(v) => setActiveMainTab(v as "ver-grade" | "gerar-grade")} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="ver-grade" className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Ver Grade Gerada
+              </TabsTrigger>
+              <TabsTrigger value="gerar-grade" className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Gerar Grade Nova
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="ver-grade" className="space-y-6">
+              <Tabs defaultValue="grade" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="grade">Grade Semanal</TabsTrigger>
+                  <TabsTrigger value="lista">Lista de Horários</TabsTrigger>
+                  <TabsTrigger value="conflitos">
+                    Conflitos
+                    {conflitos.length > 0 && (
+                      <Badge variant="destructive" className="ml-2">
+                        {conflitos.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
 
             <TabsContent value="grade" className="space-y-6">
               <div className="flex gap-4 mb-6">
@@ -777,6 +849,275 @@ export default function GradeHorariaPage() {
                   ))}
                 </div>
               )}
+            </TabsContent>
+              </Tabs>
+            </TabsContent>
+
+            <TabsContent value="gerar-grade" className="space-y-6">
+              <LiquidGlassCard
+                intensity={LIQUID_GLASS_DEFAULT_INTENSITY}
+                className={cn(
+                  isLiquidGlass
+                    ? 'bg-black/30 dark:bg-gray-800/20'
+                    : 'bg-gray-50/60 dark:bg-gray-800/40'
+                )}
+              >
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    Gerar Grade Baseada em Disponibilizações
+                  </CardTitle>
+                  <CardDescription>
+                    Selecione o curso e semestre para gerar uma grade automática baseada nas disponibilizações dos professores
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="curso-geracao">Curso</Label>
+                      <Select value={selectedCourseForGeneration} onValueChange={setSelectedCourseForGeneration}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o curso" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {courses.length === 0 ? (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              Nenhum curso disponível
+                            </div>
+                          ) : (
+                            courses.map((course) => (
+                              <SelectItem key={course.id} value={course.id}>
+                                {course.name} ({course.code})
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="semestre-geracao">Semestre</Label>
+                      {loadingSemestres || semestres.length === 0 ? (
+                        <Skeleton className="h-10 w-full" />
+                      ) : (
+                        <Select value={selectedSemesterForGeneration} onValueChange={setSelectedSemesterForGeneration}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o semestre" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {semestres.map((semestre) => (
+                              <SelectItem key={semestre.id} value={semestre.id}>
+                                <div className="flex items-center gap-2">
+                                  <span>{semestre.nome}</span>
+                                  {semestre.ativo && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Atual
+                                    </Badge>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedCourseForGeneration && selectedSemesterForGeneration && (
+                    <>
+                      {loadingAvailabilitySummary ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mr-2" />
+                          <span className="text-muted-foreground">Carregando disponibilizações...</span>
+                        </div>
+                      ) : !availabilitySummary ? (
+                        <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                          <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>Nenhuma disponibilização encontrada para este curso e semestre</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="p-4 border rounded-lg bg-muted/50">
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <h3 className="font-semibold text-lg">{availabilitySummary.course.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  Semestre: {availabilitySummary.academicPeriod.period}
+                                </p>
+                              </div>
+                              <Badge variant="secondary">
+                                {availabilitySummary.teachers.length} professor{availabilitySummary.teachers.length !== 1 ? 'es' : ''}
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                              {availabilitySummary.teachers.map((teacher) => (
+                                <div
+                                  key={teacher.id}
+                                  className="p-3 border rounded-lg bg-background"
+                                >
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                      <h4 className="font-medium">{teacher.name}</h4>
+                                      <p className="text-xs text-muted-foreground">{teacher.email}</p>
+                                    </div>
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "text-xs",
+                                        teacher.status === 'approved' && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+                                        teacher.status === 'submitted' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+                                        teacher.status === 'draft' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300'
+                                      )}
+                                    >
+                                      {teacher.status === 'approved' ? 'Aprovada' : teacher.status === 'submitted' ? 'Enviada' : 'Rascunho'}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="space-y-2 mt-3">
+                                    <div>
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Turnos Disponíveis:</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {teacher.shifts && teacher.shifts.length > 0 ? (
+                                          teacher.shifts.map((shift, idx) => {
+                                            const turnoMap: Record<string, { nome: string; icone: typeof Sun; cor: string }> = {
+                                              'morning': { nome: 'Manhã', icone: Sun, cor: 'yellow' },
+                                              'afternoon': { nome: 'Tarde', icone: Sunset, cor: 'orange' },
+                                              'evening': { nome: 'Noite', icone: Moon, cor: 'blue' }
+                                            }
+                                            const turno = turnoMap[shift.shift]
+                                            if (!turno) return null
+                                            const Icon = turno.icone
+                                            const diaMap: Record<string, string> = {
+                                              'segunda-feira': 'Seg',
+                                              'terca-feira': 'Ter',
+                                              'quarta-feira': 'Qua',
+                                              'quinta-feira': 'Qui',
+                                              'sexta-feira': 'Sex',
+                                              'sabado': 'Sáb',
+                                              'domingo': 'Dom'
+                                            }
+                                            const diaAbrev = diaMap[shift.dayOfWeek] || shift.dayOfWeek
+                                            return (
+                                              <Badge
+                                                key={idx}
+                                                variant="secondary"
+                                                className={cn(
+                                                  turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+                                                  turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                                                  turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                                                )}
+                                              >
+                                                <Icon className="h-3 w-3 mr-1" />
+                                                {turno.nome} ({diaAbrev})
+                                              </Badge>
+                                            )
+                                          })
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground">Nenhum turno</span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {teacher.disciplines && teacher.disciplines.length > 0 && (
+                                      <div>
+                                        <p className="text-xs font-medium text-muted-foreground mb-1">Disciplinas de Interesse:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {teacher.disciplines.map((discipline) => (
+                                            <Badge
+                                              key={discipline.id}
+                                              variant="outline"
+                                              className="bg-primary/5 text-primary border-primary/20"
+                                            >
+                                              <BookOpen className="h-3 w-3 mr-1" />
+                                              {discipline.name}
+                                              {discipline.code && ` (${discipline.code})`}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end gap-3 pt-4 border-t">
+                            <LiquidGlassButton
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedCourseForGeneration("")
+                                setAvailabilitySummary(null)
+                              }}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Limpar Seleção
+                            </LiquidGlassButton>
+                            <LiquidGlassButton
+                              onClick={async () => {
+                                if (!selectedCourseForGeneration || !selectedSemesterForGeneration) {
+                                  toast({
+                                    variant: "error",
+                                    title: "Erro",
+                                    description: "Selecione curso e semestre antes de gerar a grade"
+                                  })
+                                  return
+                                }
+
+                                try {
+                                  setGeneratingSchedule(true)
+                                  // TODO: Implementar chamada para API de geração de grade
+                                  // await generateSchedule(selectedCourseForGeneration, selectedSemesterForGeneration)
+                                  
+                                  toast({
+                                    variant: "success",
+                                    title: "Grade gerada",
+                                    description: "A grade foi gerada com sucesso baseada nas disponibilizações dos professores"
+                                  })
+                                  
+                                  // Após gerar, mudar para aba de visualização
+                                  setActiveMainTab("ver-grade")
+                                } catch (error: any) {
+                                  console.error("Erro ao gerar grade:", error)
+                                  toast({
+                                    variant: "error",
+                                    title: "Erro",
+                                    description: error.message || "Não foi possível gerar a grade"
+                                  })
+                                } finally {
+                                  setGeneratingSchedule(false)
+                                }
+                              }}
+                              disabled={generatingSchedule || !availabilitySummary || availabilitySummary.teachers.length === 0}
+                            >
+                              {generatingSchedule ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Gerando...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  Gerar Grade Automática
+                                </>
+                              )}
+                            </LiquidGlassButton>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {!selectedCourseForGeneration && !selectedSemesterForGeneration && (
+                    <div className="text-center py-12 text-muted-foreground border rounded-lg">
+                      <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="font-medium mb-2">Selecione um curso e semestre</p>
+                      <p className="text-sm">Escolha o curso e o semestre para visualizar as disponibilizações e gerar a grade</p>
+                    </div>
+                  )}
+                </CardContent>
+              </LiquidGlassCard>
             </TabsContent>
           </Tabs>
         </div>

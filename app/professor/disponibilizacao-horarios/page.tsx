@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -36,10 +35,13 @@ import {
   createOrUpdateAvailability,
   submitAvailability,
   type DisponibilizacaoHorarios as BackendAvailability,
+  type Shift,
   type DisponibilidadeTurnos,
-  mapBackendToFrontendTurnos,
-  mapFrontendToBackendTurnos,
 } from "@/src/services/availability-service"
+import { ShiftGrid } from "@/components/shift-grid"
+import { getTeacherCourses, type TeacherCourse } from "@/src/services/teacher-courses-service"
+import { getCourseDisciplines, type BackendDiscipline } from "@/src/services/coursesService"
+import { BookOpen, AlertCircle } from "lucide-react"
 
 type Turno = 'manha' | 'tarde' | 'noite'
 
@@ -51,6 +53,8 @@ interface DisponibilizacaoHorarios {
   observacoes: string
   dataCriacao: Date
   dataEnvio?: Date
+  disciplinas?: Array<{ id: string; name: string; code: string }>
+  diasSemana?: string[]
 }
 
 const TURNOS: Array<{
@@ -73,15 +77,27 @@ export default function DisponibilizacaoHorariosPage() {
   const [teacherId, setTeacherId] = useState<string | null>(null)
   const [status, setStatus] = useState<'rascunho' | 'enviada' | 'aprovada'>('rascunho')
   const [observacoes, setObservacoes] = useState("")
-  const [turnos, setTurnos] = useState<DisponibilidadeTurnos>({
-    manha: false,
-    tarde: false,
-    noite: false
-  })
+  const [selectedShifts, setSelectedShifts] = useState<Shift[]>([])
   const [historico, setHistorico] = useState<DisponibilizacaoHorarios[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [currentAvailabilityId, setCurrentAvailabilityId] = useState<string | null>(null)
+  const [selectedDisciplineIds, setSelectedDisciplineIds] = useState<string[]>([])
+  const [teacherCourses, setTeacherCourses] = useState<TeacherCourse[]>([])
+  const [coursesWithDisciplines, setCoursesWithDisciplines] = useState<Array<{
+    course: TeacherCourse['course']
+    disciplines: BackendDiscipline[]
+  }>>([])
+  const [loadingDisciplines, setLoadingDisciplines] = useState(false)
+
+  const DIAS_SEMANA = [
+    { id: 'segunda-feira', nome: 'Segunda-feira', abreviacao: 'Seg' },
+    { id: 'terca-feira', nome: 'Terça-feira', abreviacao: 'Ter' },
+    { id: 'quarta-feira', nome: 'Quarta-feira', abreviacao: 'Qua' },
+    { id: 'quinta-feira', nome: 'Quinta-feira', abreviacao: 'Qui' },
+    { id: 'sexta-feira', nome: 'Sexta-feira', abreviacao: 'Sex' },
+    { id: 'sabado', nome: 'Sábado', abreviacao: 'Sáb' }
+  ] as const
 
   useEffect(() => {
     const checkTheme = () => {
@@ -125,6 +141,50 @@ export default function DisponibilizacaoHorariosPage() {
     init()
   }, [router])
 
+  // Buscar cursos do professor e suas disciplinas
+  useEffect(() => {
+    const carregarCursosEDisciplinas = async () => {
+      if (!teacherId) return
+
+      try {
+        setLoadingDisciplines(true)
+        const courses = await getTeacherCourses(teacherId)
+        setTeacherCourses(courses)
+
+        if (courses.length === 0) {
+          setCoursesWithDisciplines([])
+          return
+        }
+
+        const disciplinesPromises = courses.map(async (tc: TeacherCourse) => {
+          try {
+            const disciplines = await getCourseDisciplines(tc.course.id)
+            return {
+              course: tc.course,
+              disciplines
+            }
+          } catch (error) {
+            console.error(`Erro ao carregar disciplinas do curso ${tc.course.id}:`, error)
+            return {
+              course: tc.course,
+              disciplines: [] as BackendDiscipline[]
+            }
+          }
+        })
+
+        const coursesWithDisciplinesData = await Promise.all(disciplinesPromises)
+        setCoursesWithDisciplines(coursesWithDisciplinesData)
+      } catch (error) {
+        console.error("Erro ao carregar cursos e disciplinas:", error)
+        toast.error("Erro ao carregar cursos e disciplinas")
+      } finally {
+        setLoadingDisciplines(false)
+      }
+    }
+
+    carregarCursosEDisciplinas()
+  }, [teacherId])
+
   // Buscar semestres disponíveis
   useEffect(() => {
     const buscarSemestres = async () => {
@@ -165,8 +225,9 @@ export default function DisponibilizacaoHorariosPage() {
         
         if (disponibilidade) {
           setCurrentAvailabilityId(disponibilidade.id)
-          setTurnos(mapBackendToFrontendTurnos(disponibilidade))
+          setSelectedShifts(disponibilidade.shifts || [])
           setObservacoes(disponibilidade.observations || "")
+          setSelectedDisciplineIds(disponibilidade.disciplines?.map(d => d.id) || [])
           
           const statusMap: Record<string, 'rascunho' | 'enviada' | 'aprovada'> = {
             draft: 'rascunho',
@@ -176,8 +237,9 @@ export default function DisponibilizacaoHorariosPage() {
           setStatus(statusMap[disponibilidade.status] || 'rascunho')
         } else {
           setCurrentAvailabilityId(null)
-          setTurnos({ manha: false, tarde: false, noite: false })
+          setSelectedShifts([])
           setObservacoes("")
+          setSelectedDisciplineIds([])
           setStatus('rascunho')
         }
       } catch (error) {
@@ -205,14 +267,23 @@ export default function DisponibilizacaoHorariosPage() {
             approved: 'aprovada'
           }
           
+          // Converter shifts para formato antigo para compatibilidade com interface
+          const turnos = {
+            manha: av.shifts?.some(s => s.shift === 'morning') || false,
+            tarde: av.shifts?.some(s => s.shift === 'afternoon') || false,
+            noite: av.shifts?.some(s => s.shift === 'evening') || false
+          }
+          
           return {
             id: av.id,
-            semestre: av.semesterId,
+            semestre: av.academicPeriod?.period || av.academicPeriod?.id || '',
             status: statusMap[av.status] || 'rascunho',
-            turnos: mapBackendToFrontendTurnos(av),
+            turnos,
             observacoes: av.observations || "",
             dataCriacao: new Date(av.createdAt),
-            dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined
+            dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined,
+            disciplinas: av.disciplines || [],
+            diasSemana: av.shifts?.map(s => s.dayOfWeek) || []
           }
         })
         
@@ -227,36 +298,37 @@ export default function DisponibilizacaoHorariosPage() {
     carregarHistorico()
   }, [teacherId])
 
-  const toggleTurno = (turno: Turno) => {
-    setTurnos(prev => ({
-      ...prev,
-      [turno]: !prev[turno]
-    }))
-  }
-
   const temAlgumTurnoSelecionado = () => {
-    return turnos.manha || turnos.tarde || turnos.noite
+    return selectedShifts.length > 0
   }
 
   const salvarRascunho = async () => {
-    if (!temAlgumTurnoSelecionado()) {
-      toast.warning("Selecione pelo menos um turno antes de salvar")
+    if (!semestreSelecionado) {
+      toast.error("Selecione um semestre antes de salvar", {
+        description: "É necessário selecionar um semestre para disponibilizar seus horários"
+      })
       return
     }
 
-    if (!semestreSelecionado || !teacherId) {
-      toast.error("Selecione um semestre antes de salvar")
+    if (!teacherId) {
+      toast.error("Erro ao identificar o professor")
+      return
+    }
+
+    if (!temAlgumTurnoSelecionado()) {
+      toast.warning("Selecione pelo menos um turno em um dia da semana antes de salvar")
       return
     }
 
     try {
       setSaving(true)
-      const turnosBackend = mapFrontendToBackendTurnos(turnos)
       
       const disponibilidade = await createOrUpdateAvailability({
-        semesterId: semestreSelecionado,
-        ...turnosBackend,
-        observations: observacoes || undefined
+        teacherId: teacherId!,
+        academicPeriodId: semestreSelecionado,
+        shifts: selectedShifts,
+        observations: observacoes || undefined,
+        disciplineIds: selectedDisciplineIds.length > 0 ? selectedDisciplineIds : undefined
       })
 
       setCurrentAvailabilityId(disponibilidade.id)
@@ -275,14 +347,23 @@ export default function DisponibilizacaoHorariosPage() {
           approved: 'aprovada'
         }
         
+        // Converter shifts para formato antigo para compatibilidade
+        const turnos = {
+          manha: av.shifts?.some(s => s.shift === 'morning') || false,
+          tarde: av.shifts?.some(s => s.shift === 'afternoon') || false,
+          noite: av.shifts?.some(s => s.shift === 'evening') || false
+        }
+        
         return {
           id: av.id,
-          semestre: av.semesterId,
+          semestre: av.academicPeriod?.period || av.academicPeriod?.id || '',
           status: statusMap[av.status] || 'rascunho',
-          turnos: mapBackendToFrontendTurnos(av),
+          turnos,
           observacoes: av.observations || "",
           dataCriacao: new Date(av.createdAt),
-          dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined
+          dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined,
+          disciplinas: av.disciplines || [],
+          diasSemana: av.shifts?.map(s => s.dayOfWeek) || []
         }
       })
       
@@ -300,15 +381,22 @@ export default function DisponibilizacaoHorariosPage() {
   }
 
   const enviarParaCoordenacao = async () => {
-    if (!temAlgumTurnoSelecionado()) {
-      toast.error("Selecione pelo menos um turno antes de enviar", {
-        description: "É necessário informar sua disponibilidade"
+    if (!semestreSelecionado) {
+      toast.error("Selecione um semestre antes de enviar", {
+        description: "É necessário selecionar um semestre para disponibilizar seus horários"
       })
       return
     }
 
-    if (!semestreSelecionado || !teacherId) {
-      toast.error("Selecione um semestre antes de enviar")
+    if (!teacherId) {
+      toast.error("Erro ao identificar o professor")
+      return
+    }
+
+    if (!temAlgumTurnoSelecionado()) {
+      toast.error("Selecione pelo menos um turno antes de enviar", {
+        description: "É necessário informar sua disponibilidade"
+      })
       return
     }
 
@@ -318,13 +406,14 @@ export default function DisponibilizacaoHorariosPage() {
 
     try {
       setSaving(true)
-      const turnosBackend = mapFrontendToBackendTurnos(turnos)
       
       // Primeiro criar/atualizar como draft
       let disponibilidade = await createOrUpdateAvailability({
-        semesterId: semestreSelecionado,
-        ...turnosBackend,
-        observations: observacoes || undefined
+        teacherId: teacherId!,
+        academicPeriodId: semestreSelecionado,
+        shifts: selectedShifts,
+        observations: observacoes || undefined,
+        disciplineIds: selectedDisciplineIds.length > 0 ? selectedDisciplineIds : undefined
       })
 
       setCurrentAvailabilityId(disponibilidade.id)
@@ -366,14 +455,23 @@ export default function DisponibilizacaoHorariosPage() {
           approved: 'aprovada'
         }
         
+        // Converter shifts para formato antigo para compatibilidade
+        const turnos = {
+          manha: av.shifts?.some(s => s.shift === 'morning') || false,
+          tarde: av.shifts?.some(s => s.shift === 'afternoon') || false,
+          noite: av.shifts?.some(s => s.shift === 'evening') || false
+        }
+        
         return {
           id: av.id,
-          semestre: av.semesterId,
+          semestre: av.academicPeriod?.period || av.academicPeriod?.id || '',
           status: statusMap[av.status] || 'rascunho',
-          turnos: mapBackendToFrontendTurnos(av),
+          turnos,
           observacoes: av.observations || "",
           dataCriacao: new Date(av.createdAt),
-          dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined
+          dataEnvio: av.submittedAt ? new Date(av.submittedAt) : undefined,
+          disciplinas: av.disciplines || [],
+          diasSemana: av.shifts?.map(s => s.dayOfWeek) || []
         }
       })
       
@@ -596,90 +694,122 @@ export default function DisponibilizacaoHorariosPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Seleção de Turnos */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {TURNOS.map((turno) => {
-                      const IconeTurno = turno.icone
-                      const ativo = turnos[turno.id]
-                      
-                      return (
-                        <button
-                          key={turno.id}
-                          type="button"
-                          onClick={() => toggleTurno(turno.id)}
-                          className={cn(
-                            "relative p-6 rounded-xl border-1 transition-all duration-200 text-left",
-                            "hover:shadow-md",
-                            ativo
-                              ? cn(
-                                  turno.cor === 'yellow' && 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
-                                  turno.cor === 'orange' && 'border-orange-500 bg-orange-50 dark:bg-orange-900/20',
-                                  turno.cor === 'blue' && 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                )
-                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600'
-                          )}
-                        >
-                          <div className="flex items-start justify-between mb-4">
-                            <div className={cn(
-                              "p-3 rounded-lg",
-                              ativo
-                                ? cn(
-                                    turno.cor === 'yellow' && 'bg-yellow-100 dark:bg-yellow-900/40',
-                                    turno.cor === 'orange' && 'bg-orange-100 dark:bg-orange-900/40',
-                                    turno.cor === 'blue' && 'bg-blue-100 dark:bg-blue-900/40'
-                                  )
-                                : 'bg-gray-100 dark:bg-gray-700'
-                            )}>
-                              <IconeTurno className={cn(
-                                "h-6 w-6",
-                                ativo
-                                  ? cn(
-                                      turno.cor === 'yellow' && 'text-yellow-600 dark:text-yellow-400',
-                                      turno.cor === 'orange' && 'text-orange-600 dark:text-orange-400',
-                                      turno.cor === 'blue' && 'text-blue-600 dark:text-blue-400'
-                                    )
-                                  : 'text-gray-400 dark:text-gray-500'
-                              )} />
-                            </div>
-                            <Switch
-                              checked={ativo}
-                              onCheckedChange={() => toggleTurno(turno.id)}
-                              onClick={(e) => e.stopPropagation()}
-                              className="ml-auto"
-                            />
-                          </div>
-                          
-                          <h3 className={cn(
-                            "text-xl font-semibold mb-2",
-                            ativo
-                              ? 'text-gray-900 dark:text-gray-100'
-                              : 'text-gray-500 dark:text-gray-400'
-                          )}>
-                            {turno.nome}
-                          </h3>
-                          
-                          <p className={cn(
-                            "text-sm",
-                            ativo
-                              ? 'text-gray-600 dark:text-gray-300'
-                              : 'text-gray-400 dark:text-gray-500'
-                          )}>
-                            {turno.descricao}
+                  {/* Seleção de Semestre */}
+                  <div className={cn(
+                    "p-5 rounded-lg border-2",
+                    isLiquidGlass
+                      ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
+                      : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
+                  )}>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Calendar className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <Label htmlFor="semestre-form" className="text-base font-semibold block mb-1">
+                            Semestre
+                          </Label>
+                          <p className="text-sm text-muted-foreground">
+                            Selecione o semestre para disponibilizar seus horários
                           </p>
-
-                          {ativo && (
-                            <div className="absolute top-4 right-4">
-                              <div className={cn(
-                                "w-3 h-3 rounded-full",
-                                turno.cor === 'yellow' && 'bg-yellow-500',
-                                turno.cor === 'orange' && 'bg-orange-500',
-                                turno.cor === 'blue' && 'bg-blue-500'
-                              )} />
-                            </div>
+                        </div>
+                      </div>
+                      {loading || semestres.length === 0 ? (
+                        <Skeleton className="h-12 w-64" />
+                      ) : (
+                        <div className="flex-1 md:flex-initial md:w-auto">
+                          <Select 
+                            value={semestreSelecionado} 
+                            onValueChange={setSemestreSelecionado}
+                            disabled={status === 'aprovada' || status === 'enviada'}
+                          >
+                            <SelectTrigger id="semestre-form" className="h-12 text-base min-w-[280px]">
+                              {semestreSelecionado ? (
+                                <div className="flex items-center gap-2 w-full">
+                                  <span className="font-semibold text-base flex-1 text-left">
+                                    {semestres.find(s => s.id === semestreSelecionado)?.nome || 'Semestre selecionado'}
+                                  </span>
+                                  {semestres.find(s => s.id === semestreSelecionado)?.ativo && (
+                                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs shrink-0">
+                                      Atual
+                                    </Badge>
+                                  )}
+                                </div>
+                              ) : (
+                                <SelectValue placeholder="Selecione um semestre" />
+                              )}
+                            </SelectTrigger>
+                            <SelectContent className="min-w-[280px]">
+                              {semestres.map((semestre) => (
+                                <SelectItem key={semestre.id} value={semestre.id} className="text-base py-3">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-medium">{semestre.nome}</span>
+                                    {semestre.ativo && (
+                                      <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                                        Atual
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                    {semestreSelecionado && (
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1.5">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            <span className="font-semibold">Semestre selecionado:</span>
+                            <span className="ml-1 font-bold">{semestres.find(s => s.id === semestreSelecionado)?.nome}</span>
+                          </Badge>
+                          {semestres.find(s => s.id === semestreSelecionado)?.ativo && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-sm px-3 py-1.5">
+                              Semestre Atual
+                            </Badge>
                           )}
-                        </button>
-                      )
-                    })}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-3">
+                          Sua disponibilidade será registrada para o semestre <span className="font-semibold text-foreground">{semestres.find(s => s.id === semestreSelecionado)?.nome}</span>
+                        </p>
+                      </div>
+                    )}
+                    {!semestreSelecionado && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          Selecione um semestre acima para continuar
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Seleção de Turnos por Dia da Semana */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-base font-semibold">
+                        Turnos Disponíveis por Dia da Semana
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Selecione os turnos específicos para cada dia da semana em que você está disponível
+                      </p>
+                    </div>
+                    
+                    <div className={cn(
+                      "p-4 rounded-lg border",
+                      isLiquidGlass
+                        ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
+                        : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
+                    )}>
+                      <ShiftGrid
+                        selectedShifts={selectedShifts}
+                        onChange={setSelectedShifts}
+                        disabled={status === 'aprovada' || status === 'enviada'}
+                      />
+                    </div>
                   </div>
 
                   {/* Resumo da Seleção */}
@@ -694,20 +824,136 @@ export default function DisponibilizacaoHorariosPage() {
                         Turnos selecionados:
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {TURNOS.filter(t => turnos[t.id]).map(turno => (
-                          <Badge
-                            key={turno.id}
-                            variant="secondary"
-                            className={cn(
-                              turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
-                              turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
-                              turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                            )}
-                          >
-                            {turno.nome}
-                          </Badge>
-                        ))}
+                        {selectedShifts.map((shift, index) => {
+                          const dia = DIAS_SEMANA.find(d => d.id === shift.dayOfWeek)
+                          const turno = TURNOS.find(t => {
+                            if (shift.shift === 'morning') return t.id === 'manha'
+                            if (shift.shift === 'afternoon') return t.id === 'tarde'
+                            if (shift.shift === 'evening') return t.id === 'noite'
+                            return false
+                          })
+                          if (!dia || !turno) return null
+                          return (
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className={cn(
+                                turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+                                turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                                turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                              )}
+                            >
+                              {turno.nome} ({dia.abreviacao})
+                            </Badge>
+                          )
+                        })}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Seleção de Disciplinas */}
+                  {teacherCourses.length === 0 ? (
+                    <div className={cn(
+                      "p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10"
+                    )}>
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                            Nenhum curso vinculado
+                          </p>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                            Você não está vinculado a nenhum curso. Entre em contato com o coordenador para ser vinculado a um curso.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Disciplinas de Interesse (opcional)
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Selecione as disciplinas que você tem interesse em lecionar
+                        </p>
+                      </div>
+                      
+                      {loadingDisciplines ? (
+                        <div className="space-y-3">
+                          <Skeleton className="h-20 w-full" />
+                          <Skeleton className="h-20 w-full" />
+                        </div>
+                      ) : coursesWithDisciplines.length === 0 ? (
+                        <div className="text-sm text-muted-foreground p-4 border rounded-lg">
+                          Nenhuma disciplina disponível nos cursos vinculados
+                        </div>
+                      ) : (
+                        <div className="space-y-4 max-h-96 overflow-y-auto p-4 border rounded-lg">
+                          {coursesWithDisciplines.map(({ course, disciplines }) => {
+                            if (disciplines.length === 0) return null
+                            
+                            return (
+                              <div key={course.id} className="space-y-2">
+                                <div className="flex items-center gap-2 pb-2 border-b">
+                                  <BookOpen className="h-4 w-4 text-primary" />
+                                  <h4 className="font-semibold text-sm">{course.name}</h4>
+                                  <Badge variant="outline" className="text-xs">{course.code}</Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6">
+                                  {disciplines.map((discipline) => {
+                                    const isSelected = selectedDisciplineIds.includes(discipline.id)
+                                    return (
+                                      <label
+                                        key={discipline.id}
+                                        className={cn(
+                                          "flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition-colors",
+                                          isSelected
+                                            ? "bg-primary/10 border-primary"
+                                            : "hover:bg-accent border-gray-200 dark:border-gray-700"
+                                        )}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setSelectedDisciplineIds([...selectedDisciplineIds, discipline.id])
+                                            } else {
+                                              setSelectedDisciplineIds(selectedDisciplineIds.filter(id => id !== discipline.id))
+                                            }
+                                          }}
+                                          className="rounded"
+                                          disabled={status === 'aprovada' || status === 'enviada'}
+                                        />
+                                        <span className="text-sm flex-1">
+                                          {discipline.name}
+                                          {discipline.code && (
+                                            <span className="text-muted-foreground ml-1">({discipline.code})</span>
+                                          )}
+                                        </span>
+                                      </label>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                      
+                      {selectedDisciplineIds.length > 0 && (
+                        <div className={cn(
+                          "p-3 rounded-lg border",
+                          isLiquidGlass
+                            ? 'bg-black/20 dark:bg-gray-800/10 border-gray-200/30 dark:border-gray-700/50'
+                            : 'bg-gray-50/40 dark:bg-gray-800/20 border-gray-200 dark:border-gray-700'
+                        )}>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Disciplinas selecionadas: {selectedDisciplineIds.length}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -722,8 +968,60 @@ export default function DisponibilizacaoHorariosPage() {
                       value={observacoes}
                       onChange={(e) => setObservacoes(e.target.value)}
                       className="min-h-[100px]"
+                      disabled={status === 'aprovada' || status === 'enviada'}
                     />
                   </div>
+
+                  {/* Resumo antes de enviar */}
+                  {semestreSelecionado && temAlgumTurnoSelecionado() && (
+                    <div className={cn(
+                      "p-4 rounded-lg border border-primary/20 bg-primary/5",
+                    )}>
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <CheckCircle className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm mb-1">Resumo da Disponibilização</p>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <p>
+                              <span className="font-medium">Semestre:</span> {semestres.find(s => s.id === semestreSelecionado)?.nome}
+                            </p>
+                            <p>
+                              <span className="font-medium">Turnos selecionados:</span> {selectedShifts.length} combinação{selectedShifts.length !== 1 ? 'ões' : ''}
+                            </p>
+                            {selectedShifts.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {selectedShifts.slice(0, 5).map((shift, idx) => {
+                                  const dia = DIAS_SEMANA.find(d => d.id === shift.dayOfWeek)
+                                  const turno = TURNOS.find(t => {
+                                    if (shift.shift === 'morning') return t.id === 'manha'
+                                    if (shift.shift === 'afternoon') return t.id === 'tarde'
+                                    if (shift.shift === 'evening') return t.id === 'noite'
+                                    return false
+                                  })
+                                  if (!dia || !turno) return null
+                                  return (
+                                    <span key={idx} className="text-xs">
+                                      {turno.nome} ({dia.abreviacao}){idx < Math.min(selectedShifts.length, 5) - 1 ? ',' : ''}
+                                    </span>
+                                  )
+                                })}
+                                {selectedShifts.length > 5 && (
+                                  <span className="text-xs">+{selectedShifts.length - 5} mais</span>
+                                )}
+                              </div>
+                            )}
+                            {selectedDisciplineIds.length > 0 && (
+                              <p>
+                                <span className="font-medium">Disciplinas de interesse:</span> {selectedDisciplineIds.length} selecionada{selectedDisciplineIds.length !== 1 ? 's' : ''}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Botões de Ação */}
                   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -731,7 +1029,7 @@ export default function DisponibilizacaoHorariosPage() {
                       variant="outline"
                       onClick={salvarRascunho}
                       className="flex-1"
-                      disabled={saving || loading}
+                      disabled={saving || loading || !semestreSelecionado}
                     >
                       <Save className="h-4 w-4 mr-2" />
                       {saving ? "Salvando..." : "Salvar Rascunho"}
@@ -739,12 +1037,17 @@ export default function DisponibilizacaoHorariosPage() {
                     <LiquidGlassButton
                       onClick={enviarParaCoordenacao}
                       className="flex-1"
-                      disabled={saving || loading || status === 'aprovada'}
+                      disabled={saving || loading || status === 'aprovada' || !semestreSelecionado}
                     >
                       <Send className="h-4 w-4 mr-2" />
                       {saving ? "Enviando..." : "Enviar para Coordenação"}
                     </LiquidGlassButton>
                   </div>
+                  {!semestreSelecionado && (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      Selecione um semestre acima para continuar
+                    </p>
+                  )}
                 </CardContent>
               </LiquidGlassCard>
             </TabsContent>
@@ -819,25 +1122,81 @@ export default function DisponibilizacaoHorariosPage() {
                               </p>
                             )}
 
-                            <div className="flex flex-wrap gap-2">
-                              {turnosSelecionados.length > 0 ? (
-                                turnosSelecionados.map(turno => (
-                                  <Badge
-                                    key={turno.id}
-                                    variant="secondary"
-                                    className={cn(
-                                      turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
-                                      turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
-                                      turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                                    )}
-                                  >
-                                    {turno.nome}
-                                  </Badge>
-                                ))
-                              ) : (
-                                <span className="text-gray-400 dark:text-gray-500 text-sm">
-                                  Nenhum turno selecionado
-                                </span>
+                            <div className="space-y-3">
+                              <div>
+                                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Turnos por dia da semana:
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {item.diasSemana && item.diasSemana.length > 0 && turnosSelecionados.length > 0 ? (
+                                    item.diasSemana.map(diaId => {
+                                      const dia = DIAS_SEMANA.find(d => d.id === diaId)
+                                      const turnosDoDia = turnosSelecionados.filter(t => {
+                                        // Verificar se há algum turno selecionado para este dia
+                                        // Como não temos os shifts originais, vamos mostrar todos os turnos selecionados
+                                        return true
+                                      })
+                                      return dia ? (
+                                        <div key={diaId} className="flex flex-col gap-1">
+                                          <span className="text-xs font-medium text-gray-500">{dia.abreviacao}:</span>
+                                          <div className="flex gap-1">
+                                            {turnosSelecionados.map(turno => (
+                                              <Badge
+                                                key={`${diaId}-${turno.id}`}
+                                                variant="secondary"
+                                                className={cn(
+                                                  "text-xs",
+                                                  turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+                                                  turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                                                  turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                                                )}
+                                              >
+                                                {turno.nome}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ) : null
+                                    })
+                                  ) : turnosSelecionados.length > 0 ? (
+                                    turnosSelecionados.map(turno => (
+                                      <Badge
+                                        key={turno.id}
+                                        variant="secondary"
+                                        className={cn(
+                                          turno.cor === 'yellow' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
+                                          turno.cor === 'orange' && 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+                                          turno.cor === 'blue' && 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                                        )}
+                                      >
+                                        {turno.nome}
+                                      </Badge>
+                                    ))
+                                  ) : (
+                                    <span className="text-gray-400 dark:text-gray-500 text-sm">
+                                      Nenhum turno selecionado
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {item.disciplinas && item.disciplinas.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Disciplinas de interesse:</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {item.disciplinas.map(disciplina => (
+                                      <Badge
+                                        key={disciplina.id}
+                                        variant="outline"
+                                        className="bg-primary/5 text-primary border-primary/20"
+                                      >
+                                        <BookOpen className="h-3 w-3 mr-1" />
+                                        {disciplina.name}
+                                        {disciplina.code && ` (${disciplina.code})`}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </div>

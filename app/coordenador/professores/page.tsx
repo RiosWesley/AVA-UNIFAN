@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Plus, Search, Edit, Trash2, Mail, GraduationCap, Loader2 } from "lucide-react"
+import { Users, Plus, Search, Edit, Trash2, Mail, GraduationCap, Loader2, BookOpen } from "lucide-react"
 import { getDepartments, getDepartmentTeachers, removeTeacherFromDepartment, addTeachersToDepartment, type Department, type Teacher } from "@/src/services/departmentsService"
 import { usuariosService } from "@/src/services/usuariosService"
 import { toastError, toastSuccess } from "@/components/ui/toast"
@@ -461,6 +461,15 @@ export default function ProfessoresCoordenadorPage() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge variant={p.status === "Ativo" ? "default" : "secondary"}>{p.status}</Badge>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-transparent"
+                                  onClick={() => router.push(`/coordenador/professores/${p.id}/cursos`)}
+                                  title="Gerenciar cursos"
+                                >
+                                  <BookOpen className="w-4 h-4" />
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
