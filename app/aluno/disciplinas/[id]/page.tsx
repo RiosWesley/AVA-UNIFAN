@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Sidebar } from "@/components/layout/sidebar"
-import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff, GraduationCap } from "lucide-react"
+import { ArrowLeft, Bell, FileText, Upload, CheckCircle, AlertCircle, MessageSquare, MessageCircle, Video, Play, Eye, EyeOff, CalendarClock, FileCheck, Clock, Monitor, MonitorStop, ChevronDown, Mic, MicOff, VideoOff, GraduationCap, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { ModalDiscussaoForum, ModalVideoChamada } from '@/components/modals'
+import { ModalDiscussaoForum, ModalVideoChamada, ModalVerEntrega } from '@/components/modals'
 import { ModalRealizarProva, ModalResultadoProva } from '@/components/modals'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from '@/hooks/use-toast'
@@ -157,6 +157,24 @@ export default function DisciplinaDetalhePage() {
   const [uploadFiles, setUploadFiles] = useState<Record<string, File | null>>({})
   const [uploadComments, setUploadComments] = useState<Record<string, string>>({})
 
+  // Modal de visualização de entrega
+  const [modalVerEntregaOpen, setModalVerEntregaOpen] = useState(false)
+  const [selectedActivityForView, setSelectedActivityForView] = useState<{
+    activityId: string
+    activityTitle: string
+    submissionId?: string | null
+    grade?: number | null
+    maxScore?: number | null
+  } | null>(null)
+
+  // Estado para controlar quais atividades estão em modo de retificação
+  const [retifyingActivities, setRetifyingActivities] = useState<Set<string>>(new Set())
+
+  // Estados para busca e paginação de atividades
+  const [searchActivityTerm, setSearchActivityTerm] = useState("")
+  const [currentActivityPage, setCurrentActivityPage] = useState(1)
+  const ACTIVITIES_PER_PAGE = 5
+
   // Upload activity mutation
   const uploadActivityMutation = useMutation({
     mutationFn: async ({ activityId, file, comment }: { activityId: string; file: File; comment: string }) => {
@@ -189,6 +207,12 @@ export default function DisciplinaDetalhePage() {
           grade: null
         }
       }))
+      // Sair do modo de retificação após envio bem-sucedido
+      setRetifyingActivities(prev => {
+        const next = new Set(prev)
+        next.delete(variables.activityId)
+        return next
+      })
     },
     onError: (error, variables) => {
       toast({
@@ -872,36 +896,33 @@ export default function DisciplinaDetalhePage() {
                   </Card>
                 )}
                 {(() => {
-                  // Mapear tentativas por activityId
-                  const attemptsByActivityId = new Map<string, ExamAttemptDTO>()
-                  ;(attemptsQuery.data || []).forEach((attempt) => {
-                    const activityId = attempt.exam?.activity?.id
-                    if (activityId) {
-                      attemptsByActivityId.set(activityId, attempt)
-                    }
-                  })
-
-                  // Filtrar provas virtuais da turma
-                  const virtualExams = (examsQuery.data || []).filter(
-                    (exam) => exam.activity?.class?.id === classId && exam.activity?.type === 'virtual_exam'
+                  // Filtrar atividades: remover exam e virtual_exam
+                  const filteredActivities = (activitiesQuery.data || []).filter(
+                    (activity: ClassActivity) => activity.type !== 'exam' && activity.type !== 'virtual_exam'
                   )
 
-                  // Combinar atividades normais e provas virtuais
-                  const allActivities: Array<ClassActivity & { type?: string; examId?: string; exam?: ExamDTO }> = [
-                    ...(activitiesQuery.data || []),
-                    ...virtualExams.map((exam) => ({
-                      id: exam.activity.id,
-                      title: exam.activity.title || 'Prova',
-                      description: exam.activity.description || exam.instructions || '',
-                      dueDate: exam.activity.dueDate || '',
-                      type: exam.activity.type,
-                      maxScore: exam.activity.maxScore || null,
-                      examId: exam.id,
-                      exam: exam,
-                    } as ClassActivity & { type: string; examId: string; exam: ExamDTO })),
-                  ]
+                  // Aplicar busca
+                  const searchTermLower = searchActivityTerm.toLowerCase().trim()
+                  const searchedActivities = searchTermLower
+                    ? filteredActivities.filter((activity: ClassActivity) =>
+                        activity.title.toLowerCase().includes(searchTermLower) ||
+                        activity.description?.toLowerCase().includes(searchTermLower) ||
+                        activity.unit?.toLowerCase().includes(searchTermLower)
+                      )
+                    : filteredActivities
 
-                  if (!activitiesQuery.isLoading && allActivities.length === 0) {
+                  // Paginação
+                  const totalPages = Math.ceil(searchedActivities.length / ACTIVITIES_PER_PAGE)
+                  const startIndex = (currentActivityPage - 1) * ACTIVITIES_PER_PAGE
+                  const endIndex = startIndex + ACTIVITIES_PER_PAGE
+                  const paginatedActivities = searchedActivities.slice(startIndex, endIndex)
+
+                  // Resetar página se necessário
+                  if (currentActivityPage > totalPages && totalPages > 0) {
+                    setCurrentActivityPage(1)
+                  }
+
+                  if (!activitiesQuery.isLoading && filteredActivities.length === 0) {
                     return (
                       <Card>
                         <CardContent className="p-8 text-center">
@@ -912,29 +933,183 @@ export default function DisciplinaDetalhePage() {
                     )
                   }
 
-                  return allActivities.map((atividade: ClassActivity & { type?: string; examId?: string; exam?: ExamDTO }) => {
-                    const isVirtualExam = atividade.type === 'virtual_exam'
-                    const attempt = isVirtualExam ? attemptsByActivityId.get(atividade.id) : undefined
-                    const isFinalized = attempt && (attempt.status === 'submitted' || attempt.status === 'graded')
-                    
-                    // Para atividades normais, usar lógica existente
-                    if (!isVirtualExam) {
+                  // Barra de pesquisa
+                  const searchBar = (
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar atividades..."
+                          value={searchActivityTerm}
+                          onChange={(e) => {
+                            setSearchActivityTerm(e.target.value)
+                            setCurrentActivityPage(1) // Resetar para primeira página ao buscar
+                          }}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                  )
+
+                  // Criar mapa de notas por activityId (mesma lógica da aba de notas)
+                  const gradeMap = new Map<string, { score: number; gradedAt: string | null }>()
+                  const grades = gradesQuery.data || []
+                  
+                  // Notas de grades (tabela grades)
+                  grades.forEach((grade: GradeDTO) => {
+                    if (grade.activity?.id) {
+                      gradeMap.set(grade.activity.id, {
+                        score: grade.score,
+                        gradedAt: grade.gradedAt
+                      })
+                    }
+                  })
+
+                  // Notas de provas online (virtual_exam)
+                  ;(attemptsQuery.data || []).forEach((attempt: ExamAttemptDTO) => {
+                    const activityId = attempt.exam?.activity?.id
+                    if (activityId && attempt.score !== null && attempt.score !== undefined) {
+                      gradeMap.set(activityId, {
+                        score: attempt.score,
+                        gradedAt: attempt.createdAt || null
+                      })
+                    }
+                  })
+
+                  // Notas de activity_submissions (submissionStatusByActivity)
+                  Object.values(submissionStatusByActivity).forEach((status) => {
+                    if (status.grade !== null && status.grade !== undefined) {
+                      // Só adiciona se não houver nota no gradeMap (prioridade para grades)
+                      if (!gradeMap.has(status.activityId)) {
+                        gradeMap.set(status.activityId, {
+                          score: status.grade,
+                          gradedAt: status.submittedAt || null
+                        })
+                      }
+                    }
+                  })
+
+                  return (
+                    <>
+                      {searchBar}
+                      
+                      {searchedActivities.length === 0 ? (
+                        <Card>
+                          <CardContent className="p-8 text-center">
+                            <FileCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <p className="text-muted-foreground">
+                              {searchActivityTerm ? 'Nenhuma atividade encontrada com o termo pesquisado.' : 'Nenhuma atividade disponível ainda'}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <>
+                          {paginatedActivities.map((atividade: ClassActivity & { unit?: string | null }) => {
                       const status = submissionStatusByActivity[String(atividade.id)]
                       const normalized = (status?.status || '').toString().toLowerCase()
                       const isCompleted = normalized === 'submitted' || normalized === 'graded' || normalized === 'completed'
                       const badgeLabel = isCompleted ? "Concluída" : "Pendente"
                       const badgeVariant = isCompleted ? "default" : "destructive"
                       
+                      // Buscar nota do gradeMap (prioridade) ou do status
+                      const gradeFromMap = gradeMap.get(atividade.id)
+                      const activityGrade = gradeFromMap?.score ?? status?.grade ?? null
+                      
+                      // Formatar tipo de atividade
+                      const formatActivityType = (type?: string) => {
+                        const typeMap: Record<string, string> = {
+                          'homework': 'Trabalho',
+                          'exam': 'Prova',
+                          'virtual_exam': 'Prova Online',
+                          'project': 'Projeto'
+                        }
+                        return typeMap[type || 'homework'] || type || 'Atividade'
+                      }
+
+                      // Verificar se está antes ou depois do prazo
+                      const dueDate = atividade.dueDate ? new Date(atividade.dueDate) : null
+                      const now = new Date()
+                      const isBeforeDeadline = dueDate ? now < dueDate : true
+                      const startDate = atividade.startDate ? new Date(atividade.startDate) : null
+
+                      // Formatar data com hora
+                      const formatDateTime = (date: Date | null) => {
+                        if (!date) return 'Não informado'
+                        return date.toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      }
+
+                      // Obter submissionId se disponível
+                      const submissionId = status?.id || null
+                      
                       return (
                         <Card key={atividade.id}>
                           <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <CardTitle className="text-lg">{atividade.title}</CardTitle>
-                                <CardDescription>Prazo: {new Date(atividade.dueDate).toLocaleDateString('pt-BR')}</CardDescription>
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg mb-2">{atividade.title}</CardTitle>
+                                <div className="space-y-1">
+                                  {/* Unidade */}
+                                  {atividade.unit && (
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <Badge variant="secondary" className="text-xs">
+                                        {atividade.unit}
+                                      </Badge>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Tipo da Atividade */}
+                                  {atividade.type && (
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant="outline" className="text-xs">
+                                        {formatActivityType(atividade.type)}
+                                      </Badge>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Período de Início */}
+                                  {startDate && (
+                                    <CardDescription className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      Início: {formatDateTime(startDate)}
+                                    </CardDescription>
+                                  )}
+                                  
+                                  {/* Prazo com horário */}
+                                  {dueDate && (
+                                    <CardDescription className="flex items-center gap-1">
+                                      <CalendarClock className="h-3 w-3" />
+                                      Prazo: {formatDateTime(dueDate)}
+                                    </CardDescription>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                {typeof status?.grade === 'number' && <Badge variant="default">Nota: {status.grade}</Badge>}
+                              <div className="flex flex-col items-end gap-2">
+                                {/* Nota */}
+                                {typeof activityGrade === 'number' ? (
+                                  <Badge variant="default" className="text-sm">
+                                    Nota: {activityGrade.toFixed(2)}
+                                    {atividade.maxScore && ` / ${atividade.maxScore.toFixed(2)}`}
+                                  </Badge>
+                                ) : isCompleted ? (
+                                  <Badge variant="secondary" className="text-xs">
+                                    Aguardando correção
+                                  </Badge>
+                                ) : null}
+                                
+                                {/* Peso */}
+                                {atividade.maxScore && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Peso: {atividade.maxScore.toFixed(2)}
+                                  </Badge>
+                                )}
+                                
+                                {/* Status */}
                                 <Badge variant={badgeVariant as any}>
                                   {isCompleted ? <CheckCircle className="h-3 w-3 mr-1" /> : <AlertCircle className="h-3 w-3 mr-1" />}
                                   {badgeLabel}
@@ -944,7 +1119,10 @@ export default function DisciplinaDetalhePage() {
                           </CardHeader>
                           <CardContent>
                             <p className="text-sm mb-4">{atividade.description}</p>
-                            {!isCompleted && (
+                            
+                            {/* Lógica de botões baseada no prazo e status */}
+                            {!isCompleted ? (
+                              // Não entregue: mostrar formulário de upload
                               <div className="space-y-4 border-t pt-4">
                                 <div>
                                   <Label htmlFor={`arquivo-${atividade.id}`}>Enviar Arquivo</Label>
@@ -974,7 +1152,7 @@ export default function DisciplinaDetalhePage() {
                                 </div>
                                 <Button
                                   onClick={() => handleSubmitActivity({ id: String(atividade.id) })}
-                                  disabled={uploadActivityMutation.isPending}
+                                  disabled={uploadActivityMutation.isPending || !isBeforeDeadline}
                                   className="w-full"
                                 >
                                   {uploadActivityMutation.isPending ? (
@@ -989,13 +1167,158 @@ export default function DisciplinaDetalhePage() {
                                     </>
                                   )}
                                 </Button>
+                                {!isBeforeDeadline && (
+                                  <p className="text-xs text-muted-foreground text-center">
+                                    O prazo para entrega já passou.
+                                  </p>
+                                )}
+                              </div>
+                            ) : isBeforeDeadline ? (
+                              // Entregue e antes do prazo: botão Retificar
+                              <div className="space-y-4 border-t pt-4">
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedActivityForView({
+                                        activityId: String(atividade.id),
+                                        activityTitle: atividade.title,
+                                        submissionId,
+                                        grade: activityGrade,
+                                        maxScore: atividade.maxScore ?? null
+                                      })
+                                      setModalVerEntregaOpen(true)
+                                    }}
+                                    className="flex-1"
+                                  >
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    Ver Entrega
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      // Ativar modo de retificação
+                                      setRetifyingActivities(prev => new Set(prev).add(String(atividade.id)))
+                                      // Limpar estado anterior e permitir nova entrega
+                                      setUploadFiles(prev => ({ ...prev, [String(atividade.id)]: null }))
+                                      setUploadComments(prev => ({ ...prev, [String(atividade.id)]: '' }))
+                                    }}
+                                    className="flex-1"
+                                  >
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Retificar
+                                  </Button>
+                                </div>
+                                {/* Formulário de retificação (mostrado quando em modo de retificação) */}
+                                {retifyingActivities.has(String(atividade.id)) && (
+                                  <div className="space-y-4 border-t pt-4">
+                                    <div>
+                                      <Label htmlFor={`arquivo-retificar-${atividade.id}`}>Novo Arquivo</Label>
+                                      <Input
+                                        id={`arquivo-retificar-${atividade.id}`}
+                                        type="file"
+                                        className="mt-1"
+                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                                        onChange={(e) => handleFileChange(String(atividade.id), e.target.files?.[0] || null)}
+                                      />
+                                      {uploadFiles[String(atividade.id)] && (
+                                        <p className="text-sm text-green-600 mt-1 flex items-center gap-2">
+                                          <CheckCircle className="h-4 w-4" />
+                                          {uploadFiles[String(atividade.id)]?.name} ({(uploadFiles[String(atividade.id)]?.size! / 1024).toFixed(1)} KB)
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`comentario-retificar-${atividade.id}`}>Comentário (opcional)</Label>
+                                      <Textarea
+                                        id={`comentario-retificar-${atividade.id}`}
+                                        placeholder="Adicione um comentário..."
+                                        className="mt-1"
+                                        value={uploadComments[String(atividade.id)] || ''}
+                                        onChange={(e) => setUploadComments(prev => ({ ...prev, [String(atividade.id)]: e.target.value }))}
+                                      />
+                                    </div>
+                                    <Button
+                                      onClick={() => handleSubmitActivity({ id: String(atividade.id) })}
+                                      disabled={uploadActivityMutation.isPending}
+                                      className="w-full"
+                                    >
+                                      {uploadActivityMutation.isPending ? (
+                                        <>
+                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                          Enviando...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Upload className="h-4 w-4 mr-2" />
+                                          Enviar Nova Versão
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              // Entregue e após o prazo: apenas botão Ver Entrega
+                              <div className="border-t pt-4">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedActivityForView({
+                                      activityId: String(atividade.id),
+                                      activityTitle: atividade.title,
+                                      submissionId,
+                                      grade: activityGrade,
+                                      maxScore: atividade.maxScore ?? null
+                                    })
+                                    setModalVerEntregaOpen(true)
+                                  }}
+                                  className="w-full"
+                                >
+                                  <FileText className="h-4 w-4 mr-2" />
+                                  Ver Entrega
+                                </Button>
                               </div>
                             )}
                           </CardContent>
                         </Card>
                       )
-                    }
-                  })
+                          })}
+                          
+                          {/* Paginação */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                              <div className="text-sm text-muted-foreground">
+                                Mostrando {startIndex + 1} a {Math.min(endIndex, searchedActivities.length)} de {searchedActivities.length} atividade(s)
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentActivityPage(prev => Math.max(1, prev - 1))}
+                                  disabled={currentActivityPage === 1}
+                                >
+                                  <ChevronLeft className="h-4 w-4" />
+                                  Anterior
+                                </Button>
+                                <div className="text-sm text-muted-foreground">
+                                  Página {currentActivityPage} de {totalPages}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCurrentActivityPage(prev => Math.min(totalPages, prev + 1))}
+                                  disabled={currentActivityPage === totalPages}
+                                >
+                                  Próxima
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )
                 })()}
               </div>
             </TabsContent>
@@ -1849,6 +2172,22 @@ export default function DisciplinaDetalhePage() {
         }}
         attemptId={attemptIdParaResultado}
       />
+      {/* Modal de Visualização de Entrega */}
+      {selectedActivityForView && studentId && (
+        <ModalVerEntrega
+          isOpen={modalVerEntregaOpen}
+          onClose={() => {
+            setModalVerEntregaOpen(false)
+            setSelectedActivityForView(null)
+          }}
+          activityId={selectedActivityForView.activityId}
+          studentId={studentId}
+          activityTitle={selectedActivityForView.activityTitle}
+          submissionId={selectedActivityForView.submissionId}
+          grade={selectedActivityForView.grade}
+          maxScore={selectedActivityForView.maxScore}
+        />
+      )}
     </div>
   )
 }

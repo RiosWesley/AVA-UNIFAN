@@ -99,6 +99,7 @@ export interface ClassActivity {
   title: string
   description: string
   dueDate: string
+  startDate?: string | null
   status?: 'pending' | 'in_progress' | 'completed'
   grade?: number | null
   unit?: string | null
@@ -108,6 +109,7 @@ export interface ClassActivity {
 }
 
 export interface ActivitySubmissionStatus {
+  id?: string
   activityId: string
   studentId: string
   status: 'not_submitted' | 'submitted' | 'graded' | 'completed' | 'pending' | 'PENDING' | 'SUBMITTED' | 'GRADED' | 'COMPLETED'
@@ -520,6 +522,7 @@ export const apiClient = {
   async getActivitySubmissionStatus(activityId: string, studentId: string): Promise<ActivitySubmissionStatus> {
     const { data } = await api.get<any>(`/activities/${activityId}/submissions/students/${studentId}`)
     const normalized: ActivitySubmissionStatus = {
+      id: data?.id || undefined,
       activityId: data?.activityId || data?.activity?.id || activityId,
       studentId: data?.studentId || data?.student?.id || studentId,
       status: data?.status,
@@ -527,6 +530,40 @@ export const apiClient = {
       grade: data?.grade ?? null,
     }
     return normalized
+  },
+
+  async getActivitySubmissionDetails(activityId: string, studentId: string): Promise<{
+    id: string
+    activityId: string
+    studentId: string
+    status: string
+    grade: number | null
+    fileUrls: string[] | null
+    comment: string | null
+    submittedAt: string | null
+  }> {
+    const { data } = await api.get<any>(`/activities/${activityId}/submissions/students/${studentId}`)
+    return {
+      id: data?.id || '',
+      activityId: data?.activityId || data?.activity?.id || activityId,
+      studentId: data?.studentId || data?.student?.id || studentId,
+      status: data?.status || 'pending',
+      grade: data?.grade ?? null,
+      fileUrls: data?.fileUrls || data?.file_urls || null,
+      comment: data?.comment || null,
+      submittedAt: data?.submittedAt || data?.submitted_at || null,
+    }
+  },
+
+  async getSubmissionFilesDetailed(submissionId: string): Promise<{
+    files: Array<{
+      url: string
+      originalName: string
+      fileName: string
+    }>
+  }> {
+    const { data } = await api.get(`/activities/submissions/${submissionId}/files/detailed`)
+    return data
   },
 
   async getForumsByClass(classId: string): Promise<Forum[]> {
