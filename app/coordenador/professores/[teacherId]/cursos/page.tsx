@@ -225,9 +225,11 @@ export default function ProfessorCursosPage() {
                           <h3 className="font-semibold text-lg">{tc.course.name}</h3>
                           <Badge variant="outline">{tc.course.code}</Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Departamento: {tc.course.department.name}
-                        </p>
+                        {tc.course.department && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Departamento: {tc.course.department.name}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           Vinculado em {new Date(tc.createdAt).toLocaleDateString('pt-BR')}
                         </p>

@@ -36,6 +36,11 @@ export interface DisponibilizacaoHorarios {
 
 export interface CreateAvailabilityRequest {
   teacherId: string
+  /**
+   * ID do período acadêmico.
+   * Aceita UUID (ex: "550e8400-e29b-41d4-a716-446655440000") 
+   * ou string de período (ex: "2026.2").
+   */
   academicPeriodId: string
   shifts: Shift[]
   observations?: string
@@ -53,6 +58,10 @@ export interface SemesterOption {
   ativo: boolean
 }
 
+/**
+ * Cria ou atualiza disponibilidade do professor.
+ * O campo academicPeriodId aceita UUID ou string de período (ex: "2026.2").
+ */
 export async function createOrUpdateAvailability(
   data: CreateAvailabilityRequest
 ): Promise<DisponibilizacaoHorarios> {
@@ -72,6 +81,11 @@ export async function getTeacherAvailabilities(
   return data || []
 }
 
+/**
+ * Busca disponibilidade do professor para um semestre específico.
+ * @param teacherId ID do professor
+ * @param semesterId ID do semestre (aceita UUID ou string de período como "2026.2")
+ */
 export async function getTeacherAvailabilityBySemester(
   teacherId: string,
   semesterId: string
@@ -150,11 +164,15 @@ export interface CourseAvailabilitySummary {
   }>
 }
 
+/**
+ * Busca resumo de disponibilidades de professores para um curso e semestre.
+ * @param courseId ID do curso
+ * @param semesterId ID do semestre (aceita UUID ou string de período como "2026.2")
+ */
 export async function getCourseAvailabilitySummary(
   courseId: string,
   semesterId: string
 ): Promise<CourseAvailabilitySummary> {
-  // Aceita tanto UUID quanto string do período (ex: "2026.2")
   const { data } = await api.get<CourseAvailabilitySummary>(
     `/teacher-semester-availabilities/course/${courseId}/semester/${semesterId}/summary`
   )

@@ -323,6 +323,7 @@ export default function DisponibilizacaoHorariosPage() {
     try {
       setSaving(true)
       
+      // academicPeriodId aceita UUID ou string de período (ex: "2026.2")
       const disponibilidade = await createOrUpdateAvailability({
         teacherId: teacherId!,
         academicPeriodId: semestreSelecionado,
@@ -408,6 +409,7 @@ export default function DisponibilizacaoHorariosPage() {
       setSaving(true)
       
       // Primeiro criar/atualizar como draft
+      // academicPeriodId aceita UUID ou string de período (ex: "2026.2")
       let disponibilidade = await createOrUpdateAvailability({
         teacherId: teacherId!,
         academicPeriodId: semestreSelecionado,
@@ -637,7 +639,12 @@ export default function DisponibilizacaoHorariosPage() {
                         ? 'bg-black/30 dark:bg-gray-800/20 border-gray-200/30 dark:border-gray-700/50'
                         : 'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200 dark:border-gray-700'
                     )}>
-                      <SelectValue placeholder="Selecionar semestre" />
+                      <SelectValue placeholder="Selecionar semestre">
+                        {semestreSelecionado 
+                          ? semestres.find(s => s.id === semestreSelecionado)?.nome || semestreSelecionado
+                          : "Selecionar semestre"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border-gray-200/30 dark:border-gray-700/50">
                       {semestres.map((semestre) => (
