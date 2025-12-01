@@ -97,10 +97,30 @@ export async function downloadSubmissionFile(submissionId: string, fileUrl: stri
     params: { fileUrl },
     responseType: 'blob',
   });
+  
+  // Tenta extrair do header Content-Disposition primeiro
   const disposition = (response.headers?.['content-disposition'] as string) || '';
   const match = disposition.match(/filename="([^"]+)"/i);
-  const fileName = match?.[1] || (fileUrl.split('/').pop() || 'arquivo');
-  return { blob: response.data as Blob, fileName };
+  if (match?.[1]) {
+    return { blob: response.data as Blob, fileName: decodeURIComponent(match[1]) };
+  }
+  
+  // Fallback: extrai da URL removendo query params e processando o nome
+  try {
+    const urlWithoutParams = fileUrl.split('?')[0];
+    const fileNameWithPath = urlWithoutParams.split('/').pop() || 'arquivo';
+    
+    // Remove timestamp e nanoid se existirem (formato: timestamp-nanoid-nomeOriginal)
+    const parts = fileNameWithPath.split('-');
+    if (parts.length >= 3 && /^\d+$/.test(parts[0]) && /^[A-Za-z0-9]+$/.test(parts[1])) {
+      const originalName = parts.slice(2).join('-');
+      return { blob: response.data as Blob, fileName: originalName };
+    }
+    
+    return { blob: response.data as Blob, fileName: fileNameWithPath };
+  } catch {
+    return { blob: response.data as Blob, fileName: 'arquivo' };
+  }
 }
 
 

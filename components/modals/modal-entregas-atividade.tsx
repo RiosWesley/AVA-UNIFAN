@@ -162,26 +162,30 @@ export function ModalEntregasAtividade({
   const handleDownload = async (aluno: AlunoEntrega, arquivo: { nome: string; url: string }) => {
     if (!arquivo || !arquivo.url) return
     try {
+      let finalFileName = arquivo.nome
+      
       if (aluno.submissionId) {
         const { blob, fileName } = await downloadSubmissionFile(aluno.submissionId, arquivo.url)
+        finalFileName = fileName || extractDisplayName(arquivo.nome) || arquivo.nome
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = fileName || arquivo.nome
+        link.download = finalFileName
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
         URL.revokeObjectURL(url)
       } else {
         // Fallback: link direto
+        finalFileName = extractDisplayName(arquivo.nome) || arquivo.nome
         const link = document.createElement('a')
         link.href = arquivo.url
-        link.download = arquivo.nome
+        link.download = finalFileName
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
       }
-      toast({ title: "Download iniciado", description: `Baixando ${arquivo.nome}...` })
+      toast({ title: "Download iniciado", description: `Baixando ${finalFileName}...` })
     } catch {
       toast({ title: "Erro no download", description: "Não foi possível baixar o arquivo." })
     }

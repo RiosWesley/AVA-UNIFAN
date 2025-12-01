@@ -510,9 +510,27 @@ export default function TurmaDetalhePage() {
         })
         const lista = enrollmentsState.map((en, idx) => {
           const sub = subByStudentId.get(en.student.id)
+          // Função auxiliar para extrair nome do arquivo da URL
+          const extractFileName = (url: string): string => {
+            try {
+              // Remove query params primeiro
+              const urlWithoutParams = url.split('?')[0]
+              // Pega o último segmento do path
+              const fileName = urlWithoutParams.split('/').pop() || 'arquivo'
+              // Remove timestamp e nanoid se existirem (formato: timestamp-nanoid-nomeOriginal)
+              const parts = fileName.split('-')
+              if (parts.length >= 3 && /^\d+$/.test(parts[0]) && /^[A-Za-z0-9]+$/.test(parts[1])) {
+                return parts.slice(2).join('-')
+              }
+              return fileName
+            } catch {
+              return url.split('/').pop() || 'arquivo'
+            }
+          }
+          
           const urls: string[] = (Array.isArray(sub?.files) && sub.files?.length ? sub.files : (Array.isArray(sub?.fileUrls) ? sub.fileUrls : [])) as string[]
           const firstFileUrl: string | undefined = urls.length > 0 ? urls[0] : undefined
-          const nomeArquivo = firstFileUrl ? firstFileUrl.split('/').pop() : undefined
+          const nomeArquivo = firstFileUrl ? extractFileName(firstFileUrl) : undefined
           const ext = nomeArquivo?.split('.').pop()?.toUpperCase()
           return {
             // Mantém compatibilidade com o Modal (id sequencial numérico),
@@ -531,7 +549,7 @@ export default function TurmaDetalhePage() {
               url: firstFileUrl
             } : undefined,
             arquivos: urls?.map((u) => {
-              const n = u.split('/').pop()
+              const n = extractFileName(u)
               const e = n?.split('.').pop()?.toUpperCase()
               return { nome: n || 'arquivo', url: u, tipo: e || 'ARQ' }
             }) || [],
