@@ -871,9 +871,9 @@ export default function DisciplinaDetalhePage() {
                                 size="sm" 
                                 onClick={handleDownload}
                                 disabled={isDownloading}
-                                className="text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none"
+                                className="text-xs sm:text-sm"
                               >
-                                {isDownloading ? 'Baixando...' : name}
+                                {isDownloading ? 'Baixando...' : 'Baixar'}
                               </Button>
                             )
                           })}
